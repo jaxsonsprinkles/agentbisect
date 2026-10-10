@@ -1,0 +1,41 @@
+Okay, yes, look at T3 codes, source code.  For how to use this subscription.  Um, and then push the agent demo public after you fix the issues and then do, um, do the investigation.
+
+---
+
+<task-notification>
+<task-id>a1ab5e1f70f466bda</task-id>
+<tool-use-id>toolu_01KpuU4eUZ3NnYPrKE7qtxtA</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a1ab5e1f70f466bda.output</output-file>
+<status>completed</status>
+<summary>Agent "Research T3 Code subscription auth" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>**T3 Code and Claude subscription use (checked 2026-10-10)**
+
+**How T3 Code does it.** It uses `@anthropic-ai/claude-agent-sdk` and points it at the user's own installed `claude` binary. In `apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts`, `pathToClaudeCodeExecutable` is set from `settings.binaryPath`. It never does its own login. `provider/ClaudeProvider.ts:634-647` runs `claude auth status` and, if that fails, tells the user to run `claude auth login`. T3 Code never handles tokens for inference. The one exception is `provider/claudeResetCredits.ts:155`, which reads `claudeAiOauth.accessToken` from Claude's credentials file to query reset credits. Source is cloned at `/tmp/t3code-src`.
+
+**Policy.**
+- Support article 15036540 (updated 2026-10-07) says `claude -p`, the Agent SDK and third-party apps still draw on subscription limits. Max and Team plans now also get monthly API credits that cover these.
+- The legal page (https://code.claude.com/docs/en/legal-and-compliance) says developers building products should use API keys. It forbids routing requests through Free/Pro/Max credentials on behalf of users, and forbids collecting or storing Claude.ai credentials.
+- It explicitly allows an end user to sign in to the unmodified Claude Code binary with their own subscription.
+- It also says subscription limits assume "ordinary, individual usage".
+
+**Policy risk.** A personal or hackathon tool that shells out to the user's own logged-in `claude`, with no token handling, matches the T3 pattern and the allowed case. The grey area is that hundreds of automated calls aren't "ordinary individual usage", so expect rate limits. Never extract or forward OAuth tokens. Never let judges or third parties use your subscription. Offer an `ANTHROPIC_API_KEY` provider for anyone else.
+
+**Empirical results (claude 2.1.296).**
+- Flags confirmed in `--help`: `--bare`, `--system-prompt`, `--tools`, `--disallowedTools`, `--strict-mcp-config`, `--setting-sources`, `--json-schema`, `--max-budget-usd`, `--no-session-persistence`, `--output-format`.
+- **`--bare` fails here**: it returned "Not logged in", so bare mode does not use the subscription login. Don't use it.
+- This call worked and cost about $0.0008: `claude -p ... --model claude-haiku-4-5 --output-format json --tools "" --system-prompt "..." --setting-sources "" --strict-mcp-config --no-session-persistence`.
+- The input was only 492 tokens, so the roughly 30k overhead goes away with a system-prompt override, empty tools and no settings.
+- The JSON includes `usage`, `total_cost_usd`, `num_turns`, `is_error`, `result`, and a per-model `modelUsage` keyed by full model id.
+- `modelUsage` also listed a second model, `claude-haiku-5-5`, with 1174 input tokens, so a side call is made under the hood. Count tokens from `modelUsage` rather than `usage`.
+- I did not test `--max-turns`; it doesn't appear in the `--help` lines I grepped.
+
+**Recommended Provider design.**
+- Spawn `claude -p` per call with the flags above. Pin full model ids (`claude-haiku-4-5`, a Sonnet id). Record the id reported in `modelUsage`.
+- Judge: use `--json-schema` for strict verdicts and `--tools ""`.
+- Support agent: use in-process tools through the Agent SDK's custom MCP tools, or a stdio MCP server passed with `--mcp-config` plus `--strict-mcp-config`. Whitelist only those tool names with `--tools`. Check `init.tools` in `stream-json` output to confirm nothing leaks.
+- Run in an empty cwd and set `CLAUDE_CODE_DISABLE_AUTO_MEMORY`-style isolation. Cap concurrency at 2-4 with retry and backoff on 429.
+- Temperature: there is no flag, so you can't get temperature 0. Mitigate with a cache keyed on (prompt, model), repeat runs, and `--json-schema`.
+- Keep the Provider interface pluggable, with an API-key SDK implementation as the fallback.</result>
+<usage><subagent_tokens>47894</subagent_tokens><tool_uses>9</tool_uses><duration_ms>58603</duration_ms></usage>
+</task-notification>
