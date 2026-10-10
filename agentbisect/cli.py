@@ -37,9 +37,31 @@ def _add_intake_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--fixtures", help="recorded JSON trace fixtures instead of the live neatlogs CLI")
     p.add_argument("--project", help="neatlogs project uuid (default $NEATLOGS_PROJECT_ID)")
     p.add_argument("--workflow", default="support-agent", help="neatlogs workflow name of the target's runs")
-    p.add_argument("--strategy", choices=["plain"], help="run the bisect after intake with this strategy")
+    p.add_argument("--strategy", choices=["smart", "plain"], default="smart",
+                   help="bisect strategy run after intake (default smart: rank commits by trace divergence, "
+                        "code impact and checkpoint intent, then fall back to plain)")
+    p.add_argument("--intake-only", action="store_true", help="stop after intake; do not run the bisect")
     p.add_argument("--good", help="known-good commit (overrides the one intake found)")
     p.add_argument("--bad", help="known-bad commit (default: failing trace's commit, else HEAD)")
+
+
+def trace_source(a: argparse.Namespace | None = None, meta: dict | None = None):
+    """Trace source for span divergence; `meta` ({fixtures, project}) comes from a saved investigation."""
+    fixtures = getattr(a, "fixtures", None) if a else (meta or {}).get("fixtures")
+    project = getattr(a, "project", None) if a else (meta or {}).get("project")
+    return FixtureSource(fixtures) if fixtures else NeatlogsCliSource(project=project)
+
+
+def make_strategy(st: BisectState, store: StateStore, meta: dict | None = None):
+    """Strategy for an investigation: None means the engine default (plain)."""
+    if st.metrics.get("strategy", "plain") != "smart":
+        return None
+    from .planner import Planner, SmartStrategy
+    try:
+        source = trace_source(meta=meta)
+    except Exception:  # no usable trace source: the planner ranks by checkpoint intent alone
+        source = None
+    return SmartStrategy(Planner(st.repo, source=source), store)
 
 
 def run_intake(a: argparse.Namespace) -> IntakeResult:
@@ -58,6 +80,11 @@ def _parser() -> argparse.ArgumentParser:
     inv = sub.add_parser("investigate", help="run intake and record the RegressionSpec in a new investigation")
     _add_intake_args(inv)
     _add_intake_args(sub.add_parser("intake", help="run intake and print the RegressionSpec (no state written)"))
+    c = sub.add_parser("compare", help="run plain and smart bisect on one investigation (separate empty caches) "
+                                       "and print eval rounds and cost")
+    c.add_argument("id")
+    c.add_argument("--fixtures", help="recorded trace fixtures for the smart planner's span divergence")
+    c.add_argument("--project", help="neatlogs project uuid")
     sub.add_parser("watch", help="poll neatlogs detections and auto-investigate (not implemented yet)")
     r = sub.add_parser("resume", help="resume an interrupted investigation")
     r.add_argument("id")
@@ -92,19 +119,25 @@ def main(argv: list[str] | None = None) -> int:
         if a.bad:
             st.bad_sha = a.bad
         store.save(st)
-        if not a.strategy:
-            print("pass --strategy plain to bisect, or run `agentbisect status " + st.id + "` to inspect")
+        meta = {"fixtures": a.fixtures, "project": a.project}
+        st.metrics["strategy"] = a.strategy
+        st.metrics["source"] = meta
+        store.save(st)
+        if a.intake_only:
+            print("intake only; run `agentbisect resume " + st.id + "` to bisect")
             return 0
         from .bisect import resume_investigation
         init_tracing(st.id)
         try:
-            return int(resume_investigation(store, st))
+            return int(resume_investigation(store, st, strategy=make_strategy(st, store, meta)))
         finally:
             shutdown_tracing()
     if a.cmd == "watch":
         print("agentbisect watch: not implemented yet (later chunk)", file=sys.stderr)
         return 2
     try:
+        if a.cmd == "compare":
+            return _compare(a, store)
         if a.cmd == "status":
             states = [store.load(a.id)] if a.id else store.list()
             if not states:
@@ -118,9 +151,26 @@ def main(argv: list[str] | None = None) -> int:
         try:
             print(f"resumed {st.id}" + (f"; will redo interrupted step: {redo}" if redo else ""))
             from .bisect import resume_investigation
-            return int(resume_investigation(store, st) or 0)
+            return int(resume_investigation(store, st, strategy=make_strategy(
+                st, store, st.metrics.get("source"))) or 0)
         finally:
             shutdown_tracing()
     except StateError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
+
+
+def _compare(a: argparse.Namespace, store: StateStore) -> int:
+    from .bisect import make_runner
+    from .planner import Planner, SmartStrategy, compare_strategies, format_comparison
+    st = store.load(a.id)
+    meta = {"fixtures": a.fixtures, "project": a.project}
+
+    def strategies(name: str, s: StateStore):
+        if name == "plain":
+            return None
+        return SmartStrategy(Planner(st.repo, source=trace_source(meta=meta)), s)
+
+    res = compare_strategies(st, str(store.base), make_runner, strategies)
+    print(format_comparison(res))
+    return 0

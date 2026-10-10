@@ -123,9 +123,72 @@ def trace_from_dict(d: dict[str, Any]) -> Trace:
     )
 
 
+@dataclass
+class Span:
+    """One step of a trace, reduced to what divergence needs: ordered, with the tool(s) it called (if any)."""
+    name: str
+    kind: str = ""  # llm | tool | agent | ...
+    tools: list[str] = field(default_factory=list)  # tool names chosen/executed in this step
+    args: dict[str, Any] = field(default_factory=dict)  # arguments of the first tool call, when known
+    text: str = ""  # short output/prompt text for context
+
+    @property
+    def signature(self) -> str:
+        return f"tool:{','.join(self.tools)}" if self.tools else f"{self.kind or 'span'}:{self.name}"
+
+
+def _tools_in(v: Any, depth: int = 0) -> list[tuple[str, dict]]:
+    """Tool calls found in a payload: OpenAI `tool_calls`, Anthropic `tool_use` blocks, plain {tool|tool_name}."""
+    out: list[tuple[str, dict]] = []
+    if depth > 6 or v is None:
+        return out
+    if isinstance(v, list):
+        for x in v:
+            out += _tools_in(x, depth + 1)
+    elif isinstance(v, dict):
+        if v.get("type") == "tool_use" and v.get("name"):
+            out.append((str(v["name"]), v.get("input") if isinstance(v.get("input"), dict) else {}))
+        elif isinstance(v.get("function"), dict) and v["function"].get("name"):
+            a = v["function"].get("arguments")
+            if isinstance(a, str):
+                try:
+                    a = json.loads(a)
+                except ValueError:
+                    a = {}
+            out.append((str(v["function"]["name"]), a if isinstance(a, dict) else {}))
+        elif v.get("tool_name") or (v.get("tool") and isinstance(v["tool"], str)):
+            out.append((str(v.get("tool_name") or v["tool"]), v.get("args") if isinstance(v.get("args"), dict) else {}))
+        else:
+            for x in v.values():
+                out += _tools_in(x, depth + 1)
+    return out
+
+
+def span_from_dict(d: dict[str, Any]) -> Span:
+    """Tolerant normaliser (fixture dicts and neatlogs span items; payload fields `input`/`output` optional)."""
+    attrs = d.get("attributes") or {}
+    kind = str(d.get("kind") or d.get("spanKind") or attrs.get("openinference.span.kind") or "").lower()
+    raw = d.get("tools") or d.get("tool_calls") or []
+    if raw and all(isinstance(t, str) for t in raw):  # recorded spans: plain tool names
+        found = [(t, d.get("args") or {}) for t in raw]
+    else:
+        found = _tools_in(raw)
+    if not found and (d.get("tool") or attrs.get("tool.name")):
+        found = [(str(d.get("tool") or attrs.get("tool.name")), d.get("args") or {})]
+    if not found:
+        found = _tools_in(d.get("output"))
+    return Span(name=str(d.get("name") or d.get("spanName") or ""), kind="tool" if found and not kind else kind,
+                tools=[n for n, _ in found], args=dict(found[0][1]) if found else {},
+                text=(_text_of(d.get("output")) or _text_of(d.get("input")) or "")[:500])
+
+
 class TraceSource(ABC):
     @abstractmethod
     def get_trace(self, trace_id: str) -> Trace: ...
+
+    def spans(self, trace_id: str) -> list[Span]:
+        """Ordered steps of a trace (empty when the source cannot provide them)."""
+        return []
 
     @abstractmethod
     def list_traces(self, workflow: str | None = None, limit: int = 200) -> list[Trace]: ...
@@ -217,6 +280,25 @@ class NeatlogsCliSource(TraceSource):
                 return _text_of(v.get("value"))
         return None
 
+    def spans(self, trace_id: str) -> list[Span]:
+        """Spans in start order; LLM/tool payloads are fetched to find chosen tools (shape UNVERIFIED on real runs)."""
+        data = self._call("traces", "spans", "list", trace_id, "--limit", "50")
+        items = data.get("spans", []) if isinstance(data, dict) else []
+        items = sorted(items, key=lambda s: str(s.get("startTime") or s.get("startedAt") or ""))
+        out = []
+        for s in items:
+            if not s.get("parentSpanId"):
+                continue  # the root run span only wraps the steps
+            d = dict(s)
+            try:
+                p = self._call("traces", "payload", trace_id, s["spanId"], "--fields", "output")
+                v = ((p.get("fields") or {}).get("output") or {}) if isinstance(p, dict) else {}
+                d["output"] = v.get("value") if v.get("available") else None
+            except IntakeError:
+                pass
+            out.append(span_from_dict(d))
+        return out
+
     def list_traces(self, workflow: str | None = None, limit: int = 200) -> list[Trace]:
         args = ["traces", "list"] + (["--workflow", workflow] if workflow else [])
         return [trace_from_dict(d) for d in self._paged("traces", *args, limit=limit)]
@@ -247,6 +329,7 @@ class FixtureSource(TraceSource):
             data = json.loads(Path(data).read_text())
         self.traces = {t.id: t for t in map(trace_from_dict, data.get("traces", []))}
         self.detections: dict[str, dict] = data.get("detections", {})
+        self._spans = {k: [span_from_dict(x) for x in v] for k, v in (data.get("spans") or {}).items()}
         self.fail_auth = bool(data.get("auth_failure"))
 
     def _check(self) -> None:
@@ -258,6 +341,10 @@ class FixtureSource(TraceSource):
         if trace_id not in self.traces:
             raise IntakeError(f"trace {trace_id} not found")
         return self.traces[trace_id]
+
+    def spans(self, trace_id: str) -> list[Span]:
+        self._check()
+        return list(self._spans.get(trace_id, []))
 
     def list_traces(self, workflow: str | None = None, limit: int = 200) -> list[Trace]:
         self._check()

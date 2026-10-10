@@ -245,7 +245,7 @@ def test_cli_investigate_writes_spec_to_state(target, tmp_path, capsys):
     fx.write_text(json.dumps(fixtures(shas)))
     sd = tmp_path / "state"
     assert main(["--state-dir", str(sd), "investigate", "--trace", "bad", "--repo", str(repo),
-                 "--fixtures", str(fx)]) == 0
+                 "--fixtures", str(fx), "--intake-only"]) == 0
     st = StateStore(sd).list()[0]
     assert st.spec.bad_trace_id == "bad" and st.spec.cases == ["os1", "os2"] and st.bad_sha == shas[2]
     assert st.good_sha == shas[1] and st.status == "created"
