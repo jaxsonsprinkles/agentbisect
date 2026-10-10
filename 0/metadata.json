@@ -1,0 +1,66 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KKPC0B7S4SHT47FEARADRJ",
+  "session_id": "fd272bdb-c68c-493f-8978-85b5608bf8b3",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T19:12:33.137066Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "BUILD_LOG.md",
+    "agentbisect/cli.py",
+    "agentbisect/models.py",
+    "agentbisect/runner.py",
+    "agentbisect/state.py",
+    "agentbisect/tracing.py",
+    "pyproject.toml",
+    "tests/conftest.py",
+    "tests/test_runner.py",
+    "tests/test_state.py",
+    "uv.lock"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "ed0bdb646188",
+  "checkpoint_transcript_start": 102,
+  "transcript_lines_at_start": 102,
+  "compact_transcript_start": 15,
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 6123,
+    "cache_read_tokens": 228132,
+    "output_tokens": 3927,
+    "api_call_count": 3,
+    "subagent_tokens": {
+      "input_tokens": 58,
+      "cache_creation_tokens": 356936,
+      "cache_read_tokens": 1117468,
+      "output_tokens": 24826,
+      "api_call_count": 29
+    }
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T19:12:33.122398Z",
+    "agent_lines": 1240,
+    "agent_removed": 3,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1240,
+    "total_lines_changed": 1243,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
