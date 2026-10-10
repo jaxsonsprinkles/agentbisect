@@ -1,0 +1,80 @@
+{
+  "_note": "Ground truth for the seeded regressions. Lives ONLY in the agentbisect repo. Never give to the history-builder's eval-visible context, the Fixer, or commit it into support-agent-demo.",
+  "cases": {
+    "os1": {
+      "breaks": "R1"
+    },
+    "os2": {
+      "breaks": "R1"
+    },
+    "os3": {
+      "breaks": "R1"
+    },
+    "os4": {
+      "breaks": "R1"
+    },
+    "os5": {
+      "breaks": "R1"
+    },
+    "rw1": {
+      "breaks": "R3"
+    },
+    "rw2": {
+      "breaks": "R3"
+    },
+    "rw3": {
+      "breaks": "R3"
+    },
+    "rw4": {
+      "breaks": "R3"
+    },
+    "ro1": {
+      "breaks": "control"
+    },
+    "ro2": {
+      "breaks": "control"
+    },
+    "ro3": {
+      "breaks": "control"
+    },
+    "ca1": {
+      "breaks": "control",
+      "intent_for": "R1"
+    },
+    "ca2": {
+      "breaks": "control",
+      "intent_for": "R1"
+    },
+    "ca3": {
+      "breaks": "control",
+      "intent_for": "R1"
+    },
+    "po1": {
+      "breaks": "R2"
+    },
+    "po2": {
+      "breaks": "R2"
+    },
+    "po3": {
+      "breaks": "R2"
+    },
+    "po4": {
+      "breaks": "R2"
+    },
+    "es1": {
+      "breaks": "R2"
+    },
+    "es2": {
+      "breaks": "R2"
+    },
+    "es3": {
+      "breaks": "R2"
+    },
+    "ms1": {
+      "breaks": "R1"
+    },
+    "ms2": {
+      "breaks": "R1"
+    }
+  }
+}
