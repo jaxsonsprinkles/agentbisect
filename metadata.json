@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4KM42RN5TANR1XBHZ8XB188",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "BUILD_LOG.md",
+    "agentbisect/cli.py",
+    "agentbisect/intake.py",
+    "tests/test_intake.py",
+    "tests/test_state.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 2443,
+    "cache_read_tokens": 253331,
+    "output_tokens": 1850,
+    "api_call_count": 3,
+    "subagent_tokens": {
+      "input_tokens": 28,
+      "cache_creation_tokens": 85607,
+      "cache_read_tokens": 951672,
+      "output_tokens": 33133,
+      "api_call_count": 14
+    }
+  }
+}
