@@ -1,0 +1,20 @@
+[project]
+name = "agentbisect"
+version = "0.1.0"
+description = "git bisect for agent behavior"
+readme = "README.md"
+authors = [{ name = "jaxsonsprinkles", email = "jaxstar24@gmail.com" }]
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "neatlogs>=1.4.26",
+]
+
+[project.scripts]
+agentbisect = "agentbisect.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
