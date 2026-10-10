@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import sys
 
 from .intake import (FixtureSource, IntakeError, IntakeResult, NeatlogsCliSource, WaitingOnHumanLogin,
@@ -40,6 +42,9 @@ def _add_intake_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--strategy", choices=["smart", "plain"], default="smart",
                    help="bisect strategy run after intake (default smart: rank commits by trace divergence, "
                         "code impact and checkpoint intent, then fall back to plain)")
+    p.add_argument("--llm-proxy", default="off", metavar="auto|URL|off",
+                   help="route the target's Anthropic calls through the local `claude`-CLI proxy: auto = start one "
+                        "for this run, URL = use a running one, off (default) = use the real API key")
     p.add_argument("--intake-only", action="store_true", help="stop after intake; do not run the bisect")
     p.add_argument("--good", help="known-good commit (overrides the one intake found)")
     p.add_argument("--bad", help="known-bad commit (default: failing trace's commit, else HEAD)")
@@ -93,6 +98,11 @@ def _parser() -> argparse.ArgumentParser:
     rp.add_argument("--confirm-open-pr", action="store_true",
                     help="really `git push` and `gh pr create` (requires --open-pr)")
     rp.add_argument("--draft", action="store_true", help="force a draft PR (default: draft iff the fix is unverified)")
+    lp = sub.add_parser("llm-proxy", help="serve an Anthropic-compatible API backed by your logged-in `claude` CLI")
+    lp.add_argument("--port", type=int, default=8787)
+    lp.add_argument("--concurrency", type=int, default=3)
+    lp.add_argument("--cache", action="store_true", help="cache responses in .agentbisect/llm_cache")
+    lp.add_argument("--cache-dir")
     sub.add_parser("watch", help="poll neatlogs detections and auto-investigate (not implemented yet)")
     r = sub.add_parser("resume", help="resume an interrupted investigation")
     r.add_argument("id")
@@ -104,6 +114,41 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     a = _parser().parse_args(argv)
     store = StateStore(a.state_dir)
+    if a.cmd == "llm-proxy":
+        from .llm_proxy import run_forever
+        return run_forever(a.port, a.concurrency, a.cache, a.cache_dir)
+    if a.cmd == "investigate":
+        with _llm_proxy(getattr(a, "llm_proxy", "off")):
+            return _main(a, store)
+    return _main(a, store)
+
+
+@contextlib.contextmanager
+def _llm_proxy(mode: str):
+    """`auto` starts an in-process proxy for the duration; a URL is used as is. Runners read the env var."""
+    px = None
+    prev = os.environ.get("AGENTBISECT_LLM_PROXY_URL")
+    if mode == "auto":
+        from .llm_proxy import LLMProxy
+        px = LLMProxy(cache_dir=".agentbisect/llm_cache")
+        px.serve(0)
+        os.environ["AGENTBISECT_LLM_PROXY_URL"] = px.url
+        print(f"llm proxy (own claude login) at {px.url}", file=sys.stderr)
+    elif mode and mode != "off":
+        os.environ["AGENTBISECT_LLM_PROXY_URL"] = mode
+    try:
+        yield
+    finally:
+        if px:
+            print(f"llm proxy stats: {json.dumps(px.stats.snapshot())}", file=sys.stderr)
+            px.stop()
+        if prev is None:
+            os.environ.pop("AGENTBISECT_LLM_PROXY_URL", None)
+        else:
+            os.environ["AGENTBISECT_LLM_PROXY_URL"] = prev
+
+
+def _main(a: argparse.Namespace, store: StateStore) -> int:
     if a.cmd in ("investigate", "intake"):
         try:
             res = run_intake(a)

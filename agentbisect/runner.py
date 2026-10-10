@@ -122,6 +122,8 @@ class RunnerConfig:
     classify: Callable[[float, int], str] | None = None  # hook: (pass_rate, n_runs) -> good|bad|uncertain
     env_file: str | None = None  # KEY=VALUE lines (API keys) injected into eval subprocesses; never logged
     worktree_root: str | None = None
+    # Local Anthropic-compatible proxy (agentbisect llm-proxy): sets ANTHROPIC_BASE_URL + a dummy key in eval env.
+    llm_proxy_url: str | None = field(default_factory=lambda: os.environ.get("AGENTBISECT_LLM_PROXY_URL") or None)
 
 
 def default_classify(cfg: RunnerConfig) -> Callable[[float, int], str]:
@@ -186,6 +188,9 @@ class Runner:
     def _env(self, sha: str | None, run_id: str | None, case: str | None) -> dict[str, str]:
         env = {k: v for k, v in os.environ.items() if k not in ("VIRTUAL_ENV", "PYTHONPATH")}
         env.update(_load_env_file(self.cfg.env_file))
+        if self.cfg.llm_proxy_url:
+            env["ANTHROPIC_BASE_URL"] = self.cfg.llm_proxy_url
+            env["ANTHROPIC_API_KEY"] = "agentbisect-proxy"
         for k, v in (("AGENTBISECT_COMMIT", sha), ("AGENTBISECT_RUN_ID", run_id), ("AGENTBISECT_CASE", case)):
             if v:
                 env[k] = v

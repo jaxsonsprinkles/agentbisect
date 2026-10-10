@@ -35,3 +35,8 @@ Five separate roles. They must not share context.
   `evidence/ground_truth.json` in this repo. It is for scoring AgentBisect's answer, and must be stripped from
   anything handed to the support agent, judge or Fixer. Evidence passed to the Fixer must be built from eval
   results (which carry no `breaks`), not from this file.
+
+## LLM backend note and policy (chunk 10a)
+
+- Backend: `agentbisect llm-proxy` lets the unmodified support agent (any historical commit) and judge run on the user's own logged-in `claude` CLI via `ANTHROPIC_BASE_URL`, with a dummy `ANTHROPIC_API_KEY`. Pinned model ids are passed through exactly and echoed back in the response `model`. Temperature is not controllable through the CLI, so results are noisier than API temperature 0; the runner's repeats and confidence band absorb this.
+- Policy: own login only, personal use. AgentBisect only executes the `claude` binary and never reads, copies or forwards credential files or tokens. Anyone else running AgentBisect should use their own `ANTHROPIC_API_KEY` (omit `--llm-proxy`) instead of someone's subscription.
