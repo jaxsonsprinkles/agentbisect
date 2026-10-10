@@ -1,4 +1,4 @@
-"""`agentbisect` entrypoint. status/resume work on state files; investigate/watch are stubs for later chunks."""
+"""`agentbisect` entrypoint: investigate (intake + plain bisect), resume, status; watch is a later chunk."""
 from __future__ import annotations
 
 import argparse
@@ -37,6 +37,9 @@ def _add_intake_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--fixtures", help="recorded JSON trace fixtures instead of the live neatlogs CLI")
     p.add_argument("--project", help="neatlogs project uuid (default $NEATLOGS_PROJECT_ID)")
     p.add_argument("--workflow", default="support-agent", help="neatlogs workflow name of the target's runs")
+    p.add_argument("--strategy", choices=["plain"], help="run the bisect after intake with this strategy")
+    p.add_argument("--good", help="known-good commit (overrides the one intake found)")
+    p.add_argument("--bad", help="known-bad commit (default: failing trace's commit, else HEAD)")
 
 
 def run_intake(a: argparse.Namespace) -> IntakeResult:
@@ -84,8 +87,20 @@ def main(argv: list[str] | None = None) -> int:
               f"range good={res.good_sha or '?'} bad={res.bad_sha or '?'}")
         for n in res.notes:
             print(f"  - {n}")
-        print("bisect engine is a later chunk; run `agentbisect status " + st.id + "` to inspect")
-        return 0
+        if a.good:
+            st.good_sha = a.good
+        if a.bad:
+            st.bad_sha = a.bad
+        store.save(st)
+        if not a.strategy:
+            print("pass --strategy plain to bisect, or run `agentbisect status " + st.id + "` to inspect")
+            return 0
+        from .bisect import resume_investigation
+        init_tracing(st.id)
+        try:
+            return int(resume_investigation(store, st))
+        finally:
+            shutdown_tracing()
     if a.cmd == "watch":
         print("agentbisect watch: not implemented yet (later chunk)", file=sys.stderr)
         return 2
@@ -102,11 +117,7 @@ def main(argv: list[str] | None = None) -> int:
         init_tracing(st.id)
         try:
             print(f"resumed {st.id}" + (f"; will redo interrupted step: {redo}" if redo else ""))
-            try:
-                from .bisect import resume_investigation  # type: ignore[import-not-found]  # chunk 6
-            except ImportError:
-                print("bisect engine not available yet; state is marked running and ready for it", file=sys.stderr)
-                return 0
+            from .bisect import resume_investigation
             return int(resume_investigation(store, st) or 0)
         finally:
             shutdown_tracing()

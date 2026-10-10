@@ -1,5 +1,5 @@
 # BUILD_LOG
-See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 5 complete; next chunk 6 (bisect).
+See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 6 complete (plain bisect); next chunk 7 (smart planner).
 
 ## Chunk 4: skeleton (models, state, runner, CLI, tracing)
 - `agentbisect/models.py`: RegressionSpec, Plan(+Candidate), CommitResult, BisectState, CulpritReport, FixAttempt (JSON round-trip via `to_dict`/`from_dict`).
@@ -16,3 +16,10 @@ See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 5 complete;
 - `intake_detection` (newest hit trace that maps to a case) and `intake_issue` (`gh issue view --json`, keyword->category match; optional injectable `LLM` interface called with the pinned `JUDGE_MODEL`, fake in tests, no live client shipped).
 - CLI: `agentbisect investigate --trace|--detection|--issue --repo PATH [--fixtures F] [--project UUID]` writes the spec + good/bad sha into a new investigation; `agentbisect intake ...` prints it. `watch` still a stub.
 - Tests: `tests/test_intake.py` (39 total pass). Live smoke: `list_traces`/`get_trace` against neatlogs worked (device login is done), but the project only holds synthetic probe traces (`commit:abc case:t1`), so real eval-trace mapping, `detections hits` item shape (no hits exist), pass/fail signal on real traces and span-level divergence are unverified.
+
+## Chunk 6: plain bisect engine
+- `agentbisect/bisect.py`: range resolution (bad = spec/`--bad`/HEAD, good = spec/`--good`; fails with a clear message if missing), `git rev-list --first-parent` history, both ends re-run once ("bad end does not reproduce", "good end is not good"). `narrow(history, results)` is a pure function of saved results (resume-safe); `PlainStrategy` binary-searches, skip/flaky commits count as tried so the nearest untested neighbour is picked (git bisect skip). Unresolvable => status `failed`, exit 4, "culprit is within these skipped/flaky commits: ..." (`metrics.ambiguous`).
+- `Strategy` protocol (`next_commit(state)`, `update(state, sha, result)`) is the seam for chunk 7; `run_investigation(store, st, runner=None, strategy=None)`. Each evaluation is begin_step/end_step; `resume_investigation(store, st, runner=None, strategy=None)` returns the CLI exit code (0 ok, 1 error, 4 unresolved).
+- After convergence one extra "monotonic probe" evaluates a commit between culprit and bad end; a good result (or any good-after-bad in cached verdicts) adds the warning "multiple regressions likely" and confidence `low`. Confidence: high (clean band, no skips/flaky), medium (inconclusive commits in range), low (non-monotonic). `metrics.confidence_band` holds the good/bad pass rates.
+- `BisectState.metrics` (new): strategy, eval_rounds, cost_usd (eval_rounds x `AGENTBISECT_COST_PER_RUN`, default $0.002 estimate), commits_evaluated, cache_hits, warnings. Cache reuse across investigations comes from the runner's VerdictCache (second run on same repo = 0 eval rounds).
+- CLI: `investigate ... --strategy plain [--good SHA] [--bad SHA]` runs end to end; `resume ID` calls the engine. Tests: `tests/test_bisect.py` (fake executor over a throwaway 14-commit repo: normal find at every position, skipped neighbours, skipped culprit-adjacent, flaky, crash+resume, non-monotonic, bad end not reproducing, cache reuse, custom strategy, CLI). 53 pass. Not run against the real support-agent-demo or live models.

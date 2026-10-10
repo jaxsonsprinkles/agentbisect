@@ -92,7 +92,7 @@ def test_cli_status_and_resume(tmp_path, capsys):
     s.begin_step(st, "test", sha="abc")
     assert main(["--state-dir", str(tmp_path), "status"]) == 0
     assert "INTERRUPTED" in capsys.readouterr().out
-    assert main(["--state-dir", str(tmp_path), "resume", st.id]) == 0
+    assert main(["--state-dir", str(tmp_path), "resume", st.id]) == 1  # engine ran; bare state has no eval cases
     assert "redo interrupted step" in capsys.readouterr().out
     assert main(["--state-dir", str(tmp_path), "resume", "nope"]) == 1
     assert main(["--state-dir", str(tmp_path), "watch"]) == 2

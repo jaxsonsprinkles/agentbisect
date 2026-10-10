@@ -91,6 +91,8 @@ class BisectState:
     created_at: str = ""
     updated_at: str = ""
     error: str | None = None
+    # engine bookkeeping: strategy, eval_rounds, cost_usd, cache_hits, warnings[], confidence_band, ambiguous[]
+    metrics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
