@@ -122,8 +122,15 @@ class CulpritReport:
     checkpoint_intent: str = ""
     semantic_diff: str = ""
     impacted_symbols: list[str] = field(default_factory=list)
-    revert_test_passed: bool | None = None
+    revert_test_passed: bool | None = None  # None = not run / inconclusive
     confidence: str = ""  # e.g. high | medium | low
+    # chunk 8 additions (all optional so older saved states still load)
+    intent_source: str = ""  # checkpoint | commit_message
+    trace_divergence: list[str] = field(default_factory=list)  # span-by-span good-vs-bad summary
+    failing_evidence: list[str] = field(default_factory=list)  # what the Fixer is shown about the failure
+    flags: list[str] = field(default_factory=list)  # e.g. "multiple regressions likely", "revert conflicts"
+    revert_details: dict[str, Any] = field(default_factory=dict)
+    analyzed: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

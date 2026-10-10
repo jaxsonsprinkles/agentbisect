@@ -9,6 +9,7 @@ from .intake import (FixtureSource, IntakeError, IntakeResult, NeatlogsCliSource
                      intake_detection, intake_issue, intake_trace)
 from .models import BisectState
 from .state import DEFAULT_DIR, StateError, StateStore
+from .verify import describe_revert
 from .tracing import init_tracing, shutdown_tracing
 
 
@@ -23,8 +24,7 @@ def _summary(st: BisectState) -> str:
         lines.append(f"  INTERRUPTED mid-step: {st.in_flight}")
     if st.error:
         lines.append(f"  error: {st.error}")
-    if st.culprit:
-        lines.append(f"  culprit: {st.culprit.sha} (confidence {st.culprit.confidence or '?'})")
+    lines += describe_revert(st)
     return "\n".join(lines)
 
 
@@ -129,7 +129,8 @@ def main(argv: list[str] | None = None) -> int:
         from .bisect import resume_investigation
         init_tracing(st.id)
         try:
-            return int(resume_investigation(store, st, strategy=make_strategy(st, store, meta)))
+            return _explain(store, st, int(resume_investigation(store, st, strategy=make_strategy(st, store, meta))),
+                            meta)
         finally:
             shutdown_tracing()
     if a.cmd == "watch":
@@ -151,13 +152,32 @@ def main(argv: list[str] | None = None) -> int:
         try:
             print(f"resumed {st.id}" + (f"; will redo interrupted step: {redo}" if redo else ""))
             from .bisect import resume_investigation
-            return int(resume_investigation(store, st, strategy=make_strategy(
-                st, store, st.metrics.get("source"))) or 0)
+            meta = st.metrics.get("source")
+            return _explain(store, st, int(resume_investigation(store, st, strategy=make_strategy(
+                st, store, meta)) or 0), meta)
         finally:
             shutdown_tracing()
     except StateError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
+
+
+def _explain(store: StateStore, st: BisectState, code: int, meta: dict | None) -> int:
+    """After a bisect that found a culprit: culprit analysis, then the revert test (both resume-safe)."""
+    if code != 0 or st.status != "culprit_found" or not st.culprit:
+        return code
+    from .verify import confirm_culprit
+    try:
+        source = trace_source(meta=meta)
+    except Exception:
+        source = None
+    try:
+        confirm_culprit(store, st, source=source)
+    except Exception as e:  # keep the culprit; `resume` redoes the interrupted step
+        print(f"error during culprit analysis / revert test: {type(e).__name__}: {e}", file=sys.stderr)
+        return 1
+    print("\n".join(describe_revert(st)))
+    return 0
 
 
 def _compare(a: argparse.Namespace, store: StateStore) -> int:

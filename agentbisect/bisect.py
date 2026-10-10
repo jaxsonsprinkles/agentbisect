@@ -241,7 +241,8 @@ def _conclude(store: StateStore, st: BisectState, history: list[str]) -> Outcome
     st.metrics["confidence_band"] = band
     st.metrics.pop("ambiguous", None)
     sha = history[n.hi]
-    st.culprit = CulpritReport(sha=sha, confidence=conf)
+    if not (st.culprit and st.culprit.sha == sha):  # a resumed run keeps its analysis / revert test
+        st.culprit = CulpritReport(sha=sha, confidence=conf)
     store.set_status(st, "culprit_found")
     return Outcome("culprit", sha=sha, message=f"culprit {sha[:8]} (confidence {conf})")
 
