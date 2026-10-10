@@ -265,3 +265,26 @@ def test_cli_auth_failure_exit_code(target, tmp_path, capsys):
                  "--fixtures", str(fx)]) == 3
     assert "waiting on human login" in capsys.readouterr().err
     assert StateStore(tmp_path / "s").list() == []
+
+
+def test_trace_processing_is_retried_and_case_tag_skips_span_lookup():
+    import json as _json
+    from agentbisect.intake import IntakeError, NeatlogsCliSource
+    processing = _json.dumps({"code": "TRACE_PROCESSING", "detail": "still being finalized"})
+    calls, sleeps = [], []
+
+    def run(argv):
+        calls.append(argv)
+        if "spans" in argv:
+            return 1, processing, ""
+        if len(calls) == 1:
+            return 1, processing, ""
+        return 0, _json.dumps({"data": {"traceId": "t", "status": "OK", "tags": ["case:rw1", "commit:abc"]},
+                               "success": True}), ""
+
+    src = NeatlogsCliSource(project="p", run=run, sleep=sleeps.append)
+    t = src.get_trace("t")  # `traces get` retried; the unreadable spans do not fail intake
+    assert t.tags == ["case:rw1", "commit:abc"] and len(sleeps) == 1
+    assert t.input is None
+    with pytest.raises(IntakeError):  # gives up after the retry budget
+        NeatlogsCliSource(project="p", run=lambda a: (1, processing, ""), sleep=lambda s: None).get_trace("t")

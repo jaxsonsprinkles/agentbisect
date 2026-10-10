@@ -14,6 +14,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -205,6 +206,8 @@ class TraceSource(ABC):
 
 
 Run = Callable[[list[str]], "tuple[int, str, str]"]
+PROCESSING_RETRIES = 6  # TRACE_PROCESSING retries; waits 10s, 20s, ... (about 3.5 min total)
+PROCESSING_WAIT_S = 10.0
 
 _AUTH_CODES = {"UNAUTHENTICATED", "UNAUTHORIZED", "AUTH_REQUIRED", "NOT_AUTHENTICATED", "LOGIN_REQUIRED",
                "TOKEN_EXPIRED", "INVALID_TOKEN", "CREDENTIALS_REQUIRED", "NO_CREDENTIALS", "NOT_LOGGED_IN"}
@@ -224,12 +227,24 @@ class NeatlogsCliSource(TraceSource):
     `neatlogs --host ... --profile neatlogs-us --credential-source profile auth login --device`."""
 
     def __init__(self, project: str | None = None, binary: str = NEATLOGS_BIN, host: str = NEATLOGS_HOST,
-                 profile: str = NEATLOGS_PROFILE, run: Run | None = None):
+                 profile: str = NEATLOGS_PROFILE, run: Run | None = None,
+                 sleep: Callable[[float], None] = time.sleep):
+        self._sleep = sleep
         self.project = project or os.environ.get("NEATLOGS_PROJECT_ID")
         self.binary, self.host, self.profile = binary, host, profile
         self._run = run or _subprocess_run
 
-    def _call(self, *args: str) -> Any:
+    def _call(self, *args: str, retry: bool = True) -> Any:
+        """One CLI call; a freshly ingested trace answers TRACE_PROCESSING ("still being finalized"), so retry it."""
+        for attempt in range(PROCESSING_RETRIES + 1 if retry else 1):
+            try:
+                return self._call_once(*args)
+            except IntakeError as e:
+                if "TRACE_PROCESSING" not in str(e) or attempt >= PROCESSING_RETRIES or not retry:
+                    raise
+                self._sleep(PROCESSING_WAIT_S * (attempt + 1))
+
+    def _call_once(self, *args: str) -> Any:
         argv = [self.binary, "--host", self.host, "--profile", self.profile, "--credential-source", "profile",
                 "--json"]
         if self.project:
@@ -267,11 +282,14 @@ class NeatlogsCliSource(TraceSource):
     def get_trace(self, trace_id: str) -> Trace:
         t = trace_from_dict(self._call("traces", "get", trace_id))
         if t.input is None:
-            t.input = self._root_input(trace_id)
+            try:
+                t.input = self._root_input(trace_id)
+            except IntakeError:  # e.g. TRACE_PROCESSING: spans not readable yet; the case tag still identifies the case
+                pass
         return t
 
     def _root_input(self, trace_id: str) -> str | None:
-        spans = self._call("traces", "spans", "list", trace_id, "--limit", "50")
+        spans = self._call("traces", "spans", "list", trace_id, "--limit", "50", retry=False)
         roots = [s for s in spans.get("spans", []) if not s.get("parentSpanId")] if isinstance(spans, dict) else []
         for s in roots[:1]:
             p = self._call("traces", "payload", trace_id, s["spanId"], "--fields", "input")

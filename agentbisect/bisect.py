@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .models import BisectState, CommitResult, CulpritReport, Plan
-from .runner import Runner, RunnerConfig
+from .runner import Runner, RunnerConfig, config_from_env
 from .state import StateError, StateStore
 from .tracing import step_span
 
@@ -123,7 +123,7 @@ class Outcome:
 def make_runner(store: StateStore, st: BisectState) -> Runner:
     if not st.spec or not st.spec.cases:
         raise BisectError("investigation has no eval cases (run intake first)")
-    return Runner(st.repo, RunnerConfig(cases=list(st.spec.cases)), store.cache(st.repo))
+    return Runner(st.repo, config_from_env(list(st.spec.cases)), store.cache(st.repo))
 
 
 def _evaluate(store: StateStore, st: BisectState, runner: Runner, sha: str, kind: str) -> CommitResult:

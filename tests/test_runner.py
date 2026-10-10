@@ -233,3 +233,20 @@ def test_subprocess_executor_end_to_end(tmp_path):
                                                            "AGENTBISECT_COMMIT": "abc"}, 30)
     out = SubprocessExecutor([sys.executable, "-m", "evals"]).run_case(req)
     assert out[0].case_id == "os1" and out[0].trace_id == "abcrid"
+
+
+def test_json_tail_skips_sdk_log_lines_and_env_quiets_neatlogs(tmp_path):
+    from agentbisect.runner import _json_tail, config_from_env, Runner, RunnerConfig
+    assert json.loads(_json_tail('2026 - neatlogs - INFO - done\n{\n  "a": 1\n}\n')) == {"a": 1}
+    assert json.loads(_json_tail('{"a": 1}')) == {"a": 1}
+    r = Runner(tmp_path, RunnerConfig(cases=["x"]), None)
+    assert r._env(None, None, None)["NEATLOGS_LOG_LEVEL"] == "ERROR"
+
+
+def test_config_from_env(monkeypatch):
+    from agentbisect.runner import config_from_env
+    monkeypatch.setenv("AGENTBISECT_REPEATS", "2")
+    monkeypatch.setenv("AGENTBISECT_WORKERS", "3")
+    monkeypatch.setenv("AGENTBISECT_BASELINE", "/x/b.json")
+    c = config_from_env(["a"])
+    assert (c.repeats, c.workers, c.baseline) == (2, 3, "/x/b.json")

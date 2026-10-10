@@ -64,6 +64,7 @@ class CaseRequest:
     run_id: str
     env: dict[str, str]
     timeout: float
+    baseline: str | None = None
 
 
 class EvalExecutor(Protocol):
@@ -82,6 +83,12 @@ def parse_report(report: dict) -> list[RunResult]:
             for r in report.get("results", [])]
 
 
+def _json_tail(out: str) -> str:
+    """The JSON report starts at the first line that is exactly '{'; tolerate SDK log lines printed before it."""
+    i = 0 if out.lstrip().startswith("{") else out.find("\n{\n") + 1
+    return out[i:]
+
+
 class SubprocessExecutor:
     def __init__(self, eval_cmd: list[str] | None = None):
         self.eval_cmd = eval_cmd or ["uv", "run", "python", "-m", "evals"]
@@ -89,13 +96,15 @@ class SubprocessExecutor:
     def run_case(self, req: CaseRequest) -> list[RunResult]:
         cmd = [*self.eval_cmd, "run", "--json", "--isolate", "--suite", "all", "--cases", req.case,
                "--repeats", str(req.repeats), "--commit", req.sha, "--run-id", req.run_id]
+        if req.baseline:
+            cmd += ["--baseline", req.baseline]
         try:
             p = subprocess.run(cmd, cwd=req.workdir, env=req.env, capture_output=True, text=True,
                                timeout=req.timeout)
         except subprocess.TimeoutExpired as e:
             raise EvalInfraError("timeout", f"{req.case} exceeded {req.timeout}s") from e
         try:
-            return parse_report(json.loads(p.stdout))
+            return parse_report(json.loads(_json_tail(p.stdout)))
         except json.JSONDecodeError:
             tail = (p.stderr or p.stdout)[-500:]
             kind = "rate_limit" if RATE_LIMIT_RE.search(tail) else "crash"
@@ -122,8 +131,21 @@ class RunnerConfig:
     classify: Callable[[float, int], str] | None = None  # hook: (pass_rate, n_runs) -> good|bad|uncertain
     env_file: str | None = None  # KEY=VALUE lines (API keys) injected into eval subprocesses; never logged
     worktree_root: str | None = None
+    baseline: str | None = None  # absolute path to the target's evals baseline.json (kept outside the target repo)
     # Local Anthropic-compatible proxy (agentbisect llm-proxy): sets ANTHROPIC_BASE_URL + a dummy key in eval env.
     llm_proxy_url: str | None = field(default_factory=lambda: os.environ.get("AGENTBISECT_LLM_PROXY_URL") or None)
+
+
+def config_from_env(cases: list[str], **kw) -> RunnerConfig:
+    """RunnerConfig with operator overrides from the environment (budget control for live runs):
+    AGENTBISECT_REPEATS, _MAX_REPEATS, _WORKERS, _ENV_FILE, _BASELINE."""
+    env = os.environ
+    for key, name, conv in (("repeats", "AGENTBISECT_REPEATS", int), ("max_repeats", "AGENTBISECT_MAX_REPEATS", int),
+                            ("workers", "AGENTBISECT_WORKERS", int), ("env_file", "AGENTBISECT_ENV_FILE", str),
+                            ("baseline", "AGENTBISECT_BASELINE", str)):
+        if env.get(name) and key not in kw:
+            kw[key] = conv(env[name])
+    return RunnerConfig(cases=cases, **kw)
 
 
 def default_classify(cfg: RunnerConfig) -> Callable[[float, int], str]:
@@ -188,6 +210,8 @@ class Runner:
     def _env(self, sha: str | None, run_id: str | None, case: str | None) -> dict[str, str]:
         env = {k: v for k, v in os.environ.items() if k not in ("VIRTUAL_ENV", "PYTHONPATH")}
         env.update(_load_env_file(self.cfg.env_file))
+        # The neatlogs SDK logs "shutdown complete" to STDOUT at INFO, which corrupts the harness's JSON report.
+        env.setdefault("NEATLOGS_LOG_LEVEL", "ERROR")
         if self.cfg.llm_proxy_url:
             env["ANTHROPIC_BASE_URL"] = self.cfg.llm_proxy_url
             env["ANTHROPIC_API_KEY"] = "agentbisect-proxy"
@@ -205,7 +229,8 @@ class Runner:
         remaining = n
         last = "unknown"
         for attempt in range(self.cfg.max_retries + 1):
-            req = CaseRequest(wt, sha, case, remaining, run_id, self._env(sha, run_id, case), self.cfg.timeout)
+            req = CaseRequest(wt, sha, case, remaining, run_id, self._env(sha, run_id, case), self.cfg.timeout,
+                              self.cfg.baseline)
             try:
                 got = self.executor.run_case(req)
             except EvalInfraError as e:
