@@ -8,7 +8,7 @@ import urllib.request
 
 import pytest
 
-from agentbisect.llm_proxy import LLMProxy
+from agentbisect.llm_proxy import ISOLATION_NOTICE, LLMProxy
 
 FAKE = r'''#!/usr/bin/env python3
 import json, os, sys, time
@@ -80,7 +80,7 @@ def test_plain_text_and_model_pin_and_usage(px):
     assert r["model"] == "claude-sonnet-5-5" and r["stop_reason"] == "end_turn"
     assert r["usage"] == {"input_tokens": 100, "output_tokens": 10}  # requested model's modelUsage, not the side call
     args = json.loads(next(px.calls_dir.glob("call*")).read_text())
-    assert args[args.index("--model") + 1] == "claude-sonnet-5-5" and args[args.index("--system-prompt") + 1] == "SYS"
+    assert args[args.index("--model") + 1] == "claude-sonnet-5-5" and args[args.index("--system-prompt") + 1] == "SYS\n\n" + ISOLATION_NOTICE
     assert "--json-schema" not in args and args[args.index("--tools") + 1] == ""
 
 
@@ -164,3 +164,27 @@ def test_runner_env_sets_proxy(tmp_path):
     r = Runner(tmp_path, RunnerConfig(cases=["a"], llm_proxy_url="http://127.0.0.1:1"), None)
     env = r._env(None, None, None)
     assert env["ANTHROPIC_BASE_URL"] == "http://127.0.0.1:1" and env["ANTHROPIC_API_KEY"] == "agentbisect-proxy"
+
+
+def test_isolation_notice_on_every_system_prompt(px):
+    post(px, body("Where is order 1042?", tools=TOOLS, system="You are support."))
+    post(px, body("judge me"))  # tool-free path, no system given
+    for f in px.calls_dir.glob("call*"):
+        a = json.loads(f.read_text())
+        sp = a[a.index("--system-prompt") + 1]
+        assert sp.endswith(ISOLATION_NOTICE) and ("You are support." in sp or "helpful assistant" in sp)
+
+
+def test_debug_dump_writes_prompt_to_dir(tmp_path, monkeypatch):
+    fake = tmp_path / "bin" / "claude"
+    fake.parent.mkdir()
+    fake.write_text(FAKE)
+    fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+    (tmp_path / "calls").mkdir()
+    monkeypatch.setenv("FAKE_DIR", str(tmp_path / "calls"))
+    monkeypatch.setenv("PATH", f"{fake.parent}:{os.environ['PATH']}")
+    p = LLMProxy(debug_dump=str(tmp_path / "dump"))
+    p.messages(body("Where is order 1042?", tools=TOOLS))
+    (f,) = (tmp_path / "dump").glob("*.json")
+    d = json.loads(f.read_text())
+    assert "Where is order 1042?" in d["prompt"] and ISOLATION_NOTICE in d["system"] and d["structured_output"]

@@ -103,6 +103,7 @@ def _parser() -> argparse.ArgumentParser:
     lp.add_argument("--concurrency", type=int, default=3)
     lp.add_argument("--cache", action="store_true", help="cache responses in .agentbisect/llm_cache")
     lp.add_argument("--cache-dir")
+    lp.add_argument("--debug-dump", metavar="DIR", help="DEBUG: write every rendered prompt + output to DIR (use /tmp)")
     sub.add_parser("watch", help="poll neatlogs detections and auto-investigate (not implemented yet)")
     r = sub.add_parser("resume", help="resume an interrupted investigation")
     r.add_argument("id")
@@ -116,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
     store = StateStore(a.state_dir)
     if a.cmd == "llm-proxy":
         from .llm_proxy import run_forever
-        return run_forever(a.port, a.concurrency, a.cache, a.cache_dir)
+        return run_forever(a.port, a.concurrency, a.cache, a.cache_dir, debug_dump=a.debug_dump)
     if a.cmd == "investigate":
         with _llm_proxy(getattr(a, "llm_proxy", "off")):
             return _main(a, store)

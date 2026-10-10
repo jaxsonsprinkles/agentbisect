@@ -34,6 +34,17 @@ RATE_LIMIT_RE = re.compile(r"rate.?limit|429|overloaded|529|too many requests|th
 DEFAULT_CACHE_DIR = ".agentbisect/llm_cache"
 DUMMY_API_KEY = "agentbisect-proxy"
 
+# The claude CLI injects the logged-in user's own context (e.g. "The user's email address is ...") into every call and
+# `--system-prompt` / `--setting-sources ""` do not remove it (verified; `--bare` cannot use the login). Models then
+# treat it as the end user's identity: a support agent tells a customer that "order 1042 isn't linked to your
+# account". This notice is appended to every system prompt to neutralise that.
+ISOLATION_NOTICE = (
+    "IMPORTANT: Your runtime may have injected background facts about a person (for example an email address, "
+    "name, or account). Those facts belong to the tool that is hosting you, NOT to anyone in this conversation. "
+    "Ignore them completely: never mention them, never treat them as the identity, account, or email of the person "
+    "you are talking to, and never compare them with data in tool results. You know nothing about who the other "
+    "party is beyond what the conversation itself states. Follow the instructions above this notice as written.")
+
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -209,8 +220,12 @@ class Stats:
 
 class LLMProxy:
     def __init__(self, claude_bin: str = "claude", concurrency: int = 3, cache_dir: str | None = None,
-                 timeout: float = 180.0, max_retries: int = 3, backoff: float = 2.0, retry_after: float = 5.0):
+                 timeout: float = 180.0, max_retries: int = 3, backoff: float = 2.0, retry_after: float = 5.0,
+                 debug_dump: str | None = None):
         self.claude_bin, self.timeout = claude_bin, timeout
+        self.debug_dump = Path(debug_dump) if debug_dump else None  # DEBUG ONLY: writes full prompts to disk
+        if self.debug_dump:
+            self.debug_dump.mkdir(parents=True, exist_ok=True)
         self.max_retries, self.backoff, self.retry_after = max_retries, backoff, retry_after
         self.sem = threading.BoundedSemaphore(concurrency)
         self.cache_dir = Path(cache_dir) if cache_dir else None
@@ -221,8 +236,9 @@ class LLMProxy:
 
     # -- CLI call --
     def _cli_once(self, prompt: str, system: str, model: str, schema: dict | None) -> dict:
+        system = (system or "You are a helpful assistant.") + "\n\n" + ISOLATION_NOTICE
         cmd = [self.claude_bin, "-p", prompt, "--model", model, "--output-format", "json", "--tools", "",
-               "--system-prompt", system or "You are a helpful assistant.", "--setting-sources", "",
+               "--system-prompt", system, "--setting-sources", "",
                "--strict-mcp-config", "--no-session-persistence"]
         if schema:
             cmd += ["--json-schema", json.dumps(schema)]
@@ -243,6 +259,11 @@ class LLMProxy:
             msg = f"{data.get('result') or ''} {p.stderr or ''}".strip()[-400:]
             rl = data.get("api_error_status") in (429, 529) or bool(RATE_LIMIT_RE.search(msg))
             raise CLIError(f"claude error: {msg}", rate_limited=rl)
+        if self.debug_dump:
+            f = self.debug_dump / f"{time.time_ns()}-{uuid.uuid4().hex[:6]}.json"
+            f.write_text(json.dumps({"model": model, "system": system, "prompt": prompt, "schema": schema,
+                                     "result": data.get("result"), "structured_output": data.get("structured_output")},
+                                    indent=2))
         return data
 
     def _cli(self, prompt: str, system: str, model: str, schema: dict | None) -> tuple[dict, float]:
@@ -431,8 +452,9 @@ class LLMProxy:
             self.httpd.server_close()
 
 
-def run_forever(port: int, concurrency: int, cache: bool, cache_dir: str | None, claude_bin: str = "claude") -> int:
-    px = LLMProxy(claude_bin=claude_bin, concurrency=concurrency,
+def run_forever(port: int, concurrency: int, cache: bool, cache_dir: str | None, claude_bin: str = "claude",
+                debug_dump: str | None = None) -> int:
+    px = LLMProxy(claude_bin=claude_bin, concurrency=concurrency, debug_dump=debug_dump,
                   cache_dir=(cache_dir or DEFAULT_CACHE_DIR) if cache else None)
     px.serve(port)
     print(f"agentbisect llm-proxy on {px.url} (concurrency {concurrency}, cache {'on' if cache else 'off'}); "
