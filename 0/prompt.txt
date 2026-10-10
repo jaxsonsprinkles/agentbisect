@@ -1,0 +1,9 @@
+Here's how we're going to structure it:
+1. There should be the history builder, which is the coding agent that writes the support agent's 20 commits. That's the Claude Code with `entire` on. This is a separate session from the one building the actual tool, the one actually building agent bisect, so that they don't know about each other.
+2. You have the support agent at runtime, which is the one tested in every eval. This is the actual support agent that's like the dummy, the lab rat.
+3. There's the eval judge. The support agent and the eval judge are both pinned. Make sure that the agent follows the rubric and this should be a smarter model than the agent grade.
+- The support agent can be a cheap model.
+- The eval judge can be Sonnet maybe.
+- The support is Haiku.
+- Agent Bisect itself is the actual tool, right?
+- There's the fixer that writes the fix, which is a fresh agent that knows nothing about how the bugs were actually planted.
