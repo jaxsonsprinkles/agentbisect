@@ -95,4 +95,4 @@ def test_cli_status_and_resume(tmp_path, capsys):
     assert main(["--state-dir", str(tmp_path), "resume", st.id]) == 0
     assert "redo interrupted step" in capsys.readouterr().out
     assert main(["--state-dir", str(tmp_path), "resume", "nope"]) == 1
-    assert main(["--state-dir", str(tmp_path), "investigate"]) == 2
+    assert main(["--state-dir", str(tmp_path), "watch"]) == 2

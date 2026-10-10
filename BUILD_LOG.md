@@ -1,5 +1,5 @@
 # BUILD_LOG
-See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 4 complete; next chunk 5.
+See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 5 complete; next chunk 6 (bisect).
 
 ## Chunk 4: skeleton (models, state, runner, CLI, tracing)
 - `agentbisect/models.py`: RegressionSpec, Plan(+Candidate), CommitResult, BisectState, CulpritReport, FixAttempt (JSON round-trip via `to_dict`/`from_dict`).
@@ -8,3 +8,11 @@ See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 4 complete;
 - `agentbisect/cli.py`: `investigate`/`watch` stubs, `status`/`resume` work on state files. `agentbisect/tracing.py`: neatlogs workflow `agentbisect`, no-op without key.
 - Tests: `uv run pytest` (21 pass; fake executors + throwaway git repo). No live model or neatlogs key was used; `SubprocessExecutor` is only tested against a stub `evals` package, not the real support-agent-demo.
 - Eval secrets: worktrees lack gitignored `.env`; pass `RunnerConfig.env_file` or export keys in the environment.
+
+## Chunk 5: intake
+- `agentbisect/intake.py`: `TraceSource` ABC with `NeatlogsCliSource` (shells out to `~/.local/neatlogs-cli/bin/neatlogs --host https://app.neatlogs.com --profile neatlogs-us --credential-source profile --json [--project]`; `traces list|get|spans list|payload --fields input`, `detections get|hits|trends`) and `FixtureSource` (recorded JSON, can simulate auth failure). Auth failures (codes like UNAUTHENTICATED/TOKEN_EXPIRED or "not logged in"/401 text) raise `WaitingOnHumanLogin` (CLI exit 3) with the device-login command.
+- Real CLI envelope is `{"data": {...}, "success": true}`; list items carry `traceId, workflowName, status, tags, startedAt`; tags are `commit:<sha>`, `case:<id>`, `run:<id>`. Project id needs `--project` or `NEATLOGS_PROJECT_ID`. Trace `input` is only available through span `payload --fields input`.
+- `intake_trace`: bad trace -> case (case tag, else exact input match) -> good traces = same case, status not error, commit a strict ancestor of the bad commit (git), newest first, one per commit. Suite = non-held-out cases of that category; `held_out` = every case flagged `held_out` in the target's `evals/cases.jsonl` (an assert guards that the two never overlap; held-out checks are not in the predicate). Predicate = `{order: [checks, budget, rubric], checks per case, budget {max_steps 6, token_factor 1.5}, rubric per case or None}`. `breaks`/`intent_for` are never read.
+- `intake_detection` (newest hit trace that maps to a case) and `intake_issue` (`gh issue view --json`, keyword->category match; optional injectable `LLM` interface called with the pinned `JUDGE_MODEL`, fake in tests, no live client shipped).
+- CLI: `agentbisect investigate --trace|--detection|--issue --repo PATH [--fixtures F] [--project UUID]` writes the spec + good/bad sha into a new investigation; `agentbisect intake ...` prints it. `watch` still a stub.
+- Tests: `tests/test_intake.py` (39 total pass). Live smoke: `list_traces`/`get_trace` against neatlogs worked (device login is done), but the project only holds synthetic probe traces (`commit:abc case:t1`), so real eval-trace mapping, `detections hits` item shape (no hits exist), pass/fail signal on real traces and span-level divergence are unverified.
