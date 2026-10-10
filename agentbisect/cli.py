@@ -85,6 +85,14 @@ def _parser() -> argparse.ArgumentParser:
     c.add_argument("id")
     c.add_argument("--fixtures", help="recorded trace fixtures for the smart planner's span divergence")
     c.add_argument("--project", help="neatlogs project uuid")
+    rp = sub.add_parser("report", help="write the Markdown/HTML report; optionally open a PR (dry-run by default)")
+    rp.add_argument("id")
+    rp.add_argument("--format", choices=["md", "html", "both"], default="both")
+    rp.add_argument("--out", help="output directory (default: evidence/ in the agentbisect repo)")
+    rp.add_argument("--open-pr", action="store_true", help="prepare a PR from the best fix branch (dry-run)")
+    rp.add_argument("--confirm-open-pr", action="store_true",
+                    help="really `git push` and `gh pr create` (requires --open-pr)")
+    rp.add_argument("--draft", action="store_true", help="force a draft PR (default: draft iff the fix is unverified)")
     sub.add_parser("watch", help="poll neatlogs detections and auto-investigate (not implemented yet)")
     r = sub.add_parser("resume", help="resume an interrupted investigation")
     r.add_argument("id")
@@ -139,6 +147,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if a.cmd == "compare":
             return _compare(a, store)
+        if a.cmd == "report":
+            return _report(a, store)
         if a.cmd == "status":
             states = [store.load(a.id)] if a.id else store.list()
             if not states:
@@ -193,4 +203,25 @@ def _compare(a: argparse.Namespace, store: StateStore) -> int:
 
     res = compare_strategies(st, str(store.base), make_runner, strategies)
     print(format_comparison(res))
+    st.metrics["comparison"] = res
+    store.save(st)
+    return 0
+
+
+def _report(a: argparse.Namespace, store: StateStore) -> int:
+    from .report import open_pr, write_reports
+    if a.confirm_open_pr and not a.open_pr:
+        print("error: --confirm-open-pr requires --open-pr", file=sys.stderr)
+        return 2
+    st = store.load(a.id)
+    for p in write_reports(st, a.out, a.format):
+        print(f"wrote {p}")
+    if a.open_pr:
+        try:
+            open_pr(st, st.repo, draft=True if a.draft else None, confirm=a.confirm_open_pr)
+        except (ValueError, RuntimeError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        if a.confirm_open_pr and st.status in ("verifying", "fixing", "culprit_found"):
+            store.set_status(st, "reported")
     return 0
