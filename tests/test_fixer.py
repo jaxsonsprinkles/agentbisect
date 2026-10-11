@@ -407,3 +407,122 @@ def test_system_prompt_forbids_undoing_the_commit(st, repo):
     run(st, repo, m)
     s = m.systems[0]
     assert "intent must be preserved" in s and "do not undo or revert the commit" in s and "CONSEQUENCE" in s
+
+
+# ---- guarded eval-expectation edits
+
+ROWS = [{"id": "r3", "category": "refund", "checks": {"call_args": {"amount": 64.0}}},
+        {"id": "r4", "category": "refund", "checks": {"reply_regex": "ok"}},
+        {"id": "h1", "category": "refund", "held_out": True, "checks": {"reply_regex": "ok"}}]
+
+
+class _Pass:
+    def check(self, commit, attempt):
+        return True, []
+
+
+class _EJudge(_Judge):
+    def __init__(self, intent=True, edit=True):
+        super().__init__(*([intent] * 5))
+        self.edit, self.edit_calls = edit, []
+
+    def judge_eval_edit(self, intent, culprit_diff, changes):
+        from agentbisect.verify import IntentVerdict
+        self.edit_calls.append((intent, changes))
+        if isinstance(self.edit, Exception):
+            raise self.edit
+        return IntentVerdict(self.edit, "merely follows the contract change" if self.edit else "not implied by the intent",
+                             "claude-sonnet-5-5")
+
+
+@pytest.fixture
+def st_cases(repo, st):
+    from agentbisect.models import FailureSignature, RegressionSpec
+    (repo.path / "evals").mkdir()
+    (repo.path / "evals" / "cases.jsonl").write_text("\n".join(json.dumps(r) for r in ROWS) + "\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "cases")
+    st.bad_sha = git(repo, "rev-parse", "HEAD")
+    st.spec = RegressionSpec(cases=["r3", "r4"], held_out=["h1"], signature=FailureSignature(
+        key="call_args:issue_refund.amount", check="call_args", detail="issue_refund.amount", cases=["r3"]))
+    return st
+
+
+def edit_reply(case="r3", checks=None, reason="the commit moved the refund tool to integer cents", files=()):
+    return json.dumps({"explanation": "follow the contract", "files": list(files),
+                       "eval_edits": [{"case": case, "checks": {"call_args": {"amount_cents": 6400}} if checks is None else checks,
+                                       "reason": reason}]})
+
+
+def test_eval_edit_accepted_when_judge_confirms(st_cases, repo, tmp_path):
+    j, m = _EJudge(True, True), FakeModel(edit_reply())
+    res = run_fixer(st_cases, model=m, checker=_Pass(), judge=j, out_dir=tmp_path)
+    assert res.passed and len(res.attempts) == 1 and len(j.edit_calls) == 1
+    assert res.eval_expectation_changes == [{"case": "r3", "key": "call_args", "old": {"amount": 64.0},
+                                             "new": {"amount_cents": 6400},
+                                             "reason": "the commit moved the refund tool to integer cents"}]
+    rows = [json.loads(x) for x in git(repo, "show", f"{res.branch}:evals/cases.jsonl").splitlines()]
+    assert rows[0]["checks"] == {"call_args": {"amount_cents": 6400}} and rows[1:] == ROWS[1:]
+    listed = m.prompts[0].split("Eval cases you may update")[1]
+    assert '"r3"' in listed and '"r4"' not in listed and '"h1"' not in listed
+    body = (tmp_path / "fix-inv1-pr.md").read_text()
+    assert "Human review required: eval expectation changed" in body and "amount_cents" in body and "`r3`" in body
+    assert st_cases.metrics["fix"]["eval_expectation_changes"][0]["case"] == "r3"
+    again = FixResult.from_dict(json.loads(json.dumps(res.to_dict())))
+    assert again.eval_expectation_changes == res.eval_expectation_changes
+
+
+@pytest.mark.parametrize("edit,why", [(False, "not implied"), (TimeoutError("judge down"), "judge down")])
+def test_eval_edit_rejected_when_judge_denies_or_is_inconclusive(st_cases, repo, edit, why):
+    j = _EJudge(True, edit)
+    m = FakeModel(edit_reply(), edit_reply())
+    res = run_fixer(st_cases, model=m, checker=_Pass(), judge=j, max_attempts=2)
+    assert not res.passed and [a.passed for a in res.attempts] == [False, False]
+    assert why in m.prompts[1] and "eval expectation edit not accepted" in m.prompts[1]
+
+
+def test_eval_edit_not_accepted_without_a_judge_or_with_bad_intent(st_cases, repo):
+    assert not run_fixer(st_cases, model=FakeModel(edit_reply()), checker=_Pass(), judge=None, max_attempts=1).passed
+    assert not run_fixer(st_cases, model=FakeModel(edit_reply()), checker=_Pass(), max_attempts=1,
+                         judge=_Judge(TimeoutError("down"))).passed
+    j = _EJudge(False, True)  # intent not preserved
+    assert not run_fixer(st_cases, model=FakeModel(edit_reply()), checker=_Pass(), judge=j, max_attempts=1).passed
+    assert j.edit_calls == []
+
+
+@pytest.mark.parametrize("case", ["r4", "h1", "nope"])
+def test_eval_edit_touching_non_target_case_is_rejected(st_cases, repo, case):
+    m = FakeModel(edit_reply(case=case), edit_reply(case=case))
+    j = _EJudge(True, True)
+    res = run_fixer(st_cases, model=m, checker=_Pass(), judge=j, max_attempts=2)
+    assert not res.passed and res.verifier_input == {} and j.edit_calls == []
+    assert "eval edit refused" in res.attempts[0].error
+    assert git(repo, "branch", "--list", "agentbisect/*") == ""
+
+
+def test_eval_edit_needs_reason_and_checks_object(st_cases, repo):
+    for bad in (edit_reply(reason=" "), edit_reply(checks={})):
+        res = run_fixer(st_cases, model=FakeModel(bad), checker=_Pass(), judge=_EJudge(), max_attempts=1)
+        assert not res.passed and "needs a string" in res.attempts[0].error
+
+
+def test_eval_edit_that_changes_nothing_is_rejected(st_cases, repo):
+    r = edit_reply(checks={"call_args": {"amount": 64.0}})
+    res = run_fixer(st_cases, model=FakeModel(r), checker=_Pass(), judge=_EJudge(), max_attempts=1)
+    assert not res.passed and "changed nothing" in res.attempts[0].error
+
+
+def test_eval_file_still_refused_as_a_plain_file_edit(st_cases, repo):
+    r = reply({"path": "evals/cases.jsonl", "content": "{}"})
+    res = run_fixer(st_cases, model=FakeModel(r), checker=_Pass(), judge=_EJudge(), max_attempts=1)
+    assert not res.passed and "tests/eval" in res.attempts[0].error
+
+
+def test_code_edit_plus_eval_edit_and_code_only_unaffected(st_cases, repo):
+    r = edit_reply(files=[{"path": "marker.txt", "content": "fixed"}])
+    res = run_fixer(st_cases, model=FakeModel(r), checker=FakeChecker(repo), judge=_EJudge(True, True))
+    assert res.passed and res.attempts[0].files == ["marker.txt"] and res.eval_expectation_changes
+    j = _EJudge(True, True)
+    code = run_fixer(st_cases, model=FakeModel(reply({"path": "marker.txt", "content": "fixed"})),
+                     checker=FakeChecker(repo), judge=j)
+    assert code.passed and code.eval_expectation_changes == [] and j.edit_calls == []

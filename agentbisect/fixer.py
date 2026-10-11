@@ -4,7 +4,11 @@ The agent sees only `culprit.fixer_brief` (culprit diff + original intent + fail
 the files the culprit touched, and, from attempt 2 on, the previous attempts' edits with their failing-check output.
 It never sees the bisect, the other commits, any planted-bug/ground-truth material or the evidence directory; paths
 that look like answer keys or secrets are dropped from what it reads (`culprit.PROTECTED`) and refused as edit
-targets, as are tests and eval cases (the checks must not be gameable).
+targets, as are tests and eval cases (the checks must not be gameable). The one exception is a GUARDED
+eval-expectation edit: the structured `eval_edits` field may change `checks` entries of cases of the target signature
+(never held-out cases, never other fields or cases), and the attempt only passes when the intent judge confirms both
+that the culprit's intent is preserved and that the edit merely follows the culprit's deliberate contract change. An
+inconclusive judge is not a pass. Accepted edits are recorded (`eval_expectation_changes`) and surfaced in the PR body.
 
 Each attempt: fresh worktree at the investigated HEAD -> apply the model's whole-file edits -> commit -> run the
 checks (`FixChecker`) on that commit. Up to MAX_ATTEMPTS, stopping at the first pass. The best attempt (the passing
@@ -23,10 +27,11 @@ from pathlib import Path
 from typing import Any, Callable, Collection, Protocol
 
 from .culprit import PROTECTED, fixer_brief, scrub
+from .intake import FORBIDDEN_CASE_KEYS
 from .models import BisectState, CulpritReport, FixAttempt, FixResult
 from .runner import Runner, worktree
 from .tracing import step_span
-from .verify import IntentJudge, VerifierInput, _git, check_intent
+from .verify import IntentJudge, VerifierInput, _git, cases_at, check_eval_edits, check_intent, format_changes
 
 MAX_ATTEMPTS = 3
 MAX_FILE_CHARS = 20000
@@ -34,6 +39,7 @@ MAX_FAILURE_LINES = 40
 DEFAULT_FIXER_MODEL = "claude-sonnet-5-5"
 # the checks live here: editing them would let a "fix" pass by changing the question
 TEST_PATH = re.compile(r"(^|/)(tests?|evals?)(/|$)|(^|/)test_[^/]*$|_test\.[a-z]+$|(^|/)conftest\.py$|cases\.jsonl$", re.I)
+CASES_PATH = "evals/cases.jsonl"
 NOGPG = ("-c", "commit.gpgsign=false")
 
 SYSTEM = """You are a software engineer fixing a regression in a repository you have not seen before.
@@ -43,9 +49,17 @@ The commit's intent must be preserved: do not undo or revert the commit, or any 
 introduce, even if that would make the failing checks pass. Fix the CONSEQUENCE of the change instead: whatever else
 depends on the changed behaviour and was not updated with it (callers, prompts, tool descriptions, configuration,
 documentation). An attempt is also judged on whether the intent survives; one that removes it counts as failed.
-Do not edit tests or eval cases to make checks pass. Reply with ONLY a JSON object:
+Do not edit tests or eval cases to make checks pass.
+One narrow exception: if the change DELIBERATELY changed a contract (its stated intent says so) and an eval case still
+encodes the old contract, so that no code, prompt or tool change could satisfy both the intent and that case, you may
+update that case's expectation, only via "eval_edits" and only for the cases listed under "Eval cases you may update".
+Say which expectation changes and why, citing the intent. Never loosen a check to hide a defect, and if the code can be
+fixed instead, fix the code. An edit is accepted only if a reviewer confirms it merely follows the deliberate change.
+Reply with ONLY a JSON object:
 {"explanation": "<one or two sentences>", "files": [{"path": "<repo-relative>", "content": "<complete new file>"},
- {"path": "<repo-relative>", "delete": true}]}"""
+ {"path": "<repo-relative>", "delete": true}],
+ "eval_edits": [{"case": "<case id>", "checks": {"<check name>": <complete new value>}, "reason": "<why>"}]}
+"files" and "eval_edits" may each be empty or omitted, but not both."""
 
 
 class FixModel(Protocol):
@@ -112,7 +126,16 @@ def _editable(rel: str) -> bool:
 
 # ---------------------------------------------------------------- prompt + reply
 
-def build_prompt(repo: str, report: CulpritReport, head: str, previous: list[FixAttempt]) -> tuple[str, set[str]]:
+def target_eval_cases(st: BisectState, repo: str, head: str) -> list[str]:
+    """Ids of the cases whose expectations the Fixer may update: the target signature's cases (none when the
+    investigation has no signature), minus held-out ones, that exist at `head`."""
+    sig = st.spec.signature if st.spec else None
+    rows = {r["id"]: r for r in cases_at(repo, head)}
+    return [c for c in (sig.cases if sig else []) if c in rows and not rows[c].get("held_out")]
+
+
+def build_prompt(repo: str, report: CulpritReport, head: str, previous: list[FixAttempt],
+                 eval_cases: Collection[str] = ()) -> tuple[str, set[str]]:
     """-> (prompt, oversize). Brief + current file contents + earlier attempts; nothing the Fixer may not know.
     `oversize` are touched files too big to show whole: edits to them are refused (a whole-file replace of a file
     the model only half saw would drop the rest)."""
@@ -130,6 +153,11 @@ def build_prompt(repo: str, report: CulpritReport, head: str, previous: list[Fix
             cur.append(f"### {f}\n```\n{p.stdout}\n```")
     if cur:
         parts.append("## Current contents of the files the change touched\n\n" + "\n\n".join(cur))
+    rows = [r for r in cases_at(repo, head) if r["id"] in eval_cases]
+    if rows:
+        shown = "\n".join(scrub(json.dumps({k: v for k, v in r.items() if k not in FORBIDDEN_CASE_KEYS})) for r in rows)
+        parts.append("## Eval cases you may update (only via eval_edits, only if the change deliberately changed "
+                     f"their contract)\n\n```\n{shown}\n```")
     for a in previous:
         why = scrub(a.error or "\n".join(f"- {x}" for x in a.failures)) or "(no output)"
         parts.append(f"## Previous attempt {a.attempt} did NOT fix it\n\nEdited: {', '.join(a.files) or '(nothing)'}\n"
@@ -152,14 +180,72 @@ def parse_reply(text: str) -> tuple[str, list[dict[str, Any]]]:
             d = json.loads(body)
         except ValueError as e:
             raise ValueError(f"reply was not valid JSON ({e})") from e
-    files = d.get("files") if isinstance(d, dict) else None
-    if not isinstance(files, list) or not files:
+    files = d.get("files", []) if isinstance(d, dict) else None
+    edits = d.get("eval_edits") if isinstance(d, dict) else None
+    if not isinstance(files, list) or (not files and not edits):
         raise ValueError('reply has no non-empty "files" list')
     for f in files:
         if not isinstance(f, dict) or not isinstance(f.get("path"), str) or not (
                 f.get("delete") is True or isinstance(f.get("content"), str)):
             raise ValueError('every file needs a string "path" and either "content" or "delete": true')
     return str(d.get("explanation") or ""), files
+
+
+def parse_eval_edits(text: str) -> list[dict[str, Any]]:
+    """The reply's `eval_edits` ([] when absent). Each needs a case id, a non-empty `checks` object and a reason."""
+    try:
+        d = json.loads(text)
+    except ValueError:
+        m = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.S)
+        d = json.loads(m.group(1) if m else text[text.find("{"):text.rfind("}") + 1])
+    edits = d.get("eval_edits") or []
+    if not isinstance(edits, list):
+        raise ValueError('"eval_edits" must be a list')
+    for e in edits:
+        if (not isinstance(e, dict) or not isinstance(e.get("case"), str) or not isinstance(e.get("checks"), dict)
+                or not e["checks"] or not isinstance(e.get("reason"), str) or not e["reason"].strip()):
+            raise ValueError('every eval edit needs a string "case", a non-empty "checks" object and a "reason"')
+    return edits
+
+
+def apply_eval_edits(wt: Path, edits: list[dict[str, Any]], allowed: Collection[str]) -> list[dict[str, Any]]:
+    """Update `checks` entries of the allowed cases in the worktree's cases file (other lines are left byte-identical).
+    Raises ValueError, writing nothing, for a case outside `allowed`, a missing or held-out row, or a no-op.
+    -> [{"case", "key", "old", "new", "reason"}]."""
+    target = wt / CASES_PATH
+    if target.is_symlink() or not target.is_file():
+        raise ValueError(f"eval edit refused: {CASES_PATH} is missing or a symlink")
+    lines = target.read_text(encoding="utf-8").splitlines(keepends=True)
+    rows: dict[str, tuple[int, dict]] = {}
+    for i, ln in enumerate(lines):
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(r, dict) and isinstance(r.get("id"), str):
+            rows[r["id"]] = (i, r)
+    changes: list[dict[str, Any]] = []
+    for e in edits:
+        cid = e["case"]
+        if cid not in allowed:
+            raise ValueError(f"eval edit refused: case {cid!r} is not a failing case of the target signature")
+        if cid not in rows or rows[cid][1].get("held_out"):
+            raise ValueError(f"eval edit refused: case {cid!r} does not exist or is held out")
+        i, row = rows[cid]
+        checks = row.get("checks")
+        if not isinstance(checks, dict):
+            raise ValueError(f"eval edit refused: case {cid!r} has no checks object")
+        for k, new in e["checks"].items():
+            if checks.get(k) != new:
+                changes.append({"case": cid, "key": k, "old": checks.get(k), "new": new, "reason": e["reason"].strip()})
+                checks[k] = new
+    if not changes:
+        raise ValueError("the eval edits changed nothing")
+    for cid, (i, row) in rows.items():
+        if any(c["case"] == cid for c in changes):
+            lines[i] = json.dumps(row, ensure_ascii=False) + ("\n" if lines[i].endswith("\n") else "")
+    target.write_text("".join(lines), encoding="utf-8")
+    return changes
 
 
 def apply_edits(wt: Path, edits: list[dict[str, Any]], blocked: Collection[str] = ()) -> list[str]:
@@ -218,10 +304,15 @@ def run_fixer(st: BisectState, *, model: FixModel, checker: FixChecker, out_dir:
         res.attempts.append(att)
         with step_span("fix_attempt", attempt=n, culprit=rep.sha):
             try:
-                prompt, oversize = build_prompt(str(repo), rep, head, res.attempts[:-1])
-                att.explanation, edits = parse_reply(model.complete(SYSTEM, prompt))
+                allowed = target_eval_cases(st, str(repo), head)
+                prompt, oversize = build_prompt(str(repo), rep, head, res.attempts[:-1], allowed)
+                reply = model.complete(SYSTEM, prompt)
+                att.explanation, edits = parse_reply(reply)
+                eval_edits = parse_eval_edits(reply)
                 with worktree(repo, head, worktree_root) as wt:
                     att.files = apply_edits(wt, edits, oversize)
+                    if eval_edits:
+                        att.eval_expectation_changes = apply_eval_edits(wt, eval_edits, allowed)
                     _must(wt, "add", "-A")
                     if _git(wt, "diff", "--cached", "--quiet").returncode == 0:
                         raise ValueError("the edits changed nothing")
@@ -240,6 +331,15 @@ def run_fixer(st: BisectState, *, model: FixModel, checker: FixChecker, out_dir:
                     att.passed, att.failures = False, [f"intent not preserved: {iv.detail}"]
                 elif iv.passed is None:
                     inconclusive.append({"attempt": n, "detail": iv.detail})
+                if att.passed is not False and att.eval_expectation_changes:
+                    # an expectation edit is only accepted on a positive intent verdict AND a positive eval-edit verdict
+                    ev = check_eval_edits(st, VerifierInput(str(repo), att.commit, branch, head), judge,
+                                          att.eval_expectation_changes) if iv.passed else iv
+                    if iv.passed is not True or ev.passed is not True:
+                        att.passed = False
+                        att.failures = ["eval expectation edit not accepted (" + "; ".join(
+                            format_changes(att.eval_expectation_changes)) + "): " + ev.detail
+                            + ("" if ev.passed is not None else " (judge inconclusive)")]
         best = att
         if att.passed:
             break
@@ -249,6 +349,7 @@ def run_fixer(st: BisectState, *, model: FixModel, checker: FixChecker, out_dir:
         res.patch = best.diff
         res.verifier_input = {"repo": str(repo), "commit": best.commit}
         res.passed = bool(best.passed)
+        res.eval_expectation_changes = list(best.eval_expectation_changes)
     if open_pr and res.passed:
         try:
             res.pr_url = _open_pr(st, run)
@@ -258,7 +359,8 @@ def run_fixer(st: BisectState, *, model: FixModel, checker: FixChecker, out_dir:
         _write_files(st, res, Path(out_dir))
     st.metrics["fix"] = {"branch": res.branch, "passed": res.passed, "base": res.base,
                          "verifier_input": res.verifier_input, "pr_url": res.pr_url, "pr_error": res.pr_error,
-                         "intent_inconclusive": inconclusive}
+                         "intent_inconclusive": inconclusive,
+                         "eval_expectation_changes": res.eval_expectation_changes}
     return res
 
 

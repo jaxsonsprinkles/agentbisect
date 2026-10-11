@@ -436,3 +436,91 @@ def test_budget_flags_count_when_the_target_is_a_budget_signature(tmp_path, hist
     held = res.check("held_out")
     assert held.passed is False and "h1" in held.detail and not held.data.get("budget_ignored")
     assert not res.check("regression").data.get("budget_ignored")
+
+
+# ---- guarded eval-expectation edits: reported, scoped to the target signature's cases, judged
+
+ROWS = [{"id": "a", "category": "x", "checks": {"call_args": {"amount": 64.0}}},
+        {"id": "b", "category": "x", "checks": {"reply_regex": "ok"}},
+        {"id": "h1", "category": "x", "held_out": True, "checks": {"reply_regex": "ok"}}]
+
+
+class EJudge(Judge):
+    def __init__(self, edit_ok=True, **kw):
+        super().__init__(**kw)
+        self.edit_ok, self.edit_calls = edit_ok, []
+
+    def judge_eval_edit(self, intent, culprit_diff, changes):
+        self.edit_calls.append(changes)
+        if self.edit_ok is None:
+            raise TimeoutError("judge down")
+        return IntentVerdict(self.edit_ok, "follows the contract change", "claude-sonnet-5-5")
+
+
+def edited_fix(hist, mutate):
+    """-> (base sha with ROWS, fix sha at marker 10 with `mutate(rows)` applied)."""
+    repo, shas = hist
+    git(repo, "checkout", "-q", "-b", "side", shas[BASE_IDX])
+    (repo / "evals").mkdir(exist_ok=True)
+    cases = repo / "evals" / "cases.jsonl"
+    cases.write_text("\n".join(json.dumps(r) for r in ROWS) + "\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "cases")
+    base = git(repo, "rev-parse", "HEAD")
+    rows = json.loads(json.dumps(ROWS))
+    mutate(rows)
+    cases.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+    (repo / "marker.txt").write_text(str(FIX_IDX))
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "fix")
+    return base, git(repo, "rev-parse", "HEAD")
+
+
+def verify_edit(tmp_path, hist, mutate, judge):
+    store, runner, st, vin = mk(tmp_path, hist)
+    base, fix = edited_fix(hist, mutate)
+    st.spec.held_out = ["h1"]
+    return verify_fix(st, runner, VerifierInput(str(hist[0]), fix, "fix/1", base), judge), st, store
+
+
+def _cents(rows):
+    rows[0]["checks"]["call_args"] = {"amount_cents": 6400}
+
+
+def test_target_case_expectation_change_is_reported_and_judged(tmp_path, hist):
+    j = EJudge(True)
+    res, st, store = verify_edit(tmp_path, hist, _cents, j)
+    assert res.eval_expectation_changes == [{"case": "a", "key": "call_args", "old": {"amount": 64.0},
+                                             "new": {"amount_cents": 6400}}]
+    assert res.passed is True and j.edit_calls and "amount_cents" in j.edit_calls[0]
+    assert "EXPECTATION CHANGED" in "\n".join(describe_verification(res))
+    assert res.to_dict()["eval_expectation_changes"][0]["case"] == "a"
+    att = record_verification(store, st, VerifierInput(str(hist[0]), res.commit, "fix/1"), res)
+    assert att.eval_expectation_changes == res.eval_expectation_changes
+
+
+@pytest.mark.parametrize("edit_ok", [False, None])
+def test_denied_or_inconclusive_eval_edit_judge_is_not_a_pass(tmp_path, hist, edit_ok):
+    res, _, _ = verify_edit(tmp_path, hist, _cents, EJudge(edit_ok))
+    assert res.check("intent").passed is edit_ok and res.passed is edit_ok
+    assert res.eval_expectation_changes
+
+
+def test_judge_without_eval_edit_support_is_inconclusive(tmp_path, hist):
+    res, _, _ = verify_edit(tmp_path, hist, _cents, Judge())
+    assert res.check("intent").passed is None and res.passed is None
+
+
+def test_edit_to_non_target_or_held_out_case_fails_regression(tmp_path, hist):
+    def other(rows):
+        rows[1]["checks"]["reply_regex"] = "anything"
+        rows[2]["checks"]["reply_regex"] = "anything"
+    res, _, _ = verify_edit(tmp_path, hist, other, EJudge(True))
+    reg = res.check("regression")
+    assert reg.passed is False and "outside the target signature" in reg.detail and res.passed is False
+
+
+def test_code_only_fix_has_no_expectation_changes(tmp_path, hist):
+    res, _, _ = verify_edit(tmp_path, hist, lambda rows: None, EJudge(True))
+    assert res.eval_expectation_changes == [] and res.passed is True
+    assert "EXPECTATION CHANGED" not in "\n".join(describe_verification(res))

@@ -194,6 +194,8 @@ class FixAttempt:
     files: list[str] = field(default_factory=list)
     explanation: str = ""
     error: str = ""  # model/edit problem (unparseable reply, forbidden path, ...)
+    # guarded eval-expectation edits: [{"case", "key", "old", "new", "reason"}]; any entry means human review
+    eval_expectation_changes: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -217,6 +219,7 @@ class FixResult:
     base: str = ""  # commit the fix is based on
     patch_path: str = ""
     pr_body_path: str = ""
+    eval_expectation_changes: list[dict[str, Any]] = field(default_factory=list)  # of the best attempt
 
     def to_dict(self) -> dict[str, Any]:
         return {**{k: v for k, v in asdict(self).items() if k != "attempts"},

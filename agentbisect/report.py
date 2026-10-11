@@ -10,6 +10,7 @@ PR opening is DRY-RUN unless `confirm=True` (CLI: `--open-pr --confirm-open-pr`)
 from __future__ import annotations
 
 import html
+import json
 import os
 import re
 import subprocess
@@ -87,7 +88,8 @@ def build_report(st: BisectState, repo: str | None = None, group: list[BisectSta
         fix = {"branch": attempt.branch, "attempt": attempt.attempt, "attempts": len(st.fix_attempts),
                "before": before, "after": attempt.eval_score, "baseline": baseline,
                "held_out": attempt.held_out_score, "intent_test": attempt.intent_test_passed,
-               "passed": fix_passes(attempt, baseline), "trace_ids": list(attempt.trace_ids), "diff": attempt.diff,
+               "passed": fix_passes(attempt, baseline), "eval_changes": list(attempt.eval_expectation_changes),
+               "trace_ids": list(attempt.trace_ids), "diff": attempt.diff,
                "checkpoint": checkpoint_id(repo, attempt.branch) if repo else None}
     traces: list[tuple[str, str]] = []
     if st.spec and st.spec.bad_trace_id:
@@ -256,6 +258,12 @@ def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
               f"| good-commit baseline | {_fmt(fx['baseline'])} |",
               f"| held-out score | {_fmt(fx['held_out'])} |",
               f"| intent test | {_fmt({True: 'passed', False: 'FAILED', None: 'not run'}[fx['intent_test']], False)} |", ""]
+        if fx["eval_changes"]:
+            L += ["> **Human review required: eval expectation changed.** This fix edits what the eval expects, "
+                  "not only the code. Confirm each change follows a deliberate contract change.", ""]
+            L += [f"- case `{c['case']}`, check `{c['key']}`: expected `{json.dumps(c['old'])}` -> "
+                  f"`{json.dumps(c['new'])}`" + (f" - {c['reason']}" if c.get("reason") else "")
+                  for c in fx["eval_changes"]] + [""]
         if fx["checkpoint"]:
             L += [f"Fix checkpoint: `{fx['checkpoint']}`", ""]
         if fx["diff"]:
@@ -390,10 +398,15 @@ def render_html(r: dict[str, Any]) -> str:
                                             ["pass rate after (fix)", e(_fmt(fx["after"]))],
                                             ["good-commit baseline", e(_fmt(fx["baseline"]))],
                                             ["held-out score", e(_fmt(fx["held_out"]))], ["intent test", it]])
+            ec = ("<p><strong>Human review required: eval expectation changed.</strong></p><ul>" + "".join(
+                f"<li>case <code>{e(c['case'])}</code>, check <code>{e(c['key'])}</code>: expected "
+                f"<code>{e(json.dumps(c['old']))}</code> &rarr; <code>{e(json.dumps(c['new']))}</code>"
+                f"{' - ' + e(c['reason']) if c.get('reason') else ''}</li>" for c in fx["eval_changes"]) + "</ul>"
+                  ) if fx["eval_changes"] else ""
             ck = f"<p>Fix checkpoint: <code>{e(fx['checkpoint'])}</code></p>" if fx["checkpoint"] else ""
             d = f"<pre>{e(fx['diff'])}</pre>" if fx["diff"] else ""
             sec("Fix", f"<p>Branch <code>{e(fx['branch'])}</code> &middot; attempt {fx['attempt']} of "
-                f"{fx['attempts']} &middot; {v}</p>{t}{ck}{d}")
+                f"{fx['attempts']} &middot; {v}</p>{ec}{t}{ck}{d}")
         if r["steps"]:
             sec("Steps and context tokens", table(["step", "label", "context tokens"],
                 [[e(s.get("step")), e(s.get("label")), e(s.get("tokens"))] for s in r["steps"]]))

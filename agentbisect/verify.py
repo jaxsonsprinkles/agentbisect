@@ -18,7 +18,7 @@ import subprocess
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Collection, Protocol
 
 from .baseline import budget_kind
 from .bisect import COST_PER_RUN_USD
@@ -283,6 +283,8 @@ class VerifyResult:
     branch: str = ""
     checks: list[CheckVerdict] = field(default_factory=list)
     eval_rounds: int = 0
+    # eval expectations the fix changed vs the base commit: [{"case", "key", "old", "new"}]; non-empty => human review
+    eval_expectation_changes: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def passed(self) -> bool | None:
@@ -297,6 +299,7 @@ class VerifyResult:
 
     def to_dict(self) -> dict[str, Any]:
         return {"commit": self.commit, "branch": self.branch, "passed": self.passed, "eval_rounds": self.eval_rounds,
+                "eval_expectation_changes": self.eval_expectation_changes,
                 "checks": [c.to_dict() for c in self.checks]}
 
 
@@ -318,6 +321,16 @@ INTENT_SYSTEM = ("You are a strict code reviewer. A commit (the CULPRIT) was wri
                  "culprit's stated intent: the feature or behaviour the culprit set out to add must still work. A fix "
                  "that simply reverts the culprit (undoing the intended feature) does NOT preserve the intent. "
                  'Reply with JSON only: {"preserved": true|false, "reason": "<one or two sentences>"}.')
+
+
+EVAL_EDIT_SYSTEM = ("You are a strict code reviewer. A commit (the CULPRIT) deliberately changed a contract, and an "
+                    "eval case's expectation is now proposed to change. Decide ONLY whether the proposed expectation "
+                    "change merely follows the contract change the culprit's stated intent and diff set out to make "
+                    "(the old expectation encodes the behaviour the culprit deliberately replaced, and the new one "
+                    "matches the culprit's new behaviour). A change that loosens a check, hides a defect, or is not "
+                    "implied by the culprit's intent does NOT qualify. "
+                    'Reply with JSON only: {"preserved": true|false, "reason": "<one or two sentences>"}, where '
+                    '"preserved" is true only if the change merely follows the deliberate contract change.')
 
 
 def parse_intent_reply(text: str) -> tuple[bool, str]:
@@ -350,10 +363,20 @@ class ClaudeIntentJudge:
         user = (f"## Culprit's stated intent\n\n{intent or '(unknown)'}\n\n"
                 f"## Culprit diff\n\n```diff\n{_cap(culprit_diff)}\n```\n\n"
                 f"## Fix diff (applied on top of the culprit's tree)\n\n```diff\n{_cap(fix_diff)}\n```\n")
+        return self._ask(INTENT_SYSTEM, user)
+
+    def judge_eval_edit(self, intent: str, culprit_diff: str, changes: str) -> IntentVerdict:
+        """`preserved` here means: the eval-expectation change merely follows the culprit's deliberate contract change."""
+        user = (f"## Culprit's stated intent\n\n{intent or '(unknown)'}\n\n"
+                f"## Culprit diff\n\n```diff\n{_cap(culprit_diff)}\n```\n\n"
+                f"## Proposed eval expectation changes\n\n{changes}\n")
+        return self._ask(EVAL_EDIT_SYSTEM, user)
+
+    def _ask(self, system: str, user: str) -> IntentVerdict:
         key = os.environ.get("ANTHROPIC_API_KEY", "") if self.url == ANTHROPIC_API else DUMMY_API_KEY
         req = urllib.request.Request(
             self.url + "/v1/messages",
-            json.dumps({"model": self.model, "max_tokens": 400, "temperature": 0, "system": INTENT_SYSTEM,
+            json.dumps({"model": self.model, "max_tokens": 400, "temperature": 0, "system": system,
                         "messages": [{"role": "user", "content": user}]}).encode(),
             {"content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01"})
         with urllib.request.urlopen(req, timeout=self.timeout) as r:
@@ -534,6 +557,29 @@ def check_intent(st: BisectState, vin: VerifierInput, base: str, judge: IntentJu
                         {"judge_model": v.model, "intent_source": c.intent_source})
 
 
+def format_changes(changes: list[dict[str, Any]]) -> list[str]:
+    return [f"case {c['case']}: {c['key']} expected {json.dumps(c['old'])} -> {json.dumps(c['new'])}"
+            + (f" (reason: {c['reason']})" if c.get("reason") else "") for c in changes]
+
+
+def check_eval_edits(st: BisectState, vin: VerifierInput, judge: Any, changes: list[dict[str, Any]]) -> CheckVerdict:
+    """Does the eval-expectation change merely follow the culprit's deliberate contract change? Needs a judge that has
+    `judge_eval_edit`; a missing judge or an outage is inconclusive (None)."""
+    c = st.culprit
+    ask = getattr(judge, "judge_eval_edit", None)
+    if not c or not c.checkpoint_intent:
+        return CheckVerdict("eval_edits", None, "no culprit intent recorded: cannot judge the eval expectation change")
+    if ask is None:
+        return CheckVerdict("eval_edits", None, "no judge available for eval expectation changes")
+    try:
+        culprit_diff = _git_out(vin.repo, "show", "-m", "--first-parent", "--format=", "--patch", c.sha, "--")
+        v = ask(c.checkpoint_intent, culprit_diff, "\n".join(format_changes(changes)))
+    except Exception as e:
+        return CheckVerdict("eval_edits", None, f"eval-edit judge failed: {type(e).__name__}: {e}")
+    return CheckVerdict("eval_edits", v.preserved, f"judge ({v.model or 'unknown model'}): {v.reason}",
+                        {"judge_model": v.model})
+
+
 def cases_at(repo: str, commit: str) -> list[dict]:
     """Rows of evals/cases.jsonl as committed at `commit` ([] when absent or unreadable)."""
     p = _git(Path(repo), "show", f"{commit}:evals/cases.jsonl")
@@ -544,6 +590,39 @@ def cases_at(repo: str, commit: str) -> list[dict]:
         except ValueError:
             pass
     return [r for r in rows if isinstance(r, dict) and r.get("id")]
+
+
+def eval_expectation_changes(repo: str, base: str, fix: str, target: Collection[str]) -> tuple[list[dict], list[str]]:
+    """Diff the eval cases file between `base` and `fix` -> (changes, violations). A change is one `checks` entry of a
+    TARGET case (a case of the target signature, not held-out) that differs. Anything else that differs (another case,
+    a held-out case, a non-`checks` field, an added/removed case) is a violation."""
+    old = {r["id"]: r for r in cases_at(repo, base)}
+    new = {r["id"]: r for r in cases_at(repo, fix)}
+    changes, bad = [], []
+    for cid in dict.fromkeys([*old, *new]):
+        a, b = old.get(cid), new.get(cid)
+        if a == b:
+            continue
+        if a is None or b is None:
+            bad.append(f"case {cid} was {'added' if a is None else 'removed'}")
+            continue
+        if cid not in target:
+            bad.append(f"case {cid} is not a case of the target signature")
+            continue
+        if a.get("held_out") or b.get("held_out"):
+            bad.append(f"case {cid} is held-out")
+            continue
+        for k in dict.fromkeys([*a, *b]):
+            if k != "checks" and a.get(k) != b.get(k):
+                bad.append(f"case {cid}: field {k!r} changed (only `checks` may)")
+        ca, cb = a.get("checks") or {}, b.get("checks") or {}
+        if not isinstance(ca, dict) or not isinstance(cb, dict):
+            bad.append(f"case {cid}: checks is not an object")
+            continue
+        for k in dict.fromkeys([*ca, *cb]):
+            if ca.get(k) != cb.get(k):
+                changes.append({"case": cid, "key": k, "old": ca.get(k), "new": cb.get(k)})
+    return changes, bad
 
 
 def held_out_cases(st: BisectState, repo: str, fix: str) -> tuple[list[str], list[str]]:
@@ -586,11 +665,35 @@ def verify_fix(st: BisectState, runner: Runner, vin: VerifierInput, judge: Inten
                 guarded("held_out", lambda: check_held_out(runner, fix, held, rubric, run_id,
                                                     ignore_budget=not _target_is_budget(st))),
                 check_intent(st, VerifierInput(repo, fix, vin.branch, base), base, judge)]
+        _guard_eval_edits(st, out, VerifierInput(repo, fix, vin.branch, base), base, judge)
         out.checks.sort(key=lambda c: CHECK_ORDER.index(c.name))
     finally:
         runner.signature = saved
     out.eval_rounds = runner.eval_rounds - before
     return out
+
+
+def _replace(res: VerifyResult, c: CheckVerdict) -> None:
+    res.checks = [c if x.name == c.name else x for x in res.checks]
+
+
+def _guard_eval_edits(st: BisectState, res: VerifyResult, vin: VerifierInput, base: str, judge: Any) -> None:
+    """Report the eval expectations the fix changed. Edits outside the target signature's cases fail the regression
+    check; edits to target cases additionally need the judge to confirm they only follow the culprit's contract change,
+    else the intent check is not a pass (False if denied, inconclusive if the judge could not say)."""
+    sig = st.spec.signature if st.spec else None
+    changes, bad = eval_expectation_changes(vin.repo, base, vin.commit, sig.cases if sig else ())
+    res.eval_expectation_changes = changes
+    if bad and (reg := res.check("regression")):
+        _replace(res, CheckVerdict("regression", False, "fix edits eval cases outside the target signature: "
+                                   + "; ".join(bad) + f" ({reg.detail})", {**reg.data, "eval_violations": bad}))
+    if changes and (it := res.check("intent")):
+        ev = check_eval_edits(st, vin, judge, changes)
+        if it.passed is True and ev.passed is not True:
+            _replace(res, CheckVerdict("intent", ev.passed, f"eval expectation change not confirmed: {ev.detail} "
+                                       f"({it.detail})", {**it.data, "eval_edits": ev.to_dict()}))
+        else:
+            it.data["eval_edits"] = ev.to_dict()
 
 
 def _same_commit(repo: str, ref: str, commit: str) -> bool:
@@ -612,6 +715,7 @@ def record_verification(store: StateStore, st: BisectState, vin: VerifierInput, 
     att.eval_score = reg.data.get("score") if reg else None
     att.held_out_score = held.data.get("pass_rate") if held else None
     att.intent_test_passed = intent.passed if intent else None
+    att.eval_expectation_changes = list(res.eval_expectation_changes)
     st.metrics.setdefault("verify_fix", {})[res.commit] = res.to_dict()
     st.metrics["eval_rounds"] = st.metrics.get("eval_rounds", 0) + res.eval_rounds
     st.metrics["cost_usd"] = round(st.metrics["eval_rounds"] * COST_PER_RUN_USD, 4)
@@ -628,4 +732,7 @@ def describe_verification(res: VerifyResult) -> list[str]:
     lines = [f"fix {res.commit[:10]}" + (f" ({res.branch})" if res.branch else "") + f": {head}"
              f"  eval rounds={res.eval_rounds}"]
     lines += [f"  [{mark[c.passed]}] {c.name}: {c.detail}" for c in res.checks]
+    if res.eval_expectation_changes:
+        lines.append("  EXPECTATION CHANGED (human review required):")
+        lines += [f"    {x}" for x in format_changes(res.eval_expectation_changes)]
     return lines
