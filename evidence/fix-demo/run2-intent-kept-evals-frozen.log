@@ -1,0 +1,8 @@
+llm proxy (own claude login) at http://127.0.0.1:64404
+llm proxy stats: {"calls": 32, "cli_calls": 32, "cache_hits": 0, "input_tokens": 238950, "output_tokens": 19637, "cost_usd": 0.02792, "rate_limit_events": 0, "retries": 0, "errors": 0, "invalid_output_retries": 0, "latency_s_total": 149.08661453885725, "max_concurrent": 3, "in_flight": 0, "temperatures": {"0": 32}, "avg_latency_s": 4.659}
+attempt 1: failed (verdict bad (pass rate 0.33); failing case: rw2)
+attempt 2: failed (verdict bad (pass rate 0.33); failing case: rw2)
+attempt 3: failed (verdict bad (pass rate 0.00); failing case: rw1)
+fix did NOT pass; branch=agentbisect/fix-b0be6266 verifier_input={"repo": "/private/tmp/agentbisect-demo/repo", "commit": "5a4711848fc28c2e251939be94abd1b6802830d1"}
+patch: /tmp/agentbisect-demo/fix/fix-fd47af3916.patch  pr body: /tmp/agentbisect-demo/fix/fix-fd47af3916-pr.md  pr: not opened
+exit 1

@@ -1,0 +1,16 @@
+llm proxy (own claude login) at http://127.0.0.1:57423
+llm proxy stats: {"calls": 37, "cli_calls": 37, "cache_hits": 0, "input_tokens": 290092, "output_tokens": 23698, "cost_usd": 0.0356, "rate_limit_events": 0, "retries": 0, "errors": 0, "invalid_output_retries": 0, "latency_s_total": 165.61841704294784, "max_concurrent": 3, "in_flight": 0, "temperatures": {"0": 37}, "avg_latency_s": 4.476}
+attempt 1: failed (verdict bad (pass rate 0.00); failing case: rw1)
+attempt 2: failed (verdict bad (pass rate 0.33); failing case: rw1)
+attempt 3: checks passed
+fix PASSED the Fixer checks; branch=agentbisect/fix-b0be6266 verifier_input={"repo": "/private/tmp/agentbisect-demo/repo", "commit": "a77aed8e610fabbce6fa6436bfe147a4618f2aab"}
+patch: /tmp/agentbisect-demo/fix/fix-fd47af3916.patch  pr body: /tmp/agentbisect-demo/fix/fix-fd47af3916-pr.md  pr: not opened
+fix commit: a77aed8e610fabbce6fa6436bfe147a4618f2aab
+llm proxy (own claude login) at http://127.0.0.1:58322
+llm proxy stats: {"calls": 403, "cli_calls": 285, "cache_hits": 118, "input_tokens": 2005280, "output_tokens": 170484, "cost_usd": 0.23695, "rate_limit_events": 0, "retries": 0, "errors": 0, "invalid_output_retries": 0, "latency_s_total": 1215.157690748456, "max_concurrent": 4, "in_flight": 0, "temperatures": {"0": 403}, "avg_latency_s": 4.264}
+fix a77aed8e61: NOT VERIFIED  eval rounds=121
+  [PASS] target: check=call_args(issue_refund.amount) expected 64.0 got 6400 no longer reproduces in any of 3 cases (pass rate 1.00)
+  [PASS] regression: all 8 previously passing cases still pass (10 flaky re-run)
+  [FAIL] held_out: held-out pass rate 0.25 over os5, rw4, ro3, ca3, po4, es3 (failing or flaky: os5, rw4, ro3, po4, es3)
+  [FAIL] intent: judge (claude-sonnet-5-5; intent from checkpoint): The fix restores the dollar-based schema, description, validation, and the `amount_usd` return value, which reverts the culprit's intent that issue_refund take and return integer cents.
+exit 1
