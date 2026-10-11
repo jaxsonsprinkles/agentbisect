@@ -19,9 +19,10 @@ BUILD_CASE = "__build__"
 
 TRANSITIONS = {
     "created": {"running", "failed"},
-    "running": {"running", "paused", "failed", "culprit_found"},  # running->running: resume after a crash
+    "running": {"running", "paused", "failed", "culprit_found", "refused"},  # running->running: resume after a crash
     "paused": {"running", "failed"},
     "failed": {"running"},
+    "refused": {"running"},  # a known pre-existing failure was correctly refused; resume re-checks it
     "culprit_found": {"fixing", "verifying", "reported", "running"},
     "fixing": {"verifying", "failed", "paused", "reported"},
     "verifying": {"fixing", "reported", "failed", "paused"},

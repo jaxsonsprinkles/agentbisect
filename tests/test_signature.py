@@ -304,3 +304,103 @@ def test_signature_cases_absent_at_good_end_are_vacuously_good(tmp_path, hist):
     out = B.run_investigation(store, st, runner)
     assert out.kind == "culprit" and out.sha == shas[3]
     assert store.load(st.id).results[shas[0]].verdict == "good"
+
+
+def _preexisting(tmp_path, hist):
+    """A signature (es2-style) that fails at the good commit and everywhere after: never a regression."""
+    class Always(OverlapExec):
+        def run_case(self, req):
+            return [RunResult(req.case, "fail", trace_id=f"t{i}", failures=[AMOUNT],
+                              agent_model=PINS["agent_model"], judge_model=PINS["judge_model"])
+                    for i in range(req.repeats)]
+    store, runner, st, shas = make(tmp_path, hist, ex=Always())
+    return store, runner, st, shas, B.run_investigation(store, st, runner)
+
+
+def test_signature_failing_at_good_commit_is_a_known_preexisting_failure_not_an_error(tmp_path, hist):
+    store, runner, st, shas, out = _preexisting(tmp_path, hist)
+    st = store.load(st.id)
+    assert out.kind == "refused" and "known pre-existing failure \u2014 correctly refused" in out.message
+    assert st.status == "refused" and st.error is None and st.culprit is None and st.in_flight is None
+    k = st.metrics["known_preexisting"]
+    assert k["signature"] == "call_args:issue_refund.amount" and k["good_sha"] == shas[0]
+    assert k["good_pass_rate"] == 0.0 and k["failing_cases"] == ["a", "b", "c"] and (k["fails"], k["runs"]) == (6, 6)
+    store.resume(st)  # a refused investigation can be resumed (it re-checks and refuses again from the cache)
+    assert B.run_investigation(store, st, runner).kind == "refused"
+
+
+def test_refusal_exit_code_is_ok_and_status_and_report_label_it(tmp_path, hist):
+    from agentbisect import report as RP
+    store, runner, st, shas, out = _preexisting(tmp_path, hist)
+    st = store.load(st.id)
+    assert "correctly refused" in B.report(st, out) and "correctly refused" in cli._summary(st)
+    rep = RP.build_report(st, repo=None)
+    md, page = RP.render_markdown(rep), RP.render_html(rep)
+    assert "# AgentBisect report: known pre-existing failure \u2014 correctly refused" in md
+    assert "<h1>AgentBisect report: known pre-existing failure \u2014 correctly refused</h1>" in page
+    for text in (md, page):
+        assert "No culprit was identified yet" not in text
+        assert f"fails at the good commit {shas[0][:10]}" in text and "failing cases" in text
+        assert "not an error" in text and "Confidence" not in text  # presented as a refusal, not as a culprit
+
+
+def test_exit_code_of_a_refusal_is_zero(tmp_path, hist, capsys):
+    store, runner, st, shas, out = _preexisting(tmp_path, hist)
+    st = store.load(st.id)
+    store.resume(st)
+    assert B.resume_investigation(store, st, runner) == 0
+    assert "correctly refused" in capsys.readouterr().out
+
+
+def test_a_bad_good_end_without_a_signature_is_still_an_error(tmp_path, hist):
+    class Fails(OverlapExec):
+        def run_case(self, req):
+            return [RunResult(req.case, "fail", trace_id="t", failures=[], agent_model=PINS["agent_model"],
+                              judge_model=PINS["judge_model"]) for _ in range(req.repeats)]
+    store, runner, st, shas = make(tmp_path, hist, ex=Fails())
+    st.metrics["signatures_discovered"] = True  # no signature known: whole-case pass rate
+    out = B.run_investigation(store, st, runner)
+    assert out.kind == "failed" and store.load(st.id).status == "failed" and "good end is not good" in out.message
+
+
+def test_generic_case_fail_signature_at_the_good_end_is_an_error_not_a_refusal(tmp_path, hist):
+    class Fails(OverlapExec):
+        def run_case(self, req):
+            return [RunResult(req.case, "fail", trace_id="t", failures=[], agent_model=PINS["agent_model"],
+                              judge_model=PINS["judge_model"]) for _ in range(req.repeats)]
+    store, runner, st, shas = make(tmp_path, hist, ex=Fails())
+    out = B.run_investigation(store, st, runner)  # discovery finds only the generic case_fail signature
+    assert store.load(st.id).spec.signature.check == "case_fail" and out.kind == "failed"
+
+
+def test_refusal_evidence_is_cleared_when_a_resumed_run_ends_differently(tmp_path, hist):
+    store, runner, st, shas, out = _preexisting(tmp_path, hist)
+    st = store.load(st.id)
+    store.resume(st)
+    runner.executor = OverlapExec()  # the good commit now passes (e.g. a different baseline/cache): new cache needed
+    runner.cache = store.cache(str(tmp_path / "other"))
+    st.results = {}
+    out = B.run_investigation(store, st, runner)
+    assert out.kind != "refused" and "known_preexisting" not in store.load(st.id).metrics
+
+
+def test_refusal_section_escapes_untrusted_strings(tmp_path, hist):
+    from agentbisect import report as RP
+    store, runner, st, shas, out = _preexisting(tmp_path, hist)
+    st = store.load(st.id)
+    st.metrics["known_preexisting"]["label"] = "<script>alert(1)</script>"
+    page = RP.render_html(RP.build_report(st, repo=None))
+    assert "<script>alert(1)</script>" not in page and "&lt;script&gt;" in page
+
+
+def test_budget_signature_over_budget_at_the_good_commit_is_a_known_preexisting_failure(tmp_path, hist):
+    from test_budget import BASE, Exec
+    repo, shas = hist
+    store = StateStore(tmp_path / "ab")
+    sig = FailureSignature(key="budget:tokens@x", check="budget", cases=["a"])
+    r = Runner(repo, RunnerConfig(cases=["a"], install_cmd=None, models=dict(PINS), workers=1), store.cache(str(repo)),
+               Exec(lambda *a: 400), sleep=lambda s: None, signature=sig)
+    r.baseline = BASE
+    st = store.create(str(repo), spec=RegressionSpec(cases=["a"], signature=sig), good_sha=shas[0], bad_sha=shas[-1])
+    out = B.run_investigation(store, st, r)
+    assert out.kind == "refused" and store.load(st.id).metrics["known_preexisting"]["failing_cases"] == ["a"]

@@ -23,10 +23,19 @@ from .tracing import step_span
 COST_PER_RUN_USD = float(os.environ.get("AGENTBISECT_COST_PER_RUN", "0.002"))  # rough estimate per eval run
 MULTI_REGRESSION_WARNING = "multiple regressions likely: verdicts are non-monotonic (a good commit after a bad one)"
 EXIT_OK, EXIT_ERROR, EXIT_UNRESOLVED = 0, 1, 4
+KNOWN_PREEXISTING = "known pre-existing failure \u2014 correctly refused"
 
 
 class BisectError(RuntimeError):
     pass
+
+
+class PreexistingFailure(BisectError):
+    """The signature already fails at the good commit: it is not a regression of this range. Not an error."""
+
+    def __init__(self, evidence: dict):
+        super().__init__(evidence["message"])
+        self.evidence = evidence
 
 
 class Strategy(Protocol):
@@ -206,6 +215,20 @@ def _fail(store: StateStore, st: BisectState, msg: str) -> Outcome:
     return Outcome("failed", message=msg)
 
 
+def _preexisting_evidence(sig: FailureSignature, good: str, res: CommitResult) -> dict:
+    """What shows that the signature already failed at the good commit (it cannot have been introduced later)."""
+    seen = next((FailureSignature.from_dict(d) for d in res.failure_signatures
+                 if d["key"] == sig.key or d["key"].startswith(sig.key + "@")), None)
+    rate = f"{res.pass_rate:.2f}" if res.pass_rate is not None else "n/a"
+    where = f"fails in {seen.fails}/{seen.runs} runs (cases {', '.join(seen.cases)})" if seen else \
+        f"fails (pass rate {rate}; failing cases {', '.join(res.failing_cases) or 'n/a'})"
+    return {"signature": sig.key, "label": sig.label, "good_sha": good, "good_pass_rate": res.pass_rate,
+            "failing_cases": list(res.failing_cases), "fails": seen.fails if seen else None,
+            "runs": seen.runs if seen else None, "reason": (seen.reason if seen else sig.reason)[:300],
+            "message": f"{KNOWN_PREEXISTING}: {sig.label} already {where} at the good commit {good[:10]}, so it is "
+                       "not a regression introduced in this range"}
+
+
 def _confirm_ends(store: StateStore, st: BisectState, runner: Runner, good: str, bad: str) -> str | None:
     """Re-run both ends once (cached verdicts count). Returns an error message or None."""
     for sha, want, label in ((bad, "bad", "bad end"), (good, "good", "good end")):
@@ -216,6 +239,9 @@ def _confirm_ends(store: StateStore, st: BisectState, runner: Runner, good: str,
             if want == "bad" and res.verdict == "good":
                 sig = f" for signature {st.spec.signature.key}" if st.spec and st.spec.signature else ""
                 return f"bad end does not reproduce{sig}: {sha[:8]} passes (pass_rate {res.pass_rate:.2f})"
+            if want == "good" and res.verdict == "bad" and st.spec and st.spec.signature \
+                    and st.spec.signature.check != "case_fail":  # a specific check, not a generic whole-case failure
+                raise PreexistingFailure(_preexisting_evidence(st.spec.signature, sha, res))
             if want == "good" and res.verdict == "bad":
                 return f"good end is not good: {sha[:8]} fails (pass_rate {res.pass_rate:.2f})"
             return f"{label} {sha[:8]} is unusable: verdict {res.verdict} ({res.reason})"
@@ -240,6 +266,7 @@ def run_investigation(store: StateStore, st: BisectState, runner: Runner | None 
         store.set_status(st, "running")
     elif st.status != "running":
         raise StateError(f"cannot run an investigation in status '{st.status}'")
+    st.metrics.pop("known_preexisting", None)  # a resumed run re-decides; stale refusal evidence must not linger
     try:
         runner = runner or make_runner(store, st)
         bad = resolve(st.repo, st.bad_sha or "HEAD")
@@ -269,6 +296,11 @@ def run_investigation(store: StateStore, st: BisectState, runner: Runner | None 
             strategy.update(st, sha, _evaluate(store, st, runner, sha, "bisect"))
         _monotonic_probe(store, st, runner, history)
         return _conclude(store, st, history)
+    except PreexistingFailure as e:
+        st.metrics["known_preexisting"] = e.evidence
+        st.in_flight = None
+        store.set_status(st, "refused")
+        return Outcome("refused", message=e.evidence["message"])
     except (BisectError, StateError, BaselineError) as e:
         return _fail(store, st, str(e))
     except Exception as e:  # infra/pin errors: keep in_flight so `resume` redoes the step
@@ -332,4 +364,4 @@ def resume_investigation(store: StateStore, st: BisectState, runner: Runner | No
     """Entry point used by `agentbisect resume`; also the tail of `investigate --strategy`. Exit code."""
     out = run_investigation(store, st, runner, strategy)
     print(report(st, out))
-    return {"culprit": EXIT_OK, "unresolved": EXIT_UNRESOLVED}.get(out.kind, EXIT_ERROR)
+    return {"culprit": EXIT_OK, "refused": EXIT_OK, "unresolved": EXIT_UNRESOLVED}.get(out.kind, EXIT_ERROR)

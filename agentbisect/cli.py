@@ -26,6 +26,8 @@ def _summary(st: BisectState) -> str:
         lines.append(f"  INTERRUPTED mid-step: {st.in_flight}")
     if st.error:
         lines.append(f"  error: {st.error}")
+    if st.metrics.get("known_preexisting"):
+        lines.append("  " + st.metrics["known_preexisting"]["message"])
     lines += describe_revert(st)
     return "\n".join(lines)
 

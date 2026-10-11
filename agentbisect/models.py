@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-STATUSES = ("created", "running", "paused", "failed", "culprit_found", "fixing", "verifying", "reported")
+STATUSES = ("created", "running", "paused", "failed", "culprit_found", "fixing", "verifying", "reported", "refused")
 VERDICTS = ("good", "bad", "flaky", "skip")
 
 

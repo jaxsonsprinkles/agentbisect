@@ -17,8 +17,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .models import BisectState, FixAttempt
+from .bisect import KNOWN_PREEXISTING
 from .verify import budget_line
 
+KNOWN_PREEXISTING_LABEL = KNOWN_PREEXISTING.capitalize()
 PR_FOOTER = "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
 # Dashboard link pattern is UNVERIFIED (the docs only give the host https://app.neatlogs.com); override with
 # AGENTBISECT_NEATLOGS_TRACE_URL. Trace ids are always printed next to any link.
@@ -108,6 +110,7 @@ def build_report(st: BisectState, repo: str | None = None) -> dict[str, Any]:
                 f"concurrency {th.get('concurrency')}); {th['recovered']} call(s) recovered, {th['gave_up']} gave up."
                 ) if th.get("backoffs") else None
     return {
+        "known_preexisting": m.get("known_preexisting"),
         "throttle": throttle, "signature": signature, "id": st.id, "repo": repo, "status": st.status, "good_sha": st.good_sha, "bad_sha": st.bad_sha,
         "culprit": c, "flags": flags, "multi": any(MULTI_REGRESSION in f for f in flags),
         "low_conf": bool(c and c.confidence == "low"),
@@ -160,6 +163,27 @@ def _signature_lines(r: dict[str, Any]) -> list[str]:
     return out
 
 
+def _known_lines(r: dict[str, Any]) -> list[str]:
+    k = r.get("known_preexisting")
+    if not k:
+        return []
+    ev = f"Evidence: the signature {k['signature']} fails at the good commit {k['good_sha'][:10]} itself " \
+         f"(pass rate {_fmt(k['good_pass_rate'])}"
+    if k.get("fails") is not None:
+        ev += f"; {k['fails']} of {k['runs']} runs failed"
+    if k.get("failing_cases"):
+        ev += f"; failing cases {', '.join(k['failing_cases'])}"
+    ev += ")."
+    return [f"{KNOWN_PREEXISTING_LABEL}: {k['label']}",
+            "This is not an error and there is no culprit: the failure was already present at the good commit, so no "
+            "commit in the range introduced it. AgentBisect refused to bisect it on purpose.", ev]
+
+
+def _known_md(r: dict[str, Any]) -> list[str]:
+    lines = _known_lines(r)
+    return [f"## {lines[0]}", "", *[y for x in lines[1:] for y in (x, "")]] if lines else []
+
+
 def _signature_md(r: dict[str, Any]) -> list[str]:
     lines = _signature_lines(r)
     return ["## Failure signature", "", *[y for x in lines for y in (x, "")]] if lines else []
@@ -167,11 +191,13 @@ def _signature_md(r: dict[str, Any]) -> list[str]:
 
 def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
     c, fx = r["culprit"], r["fix"]
-    L: list[str] = [f"# AgentBisect report: {c.sha[:10] if c else 'no culprit found'}", "",
+    L: list[str] = [f"# AgentBisect report: "
+                    f"{c.sha[:10] if c else KNOWN_PREEXISTING_LABEL.lower() if r.get('known_preexisting') else 'no culprit found'}",
+                    "",
                     f"Investigation `{r['id']}` - status `{r['status']}` - range `{(r['good_sha'] or '?')[:10]}`.."
                     f"`{(r['bad_sha'] or '?')[:10]}`", ""]
     if not c:
-        L += ["No culprit was identified yet.", ""]
+        L += _known_md(r) or ["No culprit was identified yet.", ""]
         return "\n".join(L) + "\n"
     L += [f"**Confidence: {c.confidence or 'unknown'}**", ""]
     if r["multi"] or r["low_conf"]:
@@ -287,12 +313,16 @@ def render_html(r: dict[str, Any]) -> str:
     def sec(title: str, inner: str) -> None:
         P.append(f"<section><h2>{e(title)}</h2>{inner}</section>")
 
-    title = f"AgentBisect report: {c.sha[:10]}" if c else "AgentBisect report: no culprit found"
+    title = f"AgentBisect report: {c.sha[:10]}" if c else (
+        f"AgentBisect report: {KNOWN_PREEXISTING_LABEL.lower()}" if r.get("known_preexisting")
+        else "AgentBisect report: no culprit found")
     P.append(f"<h1>{e(title)}</h1><p class=\"sub\">Investigation <code>{e(r['id'])}</code> &middot; status "
              f"<code>{e(r['status'])}</code> &middot; range <code>{e((r['good_sha'] or '?')[:10])}</code>.."
              f"<code>{e((r['bad_sha'] or '?')[:10])}</code></p>")
     if not c:
-        P.append("<section><p>No culprit was identified yet.</p></section>")
+        kn = _known_lines(r)
+        P.append(f'<section><h2>{e(kn[0])}</h2>' + "".join(f"<p>{e(x)}</p>" for x in kn[1:]) + "</section>" if kn
+                 else "<section><p>No culprit was identified yet.</p></section>")
     else:
         conf = c.confidence or "unknown"
         P.append(f'<p>Confidence <span class="badge {e(conf if conf in ("high", "medium", "low") else "unknown")}">'
