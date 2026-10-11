@@ -1,0 +1,9 @@
+<task-notification>
+<task-id>ac1dfe9bc9e55bf08</task-id>
+<tool-use-id>toolu_019Qwdc6iATrWTn9jbXeduhR</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ac1dfe9bc9e55bf08.output</output-file>
+<status>failed</status>
+<summary>Agent "Median budget checks, baseline, labels" failed: Agent terminated early due to an API error: You've hit your session limit · resets 12:10am (America/Chicago) (error type rate_limit, HTTP 429, request id req_011Cfug8pM8xaFgzLgTyRpHH, model sent to the API: claude-sonnet-5-5)</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>BSD sed; use python.</result>
+</task-notification>
