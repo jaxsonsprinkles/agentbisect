@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable, Iterator, Protocol
 
-from .baseline import Baseline, budget_kind, median_over_budget
+from .baseline import Baseline, BaselineError, budget_kind, median_over_budget, need_baseline_message
 from .models import CommitResult, FailureSignature
 from .signature import failures_of_result, group_signatures
 from .state import BUILD_CASE, VerdictCache
@@ -298,6 +298,7 @@ class Runner:
         times and are judged by the median rule (baseline.py); behavioural cases stay at `repeats`."""
         sig = self.signature
         bkind = budget_kind(sig.key) if sig else None
+        self.require_baseline()
         cases = list(cases or (sig.cases if sig and sig.cases else None) or self.cfg.cases)
         models = self.cfg.models
         cached_skip = self.cache.get(sha, BUILD_CASE, models)
@@ -397,6 +398,11 @@ class Runner:
             failure_signatures=self._signatures(sha, cases),
             reason=(f"pass_rate {rate:.2f} inside band ({self.cfg.bad_max}, {self.cfg.good_min}) after "
                     f"{target} repeats" if verdict == "flaky" else ""))
+
+    def require_baseline(self) -> None:
+        """Budget signatures are judged against the good commit's token medians: refuse to run without them."""
+        if self.signature and budget_kind(self.signature.key) and self.baseline is None:
+            raise BaselineError(need_baseline_message(self.signature.key))
 
     def _want(self, case: str, target: int, budget_cases: set[str]) -> int:
         """Repeats wanted for a case: the current target, raised to judge_repeats / budget_repeats where they apply."""

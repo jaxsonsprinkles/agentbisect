@@ -109,6 +109,13 @@ def _parser() -> argparse.ArgumentParser:
     rp.add_argument("--confirm-open-pr", action="store_true",
                     help="really `git push` and `gh pr create` (requires --open-pr)")
     rp.add_argument("--draft", action="store_true", help="force a draft PR (default: draft iff the fix is unverified)")
+    cb = sub.add_parser("calibrate", help="run the good commit once (budget_repeats per case) and write the per-case "
+                                          "median-token baseline that budget signatures are judged against")
+    cb.add_argument("--repo", required=True, help="path to the target repo (has evals/cases.jsonl)")
+    cb.add_argument("--good", required=True, help="the known-good commit to measure")
+    cb.add_argument("--out", help="baseline file (default: <state-dir>/baseline-<good sha>.json)")
+    cb.add_argument("--cases", help="comma-separated case ids (default: every case in evals/cases.jsonl)")
+    cb.add_argument("--llm-proxy", default="off", metavar="auto|URL|off", help="as for `investigate`")
     lp = sub.add_parser("llm-proxy", help="serve an Anthropic-compatible API backed by your logged-in `claude` CLI")
     lp.add_argument("--port", type=int, default=8787)
     lp.add_argument("--concurrency", type=int, default=None,
@@ -141,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps(r, indent=2))
         return 0 if r["match"] else 1
-    if a.cmd == "investigate":
+    if a.cmd in ("investigate", "calibrate"):
         with _llm_proxy(getattr(a, "llm_proxy", "off")):
             return _main(a, store)
     return _main(a, store)
@@ -215,6 +222,8 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
                 sib_code = _run_one(store, sib, meta)  # always run every sibling, even if the primary failed
                 code = code or sib_code
         return code
+    if a.cmd == "calibrate":
+        return _calibrate(a, store)
     if a.cmd == "watch":
         print("agentbisect watch: not implemented yet (later chunk)", file=sys.stderr)
         return 2
@@ -237,6 +246,33 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
     except StateError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
+
+
+def _calibrate(a: argparse.Namespace, store: StateStore) -> int:
+    from pathlib import Path
+    from .baseline import BaselineError, calibrate
+    from .bisect import BisectError, resolve
+    from .intake import load_cases
+    from .runner import Runner, config_from_env
+    try:
+        good = resolve(a.repo, a.good)
+        cases = [c.strip() for c in a.cases.split(",") if c.strip()] if a.cases else [c.id for c in load_cases(a.repo)]
+        out = Path(a.out) if a.out else store.base / f"baseline-{good[:10]}.json"
+        runner = Runner(a.repo, config_from_env(cases), store.cache(a.repo))
+        data = calibrate(runner, good, cases, out)
+    except (BaselineError, BisectError, IntakeError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print(f"calibrated {len(data['cases'])} cases at {good[:10]} ({data['repeats']} repeats, "
+          f"agent {data['agent_model']}) -> {out}")
+    for c, v in data["cases"].items():
+        print(f"  {c}: median {v['median_tokens']:.0f} tokens, {v['median_steps']} steps (n={v['n']})")
+    for w in data.get("warnings", []):
+        print(f"  WARNING: {w}")
+    for c, why in data["excluded_cases"].items():
+        print(f"  {c}: excluded ({why})")
+    print(f"use it:  export AGENTBISECT_BASELINE={Path(out).resolve()}")
+    return 0
 
 
 def _proxy_events() -> dict | None:

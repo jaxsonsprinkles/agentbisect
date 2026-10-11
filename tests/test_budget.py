@@ -2,8 +2,10 @@
 import hashlib
 import threading
 
+import pytest
+
 from agentbisect import bisect as B
-from agentbisect.baseline import Baseline, budget_kind
+from agentbisect.baseline import Baseline, BaselineError, budget_kind
 from agentbisect.models import FailureSignature, RegressionSpec
 from agentbisect.runner import Runner, RunnerConfig, RunResult, config_from_env, parse_report
 from agentbisect.state import StateStore
@@ -125,10 +127,12 @@ def test_repeats_cached_per_commit_case_repeat_and_salted(tmp_path, hist):
     assert len(ex.reqs) == n
 
 
-def test_no_baseline_falls_back_to_harness_flags(tmp_path, hist):
+def test_budget_signature_without_baseline_is_refused(tmp_path, hist):
     r, ex, shas = mk(tmp_path, hist, lambda idx, c, n: 200)
     r.baseline = None
-    assert r.evaluate_commit(shas[0], "x").verdict == "bad"  # steps/tokens flags set by the harness are honoured
+    with pytest.raises(BaselineError, match="calibrate"):
+        r.evaluate_commit(shas[0], "x")
+    assert ex.reqs == []  # nothing was run
 
 
 def test_steps_budget_uses_the_run_reported_cap(tmp_path, hist):
@@ -149,6 +153,7 @@ def test_steps_budget_uses_the_run_reported_cap(tmp_path, hist):
     ex.run_case = run
     r = Runner(repo, RunnerConfig(cases=["a"], install_cmd=None, models=dict(PINS), workers=1), store.cache(str(repo)),
                ex, sleep=lambda s: None, signature=sig)
+    r.baseline = BASE
     assert r.evaluate_commit(shas[0], "x").verdict == "bad"
 
 

@@ -3,6 +3,7 @@ import json
 from agentbisect import bisect as B
 from agentbisect import cli
 from agentbisect import signature as S
+from agentbisect.baseline import Baseline
 from agentbisect.intake import FixtureSource, intake_trace
 from agentbisect.models import FailureSignature, RegressionSpec
 from agentbisect.runner import Runner, RunnerConfig, RunResult, parse_report
@@ -13,6 +14,7 @@ REASON = ("no issue_refund call matching {'order_id': '1007', 'amount': 64.0} "
           "(saw [{'order_id': '1007', 'amount': 6400}])")
 AMOUNT = {"key": "call_args:issue_refund.amount", "check": "call_args", "detail": "issue_refund.amount",
           "expected": "64.0", "got": "6400", "reason": REASON}
+TOKEN_BASELINE = Baseline({"cases": {c: {"median_tokens": 100} for c in "abc"}})  # budget signatures need one
 BUDGET = {"key": "budget:steps", "check": "budget", "detail": "steps", "expected": "", "got": "",
           "reason": "7 steps > 6"}
 
@@ -95,6 +97,7 @@ def make(tmp_path, hist, spec=None, ex=None):
     runner = Runner(repo, RunnerConfig(cases=["a", "b", "c"], repeats=2, install_cmd=None, models=dict(PINS),
                                        backoff=0.0), store.cache(str(repo)), ex or OverlapExec(),
                     sleep=lambda s: None)
+    runner.baseline = TOKEN_BASELINE
     st = store.create(str(repo), spec=spec or RegressionSpec(cases=["a", "b", "c"], bad_case="a"),
                       good_sha=shas[0], bad_sha=shas[-1])
     return store, runner, st, shas
@@ -123,6 +126,7 @@ def test_all_signatures_gives_one_culprit_each_and_shares_cache(tmp_path, hist):
     sib = store.load(sibs[0].id)
     r2 = Runner(st.repo, RunnerConfig(cases=["a", "b", "c"], repeats=2, install_cmd=None, models=dict(PINS)),
                 store.cache(st.repo), ex, signature=sib.spec.signature, sleep=lambda s: None)
+    r2.baseline = TOKEN_BASELINE
     out = B.run_investigation(store, sib, r2)
     assert out.sha == shas[3]
     assert store.load(st.id).metrics["signature_siblings"][0]["id"] == sib.id

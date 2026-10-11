@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from .baseline import Baseline
+from .baseline import Baseline, BaselineError
 from .models import BisectState, CommitResult, CulpritReport, FailureSignature, Plan
 from .runner import Runner, RunnerConfig, config_from_env
 from .signature import pick_primary, signatures_of
@@ -129,7 +129,11 @@ def make_runner(store: StateStore, st: BisectState) -> Runner:
     cfg = config_from_env(list(st.spec.cases), judge_cases=judged)
     runner = Runner(st.repo, cfg, store.cache(st.repo), signature=st.spec.signature)
     if cfg.baseline:
-        runner.baseline = Baseline.load(cfg.baseline)
+        try:
+            good = resolve(st.repo, st.good_sha) if st.good_sha else None
+        except BisectError:
+            good = st.good_sha
+        runner.baseline = Baseline.load(cfg.baseline).validate(good, cfg.models["agent_model"])
     return runner
 
 
@@ -253,6 +257,8 @@ def run_investigation(store: StateStore, st: BisectState, runner: Runner | None 
         store.save(st)
 
         _discover_signature(store, st, runner, bad)
+        st.metrics["no_baseline"] = runner.baseline is None
+        runner.require_baseline()  # a budget signature without a baseline: stop before any budget evaluation
         err = _confirm_ends(store, st, runner, good, bad)
         if err:
             return _fail(store, st, err)
@@ -263,7 +269,7 @@ def run_investigation(store: StateStore, st: BisectState, runner: Runner | None 
             strategy.update(st, sha, _evaluate(store, st, runner, sha, "bisect"))
         _monotonic_probe(store, st, runner, history)
         return _conclude(store, st, history)
-    except (BisectError, StateError) as e:
+    except (BisectError, StateError, BaselineError) as e:
         return _fail(store, st, str(e))
     except Exception as e:  # infra/pin errors: keep in_flight so `resume` redoes the step
         st.status, st.error = "failed", f"{type(e).__name__}: {e}"
@@ -310,6 +316,9 @@ def report(st: BisectState, out: Outcome) -> str:
     lines = [f"[{st.id}] {out.message}" if out.message else f"[{st.id}] {out.kind}"]
     for w in m.get("warnings", []):
         lines.append(f"  WARNING: {w}")
+    if m.get("no_baseline"):
+        lines.append("  NOTE: no token baseline (AGENTBISECT_BASELINE unset): token-budget regressions cannot be "
+                     "detected; run `agentbisect calibrate` at the good commit")
     if st.spec and st.spec.signature:
         lines.append(f"  bisected on failure signature: {st.spec.signature.label} "
                      f"(cases: {', '.join(st.spec.signature.cases) or 'all'})")

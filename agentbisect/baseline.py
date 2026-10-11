@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import re
 import statistics
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +51,23 @@ class Baseline:
         except ValueError as e:
             raise BaselineError(f"baseline {p} is not valid JSON: {e}") from e
 
+    def validate(self, good_sha: str | None, agent_model: str | None) -> "Baseline":
+        """Refuse a baseline that was not measured at THIS investigation's good commit with the pinned agent model:
+        a token budget against another commit's or model's medians would be meaningless."""
+        where = self.path or "baseline"
+        have = self.data.get("good_sha")
+        if not have:
+            raise BaselineError(f"{where} has no good_sha: it was not written by `agentbisect calibrate`")
+        if not good_sha or not _same_sha(have, good_sha):
+            raise BaselineError(f"{where} was calibrated at {have[:10]} but this investigation's good commit is "
+                                f"{(good_sha or '?')[:10]}: run `agentbisect calibrate` at the good commit")
+        if not self.data.get("agent_model") or self.data["agent_model"] != agent_model:
+            raise BaselineError(f"{where} was calibrated with agent model {self.data.get('agent_model')!r} but the "
+                                f"pinned agent model is {agent_model!r}")
+        if not self.cases:
+            raise BaselineError(f"{where} has no per-case medians")
+        return self
+
     def median_tokens(self, case: str) -> float | None:
         c = self.cases.get(case)
         return float(c["median_tokens"]) if c and c.get("median_tokens") is not None else None
@@ -61,6 +79,72 @@ class Baseline:
         if kind == "steps":
             return None if self.max_steps is None else float(self.max_steps)
         return None
+
+
+def _same_sha(a: str, b: str) -> bool:
+    return min(len(a), len(b)) >= 7 and (a.startswith(b) or b.startswith(a))
+
+
+def need_baseline_message(sig_key: str) -> str:
+    return (f"budget signature {sig_key} needs a token baseline from the good commit: run `agentbisect calibrate "
+            "--repo R --good SHA` once and point AGENTBISECT_BASELINE at the file it writes (never recalibrated "
+            "automatically)")
+
+
+def build_baseline(entries: dict[str, dict], good_sha: str, models: dict[str, str], repeats: int,
+                   skipped: dict[str, str] | None = None) -> dict[str, Any]:
+    """entries: case -> verdict-cache aggregate at the good commit. Medians use only the runs whose deterministic
+    checks passed (a budget miss does not disqualify a run), like the target harness's own calibration."""
+    cases: dict[str, dict] = {}
+    caps: list[int] = []
+    excluded = dict(skipped or {})
+    for case, e in sorted(entries.items()):
+        ok = [d for d in e.get("detail") or [] if d.get("status") in ("pass", "fail") and d.get("tokens") is not None
+              and all(f.startswith("budget:") for f in d.get("fails") or [])]
+        if not ok:
+            excluded[case] = "no run passed its deterministic checks (or reported tokens)"
+            continue
+        steps = [d["steps"] for d in ok if d.get("steps") is not None]
+        caps += [d["max_steps"] for d in ok if d.get("max_steps")]
+        cases[case] = {"median_tokens": statistics.median(d["tokens"] for d in ok),
+                       "median_steps": statistics.median(steps) if steps else None, "n": len(ok)}
+    now = datetime.now(timezone.utc)
+    return {"schema_version": 1, "commit": good_sha, "good_sha": good_sha, "agent_model": models.get("agent_model"),
+            "judge_model": models.get("judge_model"), "repeats": repeats, "provider": "anthropic",
+            "created_at": now.isoformat(timespec="seconds"), "date": now.date().isoformat(),
+            "token_factor": DEFAULT_TOKEN_FACTOR, "max_steps": max(caps) if caps else None, "cases": cases,
+            "excluded_cases": excluded}
+
+
+def calibrate(runner: Any, good_sha: str, cases: list[str], out: str | Path, run_id: str = "calibrate") -> dict[str, Any]:
+    """Run the good commit once (`budget_repeats` per case, no baseline passed to the harness), write the per-case
+    median tokens to `out` and return the baseline dict. Never called implicitly."""
+    cfg = runner.cfg
+    saved = cfg.baseline, runner.signature
+    cfg.baseline, runner.signature = None, None  # no baseline for the harness while measuring one
+    try:  # budget_cases: every case at exactly budget_repeats, never escalated
+        res = runner.evaluate_commit(good_sha, run_id, cases, budget_cases=cases)
+    finally:
+        cfg.baseline, runner.signature = saved
+    if res.verdict == "skip" and not res.executed:
+        raise BaselineError(f"cannot calibrate at {good_sha[:10]}: {res.reason}")
+    entries, skipped = {}, {}
+    for c in cases:
+        e = runner.cache.get(good_sha, c, cfg.models) or {}
+        if "skip" in e:
+            skipped[c] = f"skipped by the target: {e['skip']}"
+        elif e:
+            entries[c] = e
+        else:
+            skipped[c] = "no executed runs (every repeat errored)"
+    data = build_baseline(entries, good_sha, cfg.models, cfg.budget_repeats, skipped)
+    if res.verdict != "good":
+        data["warnings"] = [f"the good commit evaluated as {res.verdict} (pass rate {res.pass_rate}): is it really good?"]
+    if not data["cases"]:
+        raise BaselineError("no case produced a usable token measurement; nothing written")
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
+    Path(out).write_text(json.dumps(data, indent=2) + "\n")
+    return data
 
 
 def median_over_budget(values: list[float], limit: float | None) -> bool | None:
