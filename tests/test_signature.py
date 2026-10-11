@@ -222,3 +222,67 @@ def test_cli_flags_parse():
     assert a.signature == "budget:steps" and a.all_signatures is False
     assert cli._parser().parse_args(["investigate", "--trace", "t", "--repo", "r"]).all_signatures is None
 
+
+
+def test_budget_signature_is_qualified_by_category():
+    r = {"status": "fail", "category": "order_status", "checks": [],
+         "budget": {"status": "fail", "reason": "tokens 9000 > limit 5000"}}
+    assert [x["key"] for x in S.failures_of_result(r)] == ["budget:tokens@order_status"]
+    r.pop("category")
+    assert [x["key"] for x in S.failures_of_result(r)] == ["budget:tokens"]  # old harness output unchanged
+
+
+def test_all_categories_suite_spans_every_non_held_out_case(tmp_path):
+    import subprocess
+    r = tmp_path / "t"
+    (r / "evals").mkdir(parents=True)
+    rows = [{"id": "rw1", "category": "refund", "input": "refund 1007", "checks": {}},
+            {"id": "os1", "category": "order", "input": "where 1042", "checks": {}},
+            {"id": "os2", "category": "order", "input": "where 1043", "checks": {}, "held_out": True}]
+    (r / "evals" / "cases.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
+    for c in (["init", "-q", "-b", "main"], ["config", "user.email", "t@t"], ["config", "user.name", "t"],
+              ["add", "-A"], ["commit", "-q", "-m", "x"]):
+        subprocess.run(["git", "-C", str(r), *c], check=True, capture_output=True)
+    src = FixtureSource({"traces": [{"traceId": "T1", "status": "ok", "tags": ["case:rw1"]}]})
+    assert intake_trace(src, "T1", r).spec.cases == ["rw1"]
+    wide = intake_trace(src, "T1", r, all_categories=True).spec
+    assert wide.cases == ["rw1", "os1"] and wide.held_out == ["os2"]
+    assert cli._parser().parse_args(["investigate", "--trace", "t", "--repo", "r", "--all-categories"]).all_categories
+
+
+class NoisyExec(OverlapExec):
+    """Case c fails once, on its first run only, with a check nobody else fails (sampling noise)."""
+
+    def run_case(self, req):
+        out = super().run_case(req)
+        if req.case == "c" and req.repeats and not getattr(self, "noised", False):
+            self.noised = True
+            out[0] = RunResult("c", "fail", trace_id="noise", agent_model=PINS["agent_model"],
+                               judge_model=PINS["judge_model"],
+                               failures=[{"key": "must_call", "check": "must_call", "detail": "", "expected": "",
+                                          "got": "", "reason": "missing"}])
+        return out
+
+
+def test_single_run_noise_is_not_a_signature(tmp_path, hist):
+    store, runner, st, shas = make(tmp_path, hist, ex=NoisyExec())
+    runner.cfg.repeats = 1
+    B.run_investigation(store, st, runner)
+    st = store.load(st.id)
+    assert "must_call" not in {d["key"] for d in st.metrics["signatures"]}
+    assert [d["key"] for d in st.metrics["signatures_unconfirmed"]] == ["must_call"]
+    assert {d["key"] for d in st.metrics["signatures"]} == {"call_args:issue_refund.amount", "budget:steps"}
+
+
+def test_bare_budget_key_matches_category_qualified_failures(tmp_path, hist):
+    qual = {**BUDGET, "key": "budget:steps@order"}
+
+    class Q(OverlapExec):
+        def run_case(self, req):
+            out = super().run_case(req)
+            for r in out:
+                r.failures = [qual if f is BUDGET else f for f in r.failures]
+            return out
+    store, runner, st, shas = make(tmp_path, hist, ex=Q())
+    st.spec.signature = runner.signature = FailureSignature(key="budget:steps")
+    assert B.run_investigation(store, st, runner).sha == shas[3]

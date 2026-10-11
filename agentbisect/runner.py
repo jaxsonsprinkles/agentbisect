@@ -384,9 +384,14 @@ class Runner:
             runs = e.get("passes", 0) + e.get("fails", 0)
             fails = e.get("fails", 0)
             if self.signature:
-                fails = min(runs, (e.get("check_fails") or {}).get(self.signature.key, 0))
+                key = self.signature.key  # a bare `budget:tokens` also covers the per-category `budget:tokens@cat`
+                cf = e.get("check_fails") or {}
+                fails = min(runs, sum(n for k, n in cf.items() if k == key or k.startswith(key + "@")))
             out[c] = {"passes": runs - fails, "fails": fails, "errors": errors.get(c, 0)}
         return out
+
+    def signatures_at(self, sha: str, cases: list[str]) -> list[dict]:
+        return self._signatures(sha, cases)
 
     def _signatures(self, sha: str, cases: list[str]) -> list[dict]:
         """Every failing check seen at `sha` over `cases`, grouped by key (see signature.py)."""

@@ -51,6 +51,9 @@ def _add_intake_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--all-signatures", action=argparse.BooleanOptionalAction, default=None,
                    help="bisect every distinct failing check at the bad end separately (one culprit per failure "
                         "signature). Default: on when several are found")
+    p.add_argument("--all-categories", action="store_true",
+                   help="build the suite from every category's non-held-out cases instead of the bad trace's "
+                        "category only, so regressions in other features surface as their own signatures")
     p.add_argument("--intake-only", action="store_true", help="stop after intake; do not run the bisect")
     p.add_argument("--good", help="known-good commit (overrides the one intake found)")
     p.add_argument("--bad", help="known-bad commit (default: failing trace's commit, else HEAD)")
@@ -80,8 +83,10 @@ def run_intake(a: argparse.Namespace) -> IntakeResult:
         return intake_issue(a.issue, a.repo)
     src = FixtureSource(a.fixtures) if a.fixtures else NeatlogsCliSource(project=a.project)
     if a.trace:
-        return intake_trace(src, a.trace, a.repo, workflow=a.workflow)
-    return intake_detection(src, a.detection, a.repo, workflow=a.workflow)
+        return intake_trace(src, a.trace, a.repo, workflow=a.workflow,
+                            all_categories=getattr(a, "all_categories", False))
+    return intake_detection(src, a.detection, a.repo, workflow=a.workflow,
+                            all_categories=getattr(a, "all_categories", False))
 
 
 def _parser() -> argparse.ArgumentParser:

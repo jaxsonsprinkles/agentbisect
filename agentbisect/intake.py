@@ -423,10 +423,11 @@ def build_predicate(cases: list[Case]) -> dict[str, Any]:
     }
 
 
-def split_suite(cases: list[Case], category_ids: list[str] | set[str]) -> tuple[list[Case], list[Case]]:
-    """Working suite = non-held-out cases of the given categories; held-out = every held_out case of the target."""
-    cats = set(category_ids)
-    working = [c for c in cases if c.category in cats and not c.held_out]
+def split_suite(cases: list[Case], category_ids: list[str] | set[str] | None) -> tuple[list[Case], list[Case]]:
+    """Working suite = non-held-out cases of the given categories (None = every category); held-out = every
+    held_out case of the target."""
+    cats = None if category_ids is None else set(category_ids)
+    working = [c for c in cases if (cats is None or c.category in cats) and not c.held_out]
     held = [c for c in cases if c.held_out]
     assert not {c.id for c in working} & {c.id for c in held}, "held-out leaked into the working suite"
     return working, held
@@ -494,7 +495,8 @@ def _git_commit_set(repo: str | Path) -> list[str]:
 
 
 def intake_trace(source: TraceSource, bad_trace_id: str, repo: str | Path, *, workflow: str = DEFAULT_WORKFLOW,
-                 max_good: int = 5, source_kind: str = "trace") -> IntakeResult:
+                 max_good: int = 5, source_kind: str = "trace",
+                 all_categories: bool = False) -> IntakeResult:
     cases = load_cases(repo)
     bad = source.get_trace(bad_trace_id)
     notes: list[str] = []
@@ -538,7 +540,10 @@ def intake_trace(source: TraceSource, bad_trace_id: str, repo: str | Path, *, wo
     elif not any(t.passed for _, _, t in cands):
         notes.append("good traces are 'status ok' only (no explicit pass signal); bisect re-confirms the good end")
 
-    working, held = split_suite(cases, {case.category})
+    working, held = split_suite(cases, None if all_categories else {case.category})
+    if all_categories:
+        notes.append(f"suite spans every category ({len(working)} cases): failing checks of other features are "
+                     "separate signatures")
     if case.held_out:
         notes.append(f"{case.id} is held out: kept out of the working suite; related cases used instead")
     if not working:
@@ -558,7 +563,8 @@ def intake_trace(source: TraceSource, bad_trace_id: str, repo: str | Path, *, wo
 
 
 def intake_detection(source: TraceSource, detection_id: str, repo: str | Path, *,
-                     workflow: str = DEFAULT_WORKFLOW, max_good: int = 5) -> IntakeResult:
+                     workflow: str = DEFAULT_WORKFLOW, max_good: int = 5,
+                     all_categories: bool = False) -> IntakeResult:
     det = source.get_detection(detection_id)
     hits = source.detection_hits(detection_id)
     if not hits:
@@ -566,7 +572,8 @@ def intake_detection(source: TraceSource, detection_id: str, repo: str | Path, *
     last_err = None
     for tid in hits:  # newest hit that maps to an eval case
         try:
-            r = intake_trace(source, tid, repo, workflow=workflow, max_good=max_good, source_kind="detection")
+            r = intake_trace(source, tid, repo, workflow=workflow, max_good=max_good, source_kind="detection",
+                             all_categories=all_categories)
         except IntakeError as e:
             last_err = e
             continue

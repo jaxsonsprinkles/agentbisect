@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from .models import BisectState, CommitResult, CulpritReport, Plan
+from .models import BisectState, CommitResult, CulpritReport, FailureSignature, Plan
 from .runner import Runner, RunnerConfig, config_from_env
 from .signature import pick_primary, signatures_of
 from .state import StateError, StateStore
@@ -149,9 +149,30 @@ def _discover_signature(store: StateStore, st: BisectState, runner: Runner, bad:
         res = runner.evaluate_commit(bad, f"{st.id}-s{step}", list(st.spec.cases))
     _account(st, runner.eval_rounds - before)
     sigs = signatures_of(res)
+    # A check that failed in a single run is as likely sampling noise as a regression (one flaky run can fail
+    # several checks at once): run those cases once more and keep only what reproduces.
+    weak = [s for s in sigs if s.fails < 2]
+    if weak:
+        redo = sorted({c for s in weak for c in s.cases})
+        saved, runner.cfg.repeats = runner.cfg.repeats, max(runner.cfg.repeats, 2)
+        before = runner.eval_rounds
+        try:
+            with step_span("signature_confirm", sha=bad, step=step):
+                res = runner.evaluate_commit(bad, f"{st.id}-s{step}c", redo)
+        finally:
+            runner.cfg.repeats = saved
+        _account(st, runner.eval_rounds - before)
+        everything = sorted((FailureSignature.from_dict(d) for d in runner.signatures_at(bad, list(st.spec.cases))),
+                            key=lambda x: (-x.fails, x.key))
+        sigs = [x for x in everything if x.fails >= 2]
+        st.metrics["signatures_unconfirmed"] = [x.to_dict() for x in everything if x not in sigs]
     st.metrics["signatures_discovered"] = True
     st.metrics["signatures"] = [s.to_dict() for s in sigs]
     st.spec.signature = runner.signature = pick_primary(sigs, st.spec.bad_case)
+    if st.spec.signature and st.spec.bad_case and st.spec.bad_case not in st.spec.signature.cases:
+        st.metrics.setdefault("warnings", []).append(
+            f"no reproducible failing check in the bad trace's case {st.spec.bad_case}: bisecting "
+            f"{st.spec.signature.key} from other cases")
     if st.spec.signature is None:
         st.metrics.setdefault("warnings", []).append(
             "no failing check found at the bad end: bisecting on whole-case pass rate")

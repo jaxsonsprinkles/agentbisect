@@ -6,7 +6,8 @@ block and an optional `judge` block. Each failed one becomes a failure record {k
 reason}; `key` is the identity used to match runs and commits:
 
   call_args:<tool>.<arg>   a tool call whose argument is wrong (expected/got parsed from the check reason)
-  budget:steps|tokens      step or token budget exceeded
+  budget:steps|tokens@<cat>  step or token budget exceeded, qualified by the case's category (two budget
+                           regressions in different features would otherwise collapse into one signature)
   judge                    rubric failed
   <check name>             any other deterministic check (reply_regex, must_call, ...)
 
@@ -72,7 +73,8 @@ def failures_of_result(r: dict[str, Any]) -> list[dict[str, str]]:
     if b.get("status") == "fail":
         reason = str(b.get("reason") or "")
         kinds = [k for k in ("steps", "tokens") if k in reason] or ["steps"]
-        out += [{"key": f"budget:{k}", "check": "budget", "detail": k, "expected": "", "got": "",
+        cat = f"@{r['category']}" if r.get("category") else ""
+        out += [{"key": f"budget:{k}{cat}", "check": "budget", "detail": f"{k}{cat}", "expected": "", "got": "",
                  "reason": reason[:300]} for k in kinds]
     j = r.get("judge")
     if isinstance(j, dict) and j.get("passed") is False:
