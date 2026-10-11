@@ -12,6 +12,7 @@ import json
 import os
 import re
 import shutil
+import statistics
 import subprocess
 import tempfile
 import threading
@@ -19,8 +20,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Iterator, Protocol
+from typing import Callable, Iterable, Iterator, Protocol
 
+from .baseline import Baseline, budget_kind, median_over_budget
 from .models import CommitResult, FailureSignature
 from .signature import failures_of_result, group_signatures
 from .state import BUILD_CASE, VerdictCache
@@ -56,6 +58,9 @@ class RunResult:
     judge_model: str | None = None
     reason: str = ""
     failures: list[dict] = field(default_factory=list)  # failing checks of this run (signature.failure_records)
+    tokens: int | None = None  # the budget metrics of the run (feed the median rule for budget signatures)
+    steps: int | None = None
+    max_steps: int | None = None
 
 
 @dataclass
@@ -80,6 +85,8 @@ def parse_report(report: dict) -> list[RunResult]:
     if report.get("schema_version") != 1:
         raise EvalInfraError("crash", f"unsupported schema_version {report.get('schema_version')!r}")
     return [RunResult(case_id=r["case_id"], status=r["status"], trace_id=r.get("trace_id"),
+                      tokens=r.get("tokens"), steps=r.get("steps") or (r.get("budget") or {}).get("steps"),
+                      max_steps=(r.get("budget") or {}).get("max_steps"),
                       agent_model=r.get("agent_model") or report.get("agent_model"),
                       judge_model=r.get("judge_model") or report.get("judge_model"),
                       reason=r.get("reason") or "",
@@ -119,6 +126,7 @@ class SubprocessExecutor:
 class RunnerConfig:
     cases: list[str]
     repeats: int = 1  # R, initial repeats per case; more only when a result is borderline or judge-graded
+    budget_repeats: int = 3  # repeats per budget-relevant case; the verdict is the MEDIAN (see baseline.py)
     judge_cases: tuple[str, ...] = ()  # cases graded by an LLM rubric (noisy): always get judge_repeats
     judge_repeats: int = 3
     max_repeats: int = 12  # cap for escalation
@@ -144,9 +152,9 @@ class RunnerConfig:
 
 def config_from_env(cases: list[str], **kw) -> RunnerConfig:
     """RunnerConfig with operator overrides from the environment (budget control for live runs):
-    AGENTBISECT_REPEATS, _MAX_REPEATS, _WORKERS, _ENV_FILE, _BASELINE."""
+    AGENTBISECT_REPEATS, _BUDGET_REPEATS, _MAX_REPEATS, _WORKERS, _ENV_FILE, _BASELINE."""
     env = os.environ
-    for key, name, conv in (("repeats", "AGENTBISECT_REPEATS", int), ("max_repeats", "AGENTBISECT_MAX_REPEATS", int), ("judge_repeats", "AGENTBISECT_JUDGE_REPEATS", int),
+    for key, name, conv in (("repeats", "AGENTBISECT_REPEATS", int), ("budget_repeats", "AGENTBISECT_BUDGET_REPEATS", int), ("max_repeats", "AGENTBISECT_MAX_REPEATS", int), ("judge_repeats", "AGENTBISECT_JUDGE_REPEATS", int),
                             ("workers", "AGENTBISECT_WORKERS", int), ("env_file", "AGENTBISECT_ENV_FILE", str),
                             ("baseline", "AGENTBISECT_BASELINE", str)):
         if env.get(name) and key not in kw:
@@ -197,6 +205,7 @@ class Runner:
         self.executor = executor or SubprocessExecutor()
         self.sleep = sleep
         self.classify = cfg.classify or default_classify(cfg)
+        self.baseline: Baseline | None = None  # token baseline; set by make_runner (budget rule needs its medians)
         self.eval_rounds = 0  # individual eval runs executed (not cache hits): the smart-vs-plain metric
         self._lock = threading.Lock()
 
@@ -277,16 +286,22 @@ class Runner:
 
     # -- one commit --
 
-    def evaluate_commit(self, sha: str, run_id: str, cases: list[str] | None = None) -> CommitResult:
+    def evaluate_commit(self, sha: str, run_id: str, cases: list[str] | None = None,
+                        budget_cases: Iterable[str] = ()) -> CommitResult:
         """K cases x R repeats at `sha` in one worktree, `workers` cases in parallel. While the verdict is inside
         the confidence band, cases that disagree with themselves (or fail, at one repeat) get doubled repeats up to
         max_repeats; judge-graded cases always run `judge_repeats`; if it is
         still uncertain the verdict is 'flaky'. Build/worktree failure => 'skip' (cached). Finished cases are
-        cached immediately, so a crash mid-step loses at most the in-flight cases."""
+        cached immediately, so a crash mid-step loses at most the in-flight cases.
+
+        Budget cases (every case when the signature is a budget one, else `budget_cases`) run `budget_repeats`
+        times and are judged by the median rule (baseline.py); behavioural cases stay at `repeats`."""
         sig = self.signature
+        bkind = budget_kind(sig.key) if sig else None
         cases = list(cases or (sig.cases if sig and sig.cases else None) or self.cfg.cases)
         models = self.cfg.models
         cached_skip = self.cache.get(sha, BUILD_CASE, models)
+        bcases = set(cases) if bkind else set(budget_cases)
         if cached_skip:
             return CommitResult("skip", reason=cached_skip["skip"], from_cache=True)
 
@@ -320,15 +335,15 @@ class Runner:
                     continue
                 recs = r.failures or ([{"key": "case_fail", "check": "case_fail", "reason": r.reason}]
                                       if r.status == "fail" else [])  # a failing run always has a cause key
-                self.cache.add_run(sha, case, models, k, r.status, r.trace_id, {x["key"]: x for x in recs})
+                self.cache.add_run(sha, case, models, k, r.status, r.trace_id, {x["key"]: x for x in recs},
+                                   tokens=r.tokens, steps=r.steps, max_steps=r.max_steps)
                 k += 1
 
         try:
             with step_span("evaluate_commit", sha=sha, run_id=run_id):
                 active, target = cases, self.cfg.repeats
                 while True:
-                    todo = [(c, need(c, max(target, self.cfg.judge_repeats) if c in self.cfg.judge_cases else target))
-                            for c in active]
+                    todo = [(c, need(c, self._want(c, target, bcases))) for c in active]
                     todo = [t for t in todo if t[1] > 0]
                     if todo and wt_ctx is None:
                         wt_ctx = worktree(self.repo, sha, self.cfg.worktree_root)
@@ -362,7 +377,9 @@ class Runner:
                     # is no disagreement to see yet, so re-run every failing case
                     flaky = [c for c, t in stats.items() if t["passes"] and t["fails"]]
                     again = flaky or ([c for c, t in stats.items() if t["fails"]] if target <= 1 else [])
-                    if band != "uncertain" or not again or target >= self.cfg.max_repeats:
+                    again = [c for c in again if c not in bcases]  # budget cases are fixed at budget_repeats
+                    # a budget verdict is the median over a fixed number of repeats: nothing to escalate
+                    if bkind or band != "uncertain" or not again or target >= self.cfg.max_repeats:
                         break
                     target, active = min(self.cfg.max_repeats, target * 2), again
         finally:
@@ -372,12 +389,23 @@ class Runner:
         traces = [t for c in stats for t in (have(c).get("trace_ids") or [])]
         verdict = {"good": "good", "bad": "bad"}.get(band, "flaky")
         return CommitResult(
-            verdict, pass_rate=rate, trace_ids=traces, executed=passes + fails, repeats=target,
+            verdict, pass_rate=rate, trace_ids=traces, executed=passes + fails,
+            repeats=self.cfg.budget_repeats if bkind else target,
             flaky_cases=flaky, failing_cases=[c for c, t in stats.items() if t["fails"] and not t["passes"]],
             case_stats=stats, from_cache=not ran,
+            budget=self._budget_summary(sha, list(stats), bkind) if bkind else {},
             failure_signatures=self._signatures(sha, cases),
             reason=(f"pass_rate {rate:.2f} inside band ({self.cfg.bad_max}, {self.cfg.good_min}) after "
                     f"{target} repeats" if verdict == "flaky" else ""))
+
+    def _want(self, case: str, target: int, budget_cases: set[str]) -> int:
+        """Repeats wanted for a case: the current target, raised to judge_repeats / budget_repeats where they apply."""
+        want = target
+        if case in self.cfg.judge_cases:
+            want = max(want, self.cfg.judge_repeats)
+        if case in budget_cases:
+            want = max(want, self.cfg.budget_repeats)
+        return want
 
     def _tally(self, sha: str, cases: list[str], errors: dict[str, int]) -> dict[str, dict[str, int]]:
         """Per case passes/fails/errors. With a signature a run only counts as failed when that check failed in
@@ -393,8 +421,50 @@ class Runner:
                 key = self.signature.key  # a bare `budget:tokens` also covers the per-category `budget:tokens@cat`
                 cf = e.get("check_fails") or {}
                 fails = min(runs, sum(n for k, n in cf.items() if k == key or k.startswith(key + "@")))
+                kind = budget_kind(key)
+                if kind and (over := self._over_budget(kind, c, e)) is not None:
+                    fails = runs if over else 0  # median rule: the case as a whole is over or within budget
             out[c] = {"passes": runs - fails, "fails": fails, "errors": errors.get(c, 0)}
         return out
+
+    # -- budget median rule (see baseline.py) --
+
+    def _budget_values(self, kind: str, entry: dict) -> list[float]:
+        return [d[kind] for d in entry.get("detail") or [] if d.get("status") in ("pass", "fail")
+                and d.get(kind) is not None]
+
+    def _limit(self, kind: str, case: str, entry: dict) -> float | None:
+        lim = self.baseline.limit(kind, case) if self.baseline else None
+        if lim is None and kind == "steps":  # steps are a fixed cap, also reported by the run itself
+            lim = next((d["max_steps"] for d in entry.get("detail") or [] if d.get("max_steps")), None)
+        return lim
+
+    def _over_budget(self, kind: str, case: str, entry: dict) -> bool | None:
+        """Is the case over budget by the median rule? None = cannot say (no values or no limit): callers then
+        keep the harness's own per-run flags."""
+        return median_over_budget(self._budget_values(kind, entry), self._limit(kind, case, entry))
+
+    def _budget_summary(self, sha: str, cases: list[str], kind: str) -> dict:
+        """Per-case median metric vs limit at `sha`, aggregated: `median` is the median over cases of the per-case
+        medians, `ratio` the median of median/baseline (tokens), `within`/`total` the cases inside the limit."""
+        rows: dict[str, dict] = {}
+        for c in cases:
+            e = self.cache.get(sha, c, self.cfg.models) or {}
+            vals = self._budget_values(kind, e)
+            if not vals:
+                continue
+            lim, med = self._limit(kind, c, e), statistics.median(vals)
+            base = self.baseline.median_tokens(c) if self.baseline and kind == "tokens" else None
+            rows[c] = {"median": med, "limit": lim, "baseline_median": base, "runs": len(vals),
+                       "over": None if lim is None else med > lim}
+        ratios = [r["median"] / r["baseline_median"] for r in rows.values() if r["baseline_median"]]
+        decided = [r for r in rows.values() if r["over"] is not None]
+        return {"kind": kind, "repeats": max((r["runs"] for r in rows.values()), default=0), "cases": rows,
+                "median": statistics.median(r["median"] for r in rows.values()) if rows else None,
+                "baseline_median": statistics.median(r["baseline_median"] for r in rows.values()
+                                                     if r["baseline_median"]) if ratios else None,
+                "ratio": round(statistics.median(ratios), 3) if ratios else None,
+                "within": sum(not r["over"] for r in decided), "total": len(decided)}
 
     def signatures_at(self, sha: str, cases: list[str]) -> list[dict]:
         return self._signatures(sha, cases)
@@ -410,6 +480,10 @@ class Runner:
                 continue
             runs[c] = e.get("passes", 0) + e.get("fails", 0)
             fails[c] = dict(e.get("check_fails") or {})
+            for k in fails[c]:  # a budget key only counts where the MEDIAN of the repeats is over the limit
+                kind = budget_kind(k)
+                if kind and (over := self._over_budget(kind, c, e)) is not None:
+                    fails[c][k] = runs[c] if over else 0
             for k, rec in (e.get("check_info") or {}).items():
                 infos.setdefault(k, rec)
         return group_signatures(infos, runs, fails)

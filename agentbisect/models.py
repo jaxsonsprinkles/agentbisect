@@ -98,6 +98,8 @@ class CommitResult:
     failing_cases: list[str] = field(default_factory=list)
     case_stats: dict[str, dict[str, int]] = field(default_factory=dict)  # case -> passes/fails/errors
     failure_signatures: list[dict[str, Any]] = field(default_factory=list)  # every failing check seen, grouped
+    # budget-signature evaluations only: per-case median metric vs limit (see Runner._budget_summary)
+    budget: dict[str, Any] = field(default_factory=dict)
     from_cache: bool = False
 
     def to_dict(self) -> dict[str, Any]:

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
+from .baseline import Baseline
 from .models import BisectState, CommitResult, CulpritReport, FailureSignature, Plan
 from .runner import Runner, RunnerConfig, config_from_env
 from .signature import pick_primary, signatures_of
@@ -125,8 +126,11 @@ def make_runner(store: StateStore, st: BisectState) -> Runner:
     if not st.spec or not st.spec.cases:
         raise BisectError("investigation has no eval cases (run intake first)")
     judged = tuple((st.spec.predicate or {}).get("rubric") or ())  # cases with a judge rubric
-    return Runner(st.repo, config_from_env(list(st.spec.cases), judge_cases=judged), store.cache(st.repo),
-                  signature=st.spec.signature)
+    cfg = config_from_env(list(st.spec.cases), judge_cases=judged)
+    runner = Runner(st.repo, cfg, store.cache(st.repo), signature=st.spec.signature)
+    if cfg.baseline:
+        runner.baseline = Baseline.load(cfg.baseline)
+    return runner
 
 
 def _account(st: BisectState, delta: int) -> None:
@@ -151,14 +155,15 @@ def _discover_signature(store: StateStore, st: BisectState, runner: Runner, bad:
     sigs = signatures_of(res)
     # A check that failed in a single run is as likely sampling noise as a regression (one flaky run can fail
     # several checks at once): run those cases once more and keep only what reproduces.
-    weak = [s for s in sigs if s.fails < 2]
+    weak = [s for s in sigs if s.fails < 2 or s.check == "budget"]  # budget: confirmed by the median of repeats
     if weak:
         redo = sorted({c for s in weak for c in s.cases})
         saved, runner.cfg.repeats = runner.cfg.repeats, max(runner.cfg.repeats, 2)
+        budget_cases = {c for s in weak if s.check == "budget" for c in s.cases}  # run at budget_repeats
         before = runner.eval_rounds
         try:
             with step_span("signature_confirm", sha=bad, step=step):
-                res = runner.evaluate_commit(bad, f"{st.id}-s{step}c", redo)
+                res = runner.evaluate_commit(bad, f"{st.id}-s{step}c", redo, budget_cases=budget_cases)
         finally:
             runner.cfg.repeats = saved
         _account(st, runner.eval_rounds - before)
