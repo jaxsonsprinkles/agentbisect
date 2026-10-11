@@ -1,0 +1,21 @@
+{
+  "tool_use_id": "toolu_01EQ1GNe4394goh2rkh7T4Zi",
+  "agent_id": "acf8ae61d6c1f359f",
+  "subagent_type": "general-purpose",
+  "task_description": "Review U5 correctness",
+  "files": [
+    "agentbisect/cli.py",
+    "agentbisect/report.py",
+    "agentbisect/summary.py",
+    "tests/test_summary.py"
+  ],
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 46536,
+    "cache_read_tokens": 119612,
+    "output_tokens": 1570,
+    "api_call_count": 4
+  },
+  "started_at": "2026-10-11T06:45:45.357006-05:00",
+  "completed_at": "2026-10-11T06:45:45.358681-05:00"
+}

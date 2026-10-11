@@ -1,0 +1,34 @@
+<task-notification>
+<task-id>ac1dfe9bc9e55bf08</task-id>
+<tool-use-id>toolu_019Qwdc6iATrWTn9jbXeduhR</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ac1dfe9bc9e55bf08.output</output-file>
+<status>failed</status>
+<summary>Agent "Median budget checks, baseline, labels" failed: Agent terminated early due to an API error: You've hit your session limit · resets 12:10am (America/Chicago) (error type rate_limit, HTTP 429, request id req_011Cfug8pM8xaFgzLgTyRpHH, model sent to the API: claude-sonnet-5-5)</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>BSD sed; use python.</result>
+</task-notification>
+
+---
+
+Continue - usage limits got hit. Just reset. Also add this logo on the github somewhere: [Image: agent-2.png; ref=image_decf1da3-e6d6-437e-b92f-38dfc4c40b36]
+
+<t3_context version="1">
+<context kind="image" id="image_decf1da3-e6d6-437e-b92f-38dfc4c40b36">
+name: agent-2.png
+mimeType: image/png
+sizeBytes: 178450
+attachmentId: b4485d4e-7680-4b4c-9d6c-49b269b634a6-7cb17382-d102-48ce-a7ea-2642ff13661c
+</context>
+</t3_context>
+
+[Attached image "agent-2.png" is saved at: /Users/jaxson/.t3/userdata/attachments/b4485d4e-7680-4b4c-9d6c-49b269b634a6-7cb17382-d102-48ce-a7ea-2642ff13661c.png]
+
+---
+
+<task-notification>
+<task-id>bde0pg3xd</task-id>
+<tool-use-id>toolu_01MwsV9k1TK6DHdYZMB9cdLX</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/bde0pg3xd.output</output-file>
+<status>completed</status>
+<summary>Background command "git status --short &amp;&amp; git log --oneline | head -3 &amp;&amp; uv run pytest -q 2&gt;&amp;1 | tail -3; ls" completed (exit code 0)</summary>
+</task-notification>
