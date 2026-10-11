@@ -1,0 +1,21 @@
+{
+  "tool_use_id": "toolu_01MbmS6LAh5NGWRksc3c2Wp3",
+  "agent_id": "a80fc48f5563b8472",
+  "task_description": "Build Fixer + draft PR",
+  "files": [
+    "agentbisect/cli.py",
+    "agentbisect/culprit.py",
+    "agentbisect/fixer.py",
+    "agentbisect/models.py",
+    "tests/test_fixer.py"
+  ],
+  "token_usage": {
+    "input_tokens": 44,
+    "cache_creation_tokens": 96877,
+    "cache_read_tokens": 1638918,
+    "output_tokens": 23659,
+    "api_call_count": 22
+  },
+  "started_at": "2026-10-11T07:38:49.232475-05:00",
+  "completed_at": "2026-10-11T07:43:33.797646-05:00"
+}

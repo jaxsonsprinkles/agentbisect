@@ -1,0 +1,14 @@
+{
+  "tool_use_id": "toolu_01Gfk9ggrZAaL8rBNGyN3fua",
+  "agent_id": "a7b0ae252e074560c",
+  "task_description": "Calibrate and full live re-run",
+  "token_usage": {
+    "input_tokens": 78,
+    "cache_creation_tokens": 335710,
+    "cache_read_tokens": 2035172,
+    "output_tokens": 16737,
+    "api_call_count": 39
+  },
+  "started_at": "2026-10-11T06:49:31.01418-05:00",
+  "completed_at": "2026-10-11T07:38:46.493842-05:00"
+}

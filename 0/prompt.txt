@@ -1,0 +1,114 @@
+What can be done to parallelize some of this work? I want to finish as fast as possible. Surely not all of these tasks are being blocked by the one in front of it?
+
+---
+
+<task-notification>
+<task-id>a7b0ae252e074560c</task-id>
+<tool-use-id>toolu_01L1vnDwmagMuFVKNLTcxpKm</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a7b0ae252e074560c.output</output-file>
+<status>completed</status>
+<summary>Agent "Calibrate and full live re-run" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The full re-run finished and is pushed to the agentbisect repo as one commit, `190d229`. Four of six signatures match my private answer key and two are wrong.
+
+All three steps completed this session, so nothing needed redoing. I calibrated once at 1b40b27, ran the smart investigation against 0ecffc0 with `--all-signatures --all-categories`, then ran `compare` for each signature. DEMO_FLAKE=0 and the pinned models were used throughout.
+
+| signature | culprit | revert test (before -&gt; after) | plain vs smart rounds | vs key |
+|---|---|---|---|---|
+| `call_args:issue_refund.amount` | b0be626 (medium) | passed, 0% -&gt; 100% | 24 vs 18 | correct |
+| `must_not_call` | 0ecffc0 (high) | passed, 0% -&gt; 100% | 4 vs 3 | correct |
+| `budget:tokens@order_status` | 59c8b10 (low) | failed, median tokens 20,405 -&gt; 22,861 (good 8,866), within budget 0/4 -&gt; 0/4 | 84 vs 96 | incorrect (key says ec19917) |
+| `budget:tokens@refund_within_policy` | 59c8b10 (low) | failed, median tokens 39,306 -&gt; 35,195, within budget 0/3 -&gt; 0/3 | 54 vs 60 | correct, but the revert test failed |
+| `budget:tokens@refund_outside_policy` | 5cee99b (medium) | inconclusive | 21 vs 21 | incorrect (not a regression commit) |
+| `escalate_to_human.priority` (es2) | none, labelled known pre-existing failure, correctly refused | n/a | n/a | correct |
+
+- **Budget signatures:** these are the weak spot. Each token regression inflates every category, so a per-category budget signature gets blamed on whichever commit crosses the limit last. For the two ambiguous signatures (`refund_within_policy`, `refund_outside_policy`) I decided the key myself: 59c8b10 for both, with ec19917 also accepted. That judgement could be disputed. The `order_status` mapping to ec19917 is mine too.
+- **Smart vs plain:** smart won on the two behavioural signatures and tied on `refund_outside_policy`. It lost by 12 and 6 rounds on the two budget signatures with many rounds. Planner context was 20–24k tokens with the graph versus 43–47k reading the raw range.
+- **Dropped signature:** one `reply_contains` failure (os3, 1 of 3 runs) did not reproduce and was dropped.
+- **Model calls and throttling:** calibrate made 136 calls (112 real, 24 cache hits). Investigate made 659 (564 real, 96 cache hits, 1 error, 2 invalid-output retries). Compare is mostly cache replays. It had reached 1,079 calls (88 real) by the third signature, and I lost the final counter because the stats file was written empty. There were 0 rate-limit events and 0 retries, so I never hit a 429.
+- **Cache reuse:** the shared `.agentbisect/llm_cache` also holds responses from earlier runs, which inflates the cache-hit counts above.
+- **Neatlogs:** span divergence was still unavailable (`TRACE_FINALIZATION_FAILED`), so the planner used graph impact and checkpoint intent only.
+- **Baseline gaps:** the baseline excludes es2 and the cancel_request and multi_step cases, because those cases don't exist at 1b40b27. The run produced no signatures for the cancel_request, multi_step, policy_question or escalation categories.
+- **Not done:** I skipped `compare` for es2, since a refused signature has nothing to bisect.
+
+The private answer key is at `/Users/jaxson/.agentbisect-private/answer_key.json` and is not in either repo.
+
+Files are in `/Users/jaxson/Downloads/codingprojects/agentbisect/evidence/`:
+- `rerun3-summary.md`
+- `baseline-1b40b27.json`
+- `rerun3-smart/` (logs, state, `summary.md`)
+- `rerun3-compare/`
+
+I also updated `BUILD_LOG.md`.</result>
+<usage><subagent_tokens>79514</subagent_tokens><tool_uses>6</tool_uses><duration_ms>574939</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a7b0ae252e074560c</task-id>
+<tool-use-id>toolu_01Gfk9ggrZAaL8rBNGyN3fua</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a7b0ae252e074560c.output</output-file>
+<status>completed</status>
+<summary>Agent "Calibrate and full live re-run" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The re-run is finished and pushed as one commit, `acca44c`. Four of the six signatures match the private answer key and two are wrong.
+
+Calibration ran once at 1b40b27 and was never repeated. The smart run and the per-signature plain-vs-smart comparison followed.
+
+| signature | culprit found | revert test | smart vs plain (rounds) | vs key |
+|---|---|---|---|---|
+| `call_args:issue_refund.amount` | b0be626 (confidence medium) | passed, 0% to 100% | 18 smart vs 24 plain | correct |
+| `must_not_call` (cancel_order) | 0ecffc0 (confidence high) | passed, 0% to 100% | 3 vs 4 | correct |
+| `budget:tokens@refund_within_policy` | 59c8b10 (confidence low) | failed, median tokens 39,306 to 35,195, within budget 0/3 to 0/3 | 60 vs 54 | correct |
+| `budget:tokens@order_status` | 59c8b10 (confidence low) | failed, median tokens 20,405 to 22,861 (good commit 8,866), within budget 0/4 to 0/4 | 96 vs 84 | wrong, key says ec19917 |
+| `budget:tokens@refund_outside_policy` | 5cee99b (confidence medium) | inconclusive | 21 vs 21 | wrong, 5cee99b is not a regression commit |
+| `call_args:escalate_to_human.priority` (es2) | none, labelled known pre-existing failure, correctly refused | not run | none | correct |
+
+- **Bad scores:** The `order_status` signature gets 59c8b10 because the two token regressions both inflate every category, so the medians still mix them. The `refund_outside_policy` signature is a single case (ro2) at 22,890 tokens against a limit of 22,702, so it is borderline noise.
+- **Smart vs plain:** Smart was faster on the two behavioural signatures but slower on both budget ones. Every pair found the same culprit. Planner context was about 21–24k tokens against 44–47k for the raw range.
+- **Rate limits and errors:** No rate-limit events and no retries. The proxy logged 1 error and 2 invalid-output retries during the investigation.
+- **Model calls:** The three runs made 1,991 proxy calls, of which 770 were real CLI calls. The rest were cache replays, so the compare round counts are replayed evaluations, not fresh samples. The proxy cache was shared with earlier runs, and the calibration run itself had 24 cache hits.
+- **Other problems:** Trace divergence was unavailable on every run (neatlogs `TRACE_FINALIZATION_FAILED`). The primary also logged an unconfirmed `reply_contains` signature on os3, which was dropped.
+- **Missing budget signatures:** The po/es/ca/ms budget signatures from run 2 did not appear this time.
+- **Key mapping for ro2:** The commits file has no case-to-regression mapping for ro. I assumed `refund_outside_policy` belongs to R2 (59c8b10). The score does not depend on this, since 5cee99b is wrong under any mapping.
+
+The private key is at `/Users/jaxson/.agentbisect-private/answer_key.json`. It is not in either repo, and I did not read `evidence/ground_truth.json`.
+
+Files are in `/Users/jaxson/Downloads/codingprojects/agentbisect`:
+- `evidence/rerun3-summary.md`
+- `evidence/baseline-1b40b27.json`
+- `evidence/rerun3-smart/`
+- `evidence/rerun3-compare/`</result>
+<usage><subagent_tokens>77754</subagent_tokens><tool_uses>34</tool_uses><duration_ms>2955568</duration_ms></usage>
+</task-notification>
+
+---
+
+Yes, do the tool count - but only small a minimal amount of agents because I do have a limit and I’m at 46% usage
+
+---
+
+Watch mode: cut it. It was already first in line, and the fixer matters far more.
+	•	Review gaps (U6 and earlier): only review pieces on the demo path.
+	•	Recovery hardening: just the single demo run above.
+	•	Dogfooding evidence: it's mostly done already. Your own runs are the before/after:
+	•	Saturday's first run named the wrong culprit; last night's named the right one after the failure-signature fix.
+	•	Smart vs plain bisect went from 84 vs 36 rounds to 21 vs 24.
+	•	Package those traces instead of doing new work.
+
+---
+
+<task-notification>
+<task-id>a80fc48f5563b8472</task-id>
+<tool-use-id>toolu_01MbmS6LAh5NGWRksc3c2Wp3</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a80fc48f5563b8472.output</output-file>
+<status>completed</status>
+<summary>Agent "Build Fixer + draft PR" finished</summary>
+<note>This agent stopped with background work of its own still running. It may resume on its own when that work completes or reports, and the same task-id notifies again if it does; the result below may be interim.</note>
+<result>I'll end my turn here and wait for the notifications.
+
+Fixer is implemented but not yet committed. I'm waiting on the three reviewers (correctness, simplification, test coverage) and the full test run. I'll apply their feedback and then commit.</result>
+<usage><subagent_tokens>103643</subagent_tokens><tool_uses>35</tool_uses><duration_ms>284801</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a80fc48f5563b8472</worktreePath><worktreeBranch>worktree-agent-a80fc48f5563b8472</worktreeBranch></worktree>
+</task-notification>
