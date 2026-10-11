@@ -111,6 +111,8 @@ def _parser() -> argparse.ArgumentParser:
     lp.add_argument("--cache", action="store_true", help="cache responses in .agentbisect/llm_cache")
     lp.add_argument("--cache-dir")
     lp.add_argument("--debug-dump", metavar="DIR", help="DEBUG: write every rendered prompt + output to DIR (use /tmp)")
+    js = sub.add_parser("judge-smoke", help="one Sonnet judge call through the proxy; prints the model recorded")
+    js.add_argument("--proxy-url", help="running llm-proxy (default: start a throwaway one on your claude login)")
     sub.add_parser("watch", help="poll neatlogs detections and auto-investigate (not implemented yet)")
     r = sub.add_parser("resume", help="resume an interrupted investigation")
     r.add_argument("id")
@@ -125,6 +127,15 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "llm-proxy":
         from .llm_proxy import run_forever
         return run_forever(a.port, a.concurrency, a.cache, a.cache_dir, debug_dump=a.debug_dump)
+    if a.cmd == "judge-smoke":
+        from .llm_proxy import judge_smoke
+        try:
+            r = judge_smoke(a.proxy_url)
+        except Exception as e:
+            print(f"judge-smoke failed: {type(e).__name__}: {e}", file=sys.stderr)
+            return 1
+        print(json.dumps(r, indent=2))
+        return 0 if r["match"] else 1
     if a.cmd == "investigate":
         with _llm_proxy(getattr(a, "llm_proxy", "off")):
             return _main(a, store)

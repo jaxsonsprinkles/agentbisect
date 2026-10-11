@@ -524,3 +524,31 @@ def run_forever(port: int, concurrency: int | None, cache: bool, cache_dir: str 
         px.stop()
         print(json.dumps(px.stats.snapshot()))
     return 0
+
+
+def judge_smoke(url: str | None = None, model: str | None = None, claude_bin: str = "claude") -> dict:
+    """One tiny judge-style call through the proxy against the pinned JUDGE_MODEL. Returns the model id the
+    response recorded and whether it equals the pin. Starts a throwaway in-process proxy when no URL is given."""
+    import urllib.request
+    model = model or os.environ.get("JUDGE_MODEL") or "claude-sonnet-5-5"
+    px = None
+    if not url:
+        px = LLMProxy(claude_bin=claude_bin)
+        px.serve(0)
+        url = px.url
+    try:
+        req = urllib.request.Request(
+            url.rstrip("/") + "/v1/messages",
+            json.dumps({"model": model, "max_tokens": 64, "temperature": 0, "system": "You are a strict grader.",
+                        "messages": [{"role": "user", "content": 'Reply with exactly: {"passed": true}'}]}).encode(),
+            {"content-type": "application/json", "x-api-key": DUMMY_API_KEY})
+        with urllib.request.urlopen(req, timeout=300) as r:
+            resp = json.loads(r.read())
+        recorded = resp.get("model")
+        text = "".join(b.get("text", "") for b in resp.get("content", []))
+        return {"pinned": model, "recorded": recorded, "match": recorded == model, "reply": text[:200],
+                "input_tokens": resp.get("usage", {}).get("input_tokens"),
+                "output_tokens": resp.get("usage", {}).get("output_tokens")}
+    finally:
+        if px:
+            px.stop()

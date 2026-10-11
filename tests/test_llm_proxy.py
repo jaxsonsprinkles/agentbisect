@@ -280,3 +280,16 @@ def test_slot_not_held_during_backoff_and_cap_enforced(px, monkeypatch):
     [t.start() for t in ts]
     [t.join() for t in ts]
     assert px.stats.snapshot()["max_concurrent"] <= px.concurrency
+
+
+def test_judge_smoke_records_pinned_model(px, monkeypatch, capsys):
+    from agentbisect import cli
+    from agentbisect.llm_proxy import judge_smoke
+    r = judge_smoke(px.url, "claude-sonnet-5-5")
+    assert r["match"] and r["recorded"] == "claude-sonnet-5-5" and r["input_tokens"] == 100
+    monkeypatch.setenv("JUDGE_MODEL", "claude-opus-5")
+    assert judge_smoke(px.url)["pinned"] == "claude-opus-5"
+    monkeypatch.delenv("JUDGE_MODEL")
+    assert cli.main(["judge-smoke", "--proxy-url", px.url]) == 0
+    assert '"match": true' in capsys.readouterr().out
+    assert cli.main(["judge-smoke", "--proxy-url", "http://127.0.0.1:1"]) == 1
