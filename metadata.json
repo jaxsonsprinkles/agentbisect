@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4NFZ7P7ZQ9K7H2SZKH89GPQ",
+  "strategy": "manual-commit",
+  "branch": "worktree-agent-a4e2cc61bb44b7fa4",
+  "checkpoints_count": 7,
+  "files_touched": [
+    "agentbisect/planner.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 210,
+    "cache_creation_tokens": 295396,
+    "cache_read_tokens": 5620556,
+    "output_tokens": 72998,
+    "api_call_count": 93
+  }
+}

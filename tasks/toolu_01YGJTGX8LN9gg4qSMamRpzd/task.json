@@ -1,0 +1,18 @@
+{
+  "tool_use_id": "toolu_01YGJTGX8LN9gg4qSMamRpzd",
+  "agent_id": "a5c2f30cd12b0d044",
+  "subagent_type": "general-purpose",
+  "task_description": "Review fixtures simplification",
+  "files": [
+    "agentbisect/planner.py"
+  ],
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 34973,
+    "cache_read_tokens": 77952,
+    "output_tokens": 1565,
+    "api_call_count": 3
+  },
+  "started_at": "2026-10-11T07:45:42.238751-05:00",
+  "completed_at": "2026-10-11T07:45:42.23916-05:00"
+}

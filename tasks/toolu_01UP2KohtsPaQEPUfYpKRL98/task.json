@@ -1,0 +1,18 @@
+{
+  "tool_use_id": "toolu_01UP2KohtsPaQEPUfYpKRL98",
+  "agent_id": "ac94c1be48c42a1a1",
+  "subagent_type": "general-purpose",
+  "task_description": "Review fixtures test coverage",
+  "files": [
+    "agentbisect/planner.py"
+  ],
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 34560,
+    "cache_read_tokens": 37776,
+    "output_tokens": 1330,
+    "api_call_count": 2
+  },
+  "started_at": "2026-10-11T07:45:44.450159-05:00",
+  "completed_at": "2026-10-11T07:45:44.450373-05:00"
+}

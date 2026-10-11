@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01AH1QfeXfARCPUP639q1KLy",
+  "agent_id": "a21b9e30c71ddc6a3",
+  "subagent_type": "general-purpose",
+  "task_description": "Review simplification",
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 40010,
+    "cache_read_tokens": 167012,
+    "output_tokens": 2889,
+    "api_call_count": 5
+  },
+  "started_at": "2026-10-11T07:44:45.789724-05:00",
+  "completed_at": "2026-10-11T07:45:09.608883-05:00"
+}
