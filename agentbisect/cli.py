@@ -439,6 +439,11 @@ def _fix(a: argparse.Namespace, store: StateStore) -> int:
         print("EXPECTATION CHANGED (human review required):")
         for line in format_changes(res.eval_expectation_changes):
             print(f"  {line}")
+    if res.held_out_expectation_changes:
+        from .verify import format_changes
+        print("HELD-OUT EXPECTATION CHANGED (human review required):")
+        for line in format_changes(res.held_out_expectation_changes):
+            print(f"  {line}")
     print(f"patch: {res.patch_path or '-'}  pr body: {res.pr_body_path or '-'}  pr: {res.pr_url or 'not opened'}")
     return 0 if res.passed else 1
 

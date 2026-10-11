@@ -526,3 +526,91 @@ def test_code_edit_plus_eval_edit_and_code_only_unaffected(st_cases, repo):
     code = run_fixer(st_cases, model=FakeModel(reply({"path": "marker.txt", "content": "fixed"})),
                      checker=FakeChecker(repo), judge=j)
     assert code.passed and code.eval_expectation_changes == [] and j.edit_calls == []
+
+
+# ---- held-out consistency edits (same check key and tool/arg contract as an accepted target edit)
+
+HELD_ROWS = [{"id": "r3", "category": "refund", "checks": {"call_args": {"amount": 64.0}}},
+             {"id": "r4", "category": "refund", "checks": {"reply_regex": "ok"}},
+             {"id": "h1", "category": "refund", "held_out": True, "checks": {"reply_regex": "ok"}},
+             {"id": "h2", "category": "refund", "held_out": True, "checks": {"call_args": {"amount": 36.0}}}]
+
+
+@pytest.fixture
+def st_held(repo, st):
+    from agentbisect.models import FailureSignature, RegressionSpec
+    (repo.path / "evals").mkdir()
+    (repo.path / "evals" / "cases.jsonl").write_text("\n".join(json.dumps(r) for r in HELD_ROWS) + "\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "cases")
+    st.bad_sha = git(repo, "rev-parse", "HEAD")
+    st.spec = RegressionSpec(cases=["r3", "r4"], held_out=["h1", "h2"], signature=FailureSignature(
+        key="call_args:issue_refund.amount", check="call_args", detail="issue_refund.amount", cases=["r3"]))
+    return st
+
+
+def two_edits(held_checks=None, held_case="h2", with_target=True):
+    edits = []
+    if with_target:
+        edits.append({"case": "r3", "checks": {"call_args": {"amount_cents": 6400}}, "reason": "integer cents"})
+    edits.append({"case": held_case, "reason": "same contract on the held-out row",
+                  "checks": held_checks if held_checks is not None else {"call_args": {"amount_cents": 3600}}})
+    return json.dumps({"explanation": "x", "files": [], "eval_edits": edits})
+
+
+def test_held_out_edit_accepted_with_target_edit_and_flagged_separately(st_held, repo, tmp_path):
+    j, m = _EJudge(True, True), FakeModel(two_edits())
+    res = run_fixer(st_held, model=m, checker=_Pass(), judge=j, out_dir=tmp_path)
+    assert res.passed and len(j.edit_calls) == 1 and "[held-out consistency edit]" in j.edit_calls[0][1]
+    assert [c["case"] for c in res.eval_expectation_changes] == ["r3"]
+    assert res.held_out_expectation_changes == [{"case": "h2", "key": "call_args", "old": {"amount": 36.0},
+                                                 "new": {"amount_cents": 3600},
+                                                 "reason": "same contract on the held-out row"}]
+    rows = {json.loads(x)["id"]: json.loads(x) for x in git(repo, "show", f"{res.branch}:evals/cases.jsonl").splitlines()}
+    assert rows["h2"]["checks"] == {"call_args": {"amount_cents": 3600}} and rows["h2"]["held_out"] is True
+    assert rows["h1"] == HELD_ROWS[2]
+    listed = m.prompts[0].split("Held-out eval cases")[1]  # ids + only the matching check key are shown
+    assert '"h2"' in listed and '"h1"' not in listed and "36.0" in listed
+    body = (tmp_path / "fix-inv1-pr.md").read_text()
+    assert "Human review required: HELD-OUT expectation changed" in body and "held-out case `h2`" in body
+    assert "Human review required: eval expectation changed" in body
+    assert st_held.metrics["fix"]["held_out_expectation_changes"][0]["case"] == "h2"
+    again = FixResult.from_dict(json.loads(json.dumps(res.to_dict())))
+    assert again.held_out_expectation_changes == res.held_out_expectation_changes
+
+
+def test_held_out_edit_without_target_edit_is_rejected(st_held, repo):
+    j, m = _EJudge(True, True), FakeModel(two_edits(with_target=False))
+    res = run_fixer(st_held, model=m, checker=_Pass(), judge=j, max_attempts=1)
+    assert not res.passed and res.verifier_input == {} and j.edit_calls == []
+    assert "held-out eval edit refused" in res.attempts[0].error and "without any target-case" in res.attempts[0].error
+    assert res.attempts[0].held_out_expectation_changes == []
+
+
+@pytest.mark.parametrize("held_case,checks", [
+    ("h1", {"reply_regex": "anything"}),                                # a different check key
+    ("h2", {"call_args": {"amount_cents": 3600}, "reply_regex": "x"}),  # extra key on the same row
+    ("h2", {"call_args": {"refund_amount": 36.0}}),                     # same key, different argument contract
+    ("h2", {"call_args": {"amount": 40.0}}),                            # value-only change: not the cents contract
+    ("r4", {"reply_regex": "zzz"}),                                     # non-held, non-target case
+])
+def test_other_held_out_edits_are_rejected(st_held, repo, held_case, checks):
+    j, m = _EJudge(True, True), FakeModel(two_edits(checks, held_case))
+    res = run_fixer(st_held, model=m, checker=_Pass(), judge=j, max_attempts=1)
+    assert not res.passed and res.attempts[0].commit == "" and j.edit_calls == []
+    assert "refused" in res.attempts[0].error
+    assert git(repo, "branch", "--list", "agentbisect/*") == ""
+
+
+def test_held_out_edit_needs_judge_confirmation(st_held, repo):
+    m = FakeModel(two_edits(), two_edits())
+    res = run_fixer(st_held, model=m, checker=_Pass(), judge=_EJudge(True, False), max_attempts=2)
+    assert not res.passed and "held-out consistency edit" in m.prompts[1] and "not accepted" in m.prompts[1]
+    assert not run_fixer(st_held, model=FakeModel(two_edits()), checker=_Pass(), judge=None, max_attempts=1).passed
+
+
+def test_held_out_rows_listed_only_with_target_rows_and_matching_check(st_held, repo):
+    prompt, _ = build_prompt(st_held.repo, st_held.culprit, st_held.bad_sha, [], [], ["h1", "h2"])
+    assert "Held-out eval cases" not in prompt
+    prompt, _ = build_prompt(st_held.repo, st_held.culprit, st_held.bad_sha, [], ["r3"], ["h1", "h2"])
+    assert "consistency check only" in prompt and '"h2"' in prompt and '"h1"' not in prompt

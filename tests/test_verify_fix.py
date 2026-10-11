@@ -524,3 +524,63 @@ def test_code_only_fix_has_no_expectation_changes(tmp_path, hist):
     res, _, _ = verify_edit(tmp_path, hist, lambda rows: None, EJudge(True))
     assert res.eval_expectation_changes == [] and res.passed is True
     assert "EXPECTATION CHANGED" not in "\n".join(describe_verification(res))
+
+
+# ---- held-out expectation changes: same contract as an accepted target edit, reported separately
+
+ROWS_H = [{"id": "a", "category": "x", "checks": {"call_args": {"amount": 64.0}}},
+          {"id": "b", "category": "x", "checks": {"reply_regex": "ok"}},
+          {"id": "h1", "category": "x", "held_out": True, "checks": {"call_args": {"amount": 36.0}}}]
+
+
+def verify_held(tmp_path, hist, mutate, judge):
+    saved = list(ROWS)
+    ROWS[:] = ROWS_H  # edited_fix reads the module-level ROWS
+    try:
+        return verify_edit(tmp_path, hist, mutate, judge)
+    finally:
+        ROWS[:] = saved
+
+
+def _cents_both(rows):
+    rows[0]["checks"]["call_args"] = {"amount_cents": 6400}
+    rows[2]["checks"]["call_args"] = {"amount_cents": 3600}
+
+
+def test_held_out_consistency_edit_is_reported_separately_and_judged(tmp_path, hist):
+    j = EJudge(True)
+    res, st, store = verify_held(tmp_path, hist, _cents_both, j)
+    assert [c["case"] for c in res.eval_expectation_changes] == ["a"]
+    assert res.held_out_expectation_changes == [{"case": "h1", "key": "call_args", "old": {"amount": 36.0},
+                                                 "new": {"amount_cents": 3600}}]
+    held = res.check("held_out")
+    assert held.passed is True and "passes with 1 held-out expectation change(s)" in held.detail
+    assert res.check("regression").passed is True and res.passed is True
+    assert "[held-out consistency edit]" in j.edit_calls[0]
+    text = "\n".join(describe_verification(res))
+    assert "HELD-OUT EXPECTATION CHANGED" in text
+    assert res.to_dict()["held_out_expectation_changes"][0]["case"] == "h1"
+    att = record_verification(store, st, VerifierInput(str(hist[0]), res.commit, "fix/1"), res)
+    assert att.held_out_expectation_changes == res.held_out_expectation_changes
+
+
+def test_held_out_edit_of_a_different_contract_fails_regression(tmp_path, hist):
+    def mutate(rows):
+        rows[0]["checks"]["call_args"] = {"amount_cents": 6400}
+        rows[2]["checks"]["call_args"] = {"amount": 99.0}  # same key, not the cents contract
+    res, _, _ = verify_held(tmp_path, hist, mutate, EJudge(True))
+    reg = res.check("regression")
+    assert reg.passed is False and "not the same check/tool/argument contract" in reg.detail and res.passed is False
+
+
+def test_held_out_edit_without_target_edit_fails_regression(tmp_path, hist):
+    def mutate(rows):
+        rows[2]["checks"]["call_args"] = {"amount_cents": 3600}
+    res, _, _ = verify_held(tmp_path, hist, mutate, EJudge(True))
+    assert res.check("regression").passed is False and res.passed is False
+    assert res.held_out_expectation_changes and not res.eval_expectation_changes
+
+
+def test_held_out_edit_denied_by_judge_is_not_a_pass(tmp_path, hist):
+    res, _, _ = verify_held(tmp_path, hist, _cents_both, EJudge(False))
+    assert res.check("intent").passed is False and res.passed is False

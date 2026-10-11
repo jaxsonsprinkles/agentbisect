@@ -89,6 +89,7 @@ def build_report(st: BisectState, repo: str | None = None, group: list[BisectSta
                "before": before, "after": attempt.eval_score, "baseline": baseline,
                "held_out": attempt.held_out_score, "intent_test": attempt.intent_test_passed,
                "passed": fix_passes(attempt, baseline), "eval_changes": list(attempt.eval_expectation_changes),
+               "held_out_eval_changes": list(attempt.held_out_expectation_changes),
                "trace_ids": list(attempt.trace_ids), "diff": attempt.diff,
                "checkpoint": checkpoint_id(repo, attempt.branch) if repo else None}
     traces: list[tuple[str, str]] = []
@@ -264,6 +265,13 @@ def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
             L += [f"- case `{c['case']}`, check `{c['key']}`: expected `{json.dumps(c['old'])}` -> "
                   f"`{json.dumps(c['new'])}`" + (f" - {c['reason']}" if c.get("reason") else "")
                   for c in fx["eval_changes"]] + [""]
+        if fx["held_out_eval_changes"]:
+            L += ["> **Human review required: HELD-OUT expectation changed.** The same contract change was also "
+                  "applied to held-out cases, which exist to catch overfitting. Confirm these only follow the "
+                  "deliberate contract change.", ""]
+            L += [f"- held-out case `{c['case']}`, check `{c['key']}`: expected `{json.dumps(c['old'])}` -> "
+                  f"`{json.dumps(c['new'])}`" + (f" - {c['reason']}" if c.get("reason") else "")
+                  for c in fx["held_out_eval_changes"]] + [""]
         if fx["checkpoint"]:
             L += [f"Fix checkpoint: `{fx['checkpoint']}`", ""]
         if fx["diff"]:
@@ -403,6 +411,11 @@ def render_html(r: dict[str, Any]) -> str:
                 f"<code>{e(json.dumps(c['old']))}</code> &rarr; <code>{e(json.dumps(c['new']))}</code>"
                 f"{' - ' + e(c['reason']) if c.get('reason') else ''}</li>" for c in fx["eval_changes"]) + "</ul>"
                   ) if fx["eval_changes"] else ""
+            ec += ("<p><strong>Human review required: HELD-OUT expectation changed.</strong></p><ul>" + "".join(
+                f"<li>held-out case <code>{e(c['case'])}</code>, check <code>{e(c['key'])}</code>: expected "
+                f"<code>{e(json.dumps(c['old']))}</code> &rarr; <code>{e(json.dumps(c['new']))}</code>"
+                f"{' - ' + e(c['reason']) if c.get('reason') else ''}</li>" for c in fx["held_out_eval_changes"])
+                   + "</ul>") if fx["held_out_eval_changes"] else ""
             ck = f"<p>Fix checkpoint: <code>{e(fx['checkpoint'])}</code></p>" if fx["checkpoint"] else ""
             d = f"<pre>{e(fx['diff'])}</pre>" if fx["diff"] else ""
             sec("Fix", f"<p>Branch <code>{e(fx['branch'])}</code> &middot; attempt {fx['attempt']} of "

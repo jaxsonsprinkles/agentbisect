@@ -285,6 +285,8 @@ class VerifyResult:
     eval_rounds: int = 0
     # eval expectations the fix changed vs the base commit: [{"case", "key", "old", "new"}]; non-empty => human review
     eval_expectation_changes: list[dict[str, Any]] = field(default_factory=list)
+    # the same kind of change on HELD-OUT cases (a consistency edit for the same contract); reported separately
+    held_out_expectation_changes: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def passed(self) -> bool | None:
@@ -300,6 +302,7 @@ class VerifyResult:
     def to_dict(self) -> dict[str, Any]:
         return {"commit": self.commit, "branch": self.branch, "passed": self.passed, "eval_rounds": self.eval_rounds,
                 "eval_expectation_changes": self.eval_expectation_changes,
+                "held_out_expectation_changes": self.held_out_expectation_changes,
                 "checks": [c.to_dict() for c in self.checks]}
 
 
@@ -562,7 +565,13 @@ def format_changes(changes: list[dict[str, Any]]) -> list[str]:
             + (f" (reason: {c['reason']})" if c.get("reason") else "") for c in changes]
 
 
-def check_eval_edits(st: BisectState, vin: VerifierInput, judge: Any, changes: list[dict[str, Any]]) -> CheckVerdict:
+def format_all_changes(changes: list[dict[str, Any]], held: list[dict[str, Any]]) -> list[str]:
+    """Judge/prompt lines: target changes, then held-out consistency edits marked as such."""
+    return [*format_changes(changes), *(f"[held-out consistency edit] {x}" for x in format_changes(held))]
+
+
+def check_eval_edits(st: BisectState, vin: VerifierInput, judge: Any, changes: list[dict[str, Any]],
+                     held: list[dict[str, Any]] = ()) -> CheckVerdict:
     """Does the eval-expectation change merely follow the culprit's deliberate contract change? Needs a judge that has
     `judge_eval_edit`; a missing judge or an outage is inconclusive (None)."""
     c = st.culprit
@@ -573,7 +582,7 @@ def check_eval_edits(st: BisectState, vin: VerifierInput, judge: Any, changes: l
         return CheckVerdict("eval_edits", None, "no judge available for eval expectation changes")
     try:
         culprit_diff = _git_out(vin.repo, "show", "-m", "--first-parent", "--format=", "--patch", c.sha, "--")
-        v = ask(c.checkpoint_intent, culprit_diff, "\n".join(format_changes(changes)))
+        v = ask(c.checkpoint_intent, culprit_diff, "\n".join(format_all_changes(changes, list(held))))
     except Exception as e:
         return CheckVerdict("eval_edits", None, f"eval-edit judge failed: {type(e).__name__}: {e}")
     return CheckVerdict("eval_edits", v.preserved, f"judge ({v.model or 'unknown model'}): {v.reason}",
@@ -592,13 +601,51 @@ def cases_at(repo: str, commit: str) -> list[dict]:
     return [r for r in rows if isinstance(r, dict) and r.get("id")]
 
 
-def eval_expectation_changes(repo: str, base: str, fix: str, target: Collection[str]) -> tuple[list[dict], list[str]]:
-    """Diff the eval cases file between `base` and `fix` -> (changes, violations). A change is one `checks` entry of a
-    TARGET case (a case of the target signature, not held-out) that differs. Anything else that differs (another case,
-    a held-out case, a non-`checks` field, an added/removed case) is a violation."""
+def _leaves(v: Any, path: tuple[str, ...] = ()) -> dict[tuple[str, ...], Any]:
+    if isinstance(v, dict):
+        out: dict[tuple[str, ...], Any] = {}
+        for k, x in v.items():
+            out.update(_leaves(x, (*path, str(k))))
+        return out
+    return {path: v}
+
+
+def contract_shape(change: dict[str, Any]) -> tuple | None:
+    """The contract an expectation change is about, independent of the concrete values: (check key, argument paths
+    removed, added, changed), where a path is the tool/argument names inside the check's object. None when the check
+    value is not an object (a plain string/number has no tool+arg contract)."""
+    old, new = change.get("old"), change.get("new")
+    if not isinstance(old, dict) or not isinstance(new, dict):
+        return None
+    a, b = _leaves(old), _leaves(new)
+    return (change["key"], tuple(sorted(".".join(p) for p in a.keys() - b.keys())),
+            tuple(sorted(".".join(p) for p in b.keys() - a.keys())),
+            tuple(sorted(".".join(p) for p in a.keys() & b.keys() if a[p] != b[p])))
+
+
+def held_out_violations(target: list[dict[str, Any]], held: list[dict[str, Any]]) -> list[str]:
+    """Held-out expectation changes are only allowed as a consistency edit: the same check key and tool/argument
+    contract as a change to a target case, and never on their own."""
+    if not held:
+        return []
+    if not target:
+        return ["held-out expectations changed without any target-case expectation change"]
+    shapes = {s for c in target if (s := contract_shape(c)) is not None}
+    return [f"held-out case {h['case']}: {h['key']} is not the same check/tool/argument contract as an edited target case"
+            for h in held if contract_shape(h) not in shapes]
+
+
+def eval_expectation_changes(repo: str, base: str, fix: str, target: Collection[str],
+                             held: Collection[str] = ()) -> tuple[list[dict], list[dict], list[str]]:
+    """Diff the eval cases file between `base` and `fix` -> (changes, held_out_changes, violations). A change is one
+    `checks` entry of a TARGET case (a case of the target signature, not held-out) that differs; a held-out change is
+    the same for a case in `held` and is only legitimate as the same contract as a target change. Anything else that
+    differs (another case, a non-`checks` field, an added/removed case, a held-out edit of another contract) is a
+    violation."""
     old = {r["id"]: r for r in cases_at(repo, base)}
     new = {r["id"]: r for r in cases_at(repo, fix)}
-    changes, bad = [], []
+    held_ids = set(held) | {c for c, r in {**old, **new}.items() if r.get("held_out")}
+    changes, held_changes, bad = [], [], []
     for cid in dict.fromkeys([*old, *new]):
         a, b = old.get(cid), new.get(cid)
         if a == b:
@@ -606,10 +653,11 @@ def eval_expectation_changes(repo: str, base: str, fix: str, target: Collection[
         if a is None or b is None:
             bad.append(f"case {cid} was {'added' if a is None else 'removed'}")
             continue
-        if cid not in target:
+        is_held = cid in held_ids
+        if not is_held and cid not in target:
             bad.append(f"case {cid} is not a case of the target signature")
             continue
-        if a.get("held_out") or b.get("held_out"):
+        if bool(a.get("held_out")) != bool(b.get("held_out")):
             bad.append(f"case {cid} is held-out")
             continue
         for k in dict.fromkeys([*a, *b]):
@@ -621,8 +669,8 @@ def eval_expectation_changes(repo: str, base: str, fix: str, target: Collection[
             continue
         for k in dict.fromkeys([*ca, *cb]):
             if ca.get(k) != cb.get(k):
-                changes.append({"case": cid, "key": k, "old": ca.get(k), "new": cb.get(k)})
-    return changes, bad
+                (held_changes if is_held else changes).append({"case": cid, "key": k, "old": ca.get(k), "new": cb.get(k)})
+    return changes, held_changes, [*bad, *held_out_violations(changes, held_changes)]
 
 
 def held_out_cases(st: BisectState, repo: str, fix: str) -> tuple[list[str], list[str]]:
@@ -679,16 +727,23 @@ def _replace(res: VerifyResult, c: CheckVerdict) -> None:
 
 def _guard_eval_edits(st: BisectState, res: VerifyResult, vin: VerifierInput, base: str, judge: Any) -> None:
     """Report the eval expectations the fix changed. Edits outside the target signature's cases fail the regression
-    check; edits to target cases additionally need the judge to confirm they only follow the culprit's contract change,
-    else the intent check is not a pass (False if denied, inconclusive if the judge could not say)."""
+    check, as do held-out edits that are not the same contract as an accepted target edit; edits to target (and
+    held-out) cases additionally need the judge to confirm they only follow the culprit's contract change, else the
+    intent check is not a pass (False if denied, inconclusive if the judge could not say). Held-out changes are
+    reported in their own list and named in the held-out check's detail."""
     sig = st.spec.signature if st.spec else None
-    changes, bad = eval_expectation_changes(vin.repo, base, vin.commit, sig.cases if sig else ())
-    res.eval_expectation_changes = changes
+    held_ids, _ = held_out_cases(st, vin.repo, base)
+    changes, held, bad = eval_expectation_changes(vin.repo, base, vin.commit, sig.cases if sig else (), held_ids)
+    res.eval_expectation_changes, res.held_out_expectation_changes = changes, held
     if bad and (reg := res.check("regression")):
         _replace(res, CheckVerdict("regression", False, "fix edits eval cases outside the target signature: "
                                    + "; ".join(bad) + f" ({reg.detail})", {**reg.data, "eval_violations": bad}))
-    if changes and (it := res.check("intent")):
-        ev = check_eval_edits(st, vin, judge, changes)
+    if held and (ho := res.check("held_out")):
+        verb = {True: "passes", False: "fails", None: "is inconclusive"}[ho.passed]
+        ho.detail += f"; {verb} with {len(held)} held-out expectation change(s)"
+        ho.data["held_out_expectation_changes"] = held
+    if (changes or held) and (it := res.check("intent")):
+        ev = check_eval_edits(st, vin, judge, changes, held)
         if it.passed is True and ev.passed is not True:
             _replace(res, CheckVerdict("intent", ev.passed, f"eval expectation change not confirmed: {ev.detail} "
                                        f"({it.detail})", {**it.data, "eval_edits": ev.to_dict()}))
@@ -716,6 +771,7 @@ def record_verification(store: StateStore, st: BisectState, vin: VerifierInput, 
     att.held_out_score = held.data.get("pass_rate") if held else None
     att.intent_test_passed = intent.passed if intent else None
     att.eval_expectation_changes = list(res.eval_expectation_changes)
+    att.held_out_expectation_changes = list(res.held_out_expectation_changes)
     st.metrics.setdefault("verify_fix", {})[res.commit] = res.to_dict()
     st.metrics["eval_rounds"] = st.metrics.get("eval_rounds", 0) + res.eval_rounds
     st.metrics["cost_usd"] = round(st.metrics["eval_rounds"] * COST_PER_RUN_USD, 4)
@@ -735,4 +791,7 @@ def describe_verification(res: VerifyResult) -> list[str]:
     if res.eval_expectation_changes:
         lines.append("  EXPECTATION CHANGED (human review required):")
         lines += [f"    {x}" for x in format_changes(res.eval_expectation_changes)]
+    if res.held_out_expectation_changes:
+        lines.append("  HELD-OUT EXPECTATION CHANGED (human review required):")
+        lines += [f"    {x}" for x in format_changes(res.held_out_expectation_changes)]
     return lines
