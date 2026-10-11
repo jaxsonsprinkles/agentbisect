@@ -53,6 +53,8 @@ def _add_intake_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--all-signatures", action=argparse.BooleanOptionalAction, default=None,
                    help="bisect every distinct failing check at the bad end separately (one culprit per failure "
                         "signature). Default: on when several are found")
+    p.add_argument("--only-budget", action="store_true",
+                   help="bisect only the budget signatures (token/step budgets); behavioural ones are not investigated")
     p.add_argument("--all-categories", action="store_true",
                    help="build the suite from every category's non-held-out cases instead of the bad trace's "
                         "category only, so regressions in other features surface as their own signatures")
@@ -213,6 +215,8 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
         store.save(st)
         meta = {"fixtures": a.fixtures, "project": a.project}
         st.metrics["strategy"] = a.strategy
+        if a.only_budget:
+            st.metrics["only_budget"] = True
         st.metrics["source"] = meta
         store.save(st)
         if a.intake_only:
@@ -276,7 +280,9 @@ def _calibrate(a: argparse.Namespace, store: StateStore) -> int:
     print(f"calibrated {len(data['cases'])} cases at {good[:10]} ({data['repeats']} repeats, "
           f"agent {data['agent_model']}) -> {out}")
     for c, v in data["cases"].items():
-        print(f"  {c}: median {v['median_tokens']:.0f} tokens, {v['median_steps']} steps (n={v['n']})")
+        tools = ", ".join(f"{t} {n:g}" for t, n in (v.get("tool_counts") or {}).items())
+        print(f"  {c}: median {v['median_tokens']:.0f} tokens, {v['median_steps']} steps (n={v['n']})"
+              + (f"; tool calls: {tools}" if tools else ""))
     for w in data.get("warnings", []):
         print(f"  WARNING: {w}")
     for c, why in data["excluded_cases"].items():

@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "commit": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+  "good_sha": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+  "agent_model": "claude-haiku-5-5",
+  "judge_model": "claude-sonnet-5-5",
+  "repeats": 3,
+  "provider": "anthropic",
+  "created_at": "2026-10-11T12:47:03+00:00",
+  "date": "2026-10-11",
+  "token_factor": 1.5,
+  "max_steps": 6,
+  "cases": {
+    "es1": {
+      "median_tokens": 10809.0,
+      "median_steps": 2.0,
+      "n": 2,
+      "tool_counts": {
+        "escalate_to_human": 1.0
+      }
+    },
+    "es3": {
+      "median_tokens": 18634.5,
+      "median_steps": 3.0,
+      "n": 2,
+      "tool_counts": {
+        "escalate_to_human": 1.0,
+        "lookup_order": 1.0,
+        "search_help": 1.0
+      }
+    },
+    "os1": {
+      "median_tokens": 8848,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "lookup_order": 1
+      }
+    },
+    "os2": {
+      "median_tokens": 8878,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "lookup_order": 1
+      }
+    },
+    "os3": {
+      "median_tokens": 8196.0,
+      "median_steps": 2.0,
+      "n": 2,
+      "tool_counts": {
+        "lookup_order": 1.0
+      }
+    },
+    "os4": {
+      "median_tokens": 11900,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "lookup_order": 1
+      }
+    },
+    "os5": {
+      "median_tokens": 8918,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "lookup_order": 1
+      }
+    },
+    "po1": {
+      "median_tokens": 8916,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "search_help": 1
+      }
+    },
+    "po2": {
+      "median_tokens": 8811,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "search_help": 1
+      }
+    },
+    "po3": {
+      "median_tokens": 8874,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "search_help": 1
+      }
+    },
+    "po4": {
+      "median_tokens": 8769,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "search_help": 1
+      }
+    },
+    "ro1": {
+      "median_tokens": 14783,
+      "median_steps": 3,
+      "n": 3,
+      "tool_counts": {
+        "lookup_order": 1,
+        "search_help": 1
+      }
+    },
+    "ro2": {
+      "median_tokens": 15135,
+      "median_steps": 3,
+      "n": 3,
+      "tool_counts": {
+        "lookup_order": 1,
+        "search_help": 1
+      }
+    },
+    "ro3": {
+      "median_tokens": 8850,
+      "median_steps": 2,
+      "n": 3,
+      "tool_counts": {
+        "lookup_order": 1
+      }
+    },
+    "rw1": {
+      "median_tokens": 17594,
+      "median_steps": 3,
+      "n": 3,
+      "tool_counts": {
+        "issue_refund": 1,
+        "lookup_order": 1
+      }
+    },
+    "rw2": {
+      "median_tokens": 14597,
+      "median_steps": 3,
+      "n": 3,
+      "tool_counts": {
+        "issue_refund": 1,
+        "lookup_order": 1
+      }
+    },
+    "rw3": {
+      "median_tokens": 14512,
+      "median_steps": 3,
+      "n": 3,
+      "tool_counts": {
+        "issue_refund": 1,
+        "lookup_order": 1
+      }
+    },
+    "rw4": {
+      "median_tokens": 14664,
+      "median_steps": 3,
+      "n": 3,
+      "tool_counts": {
+        "issue_refund": 1,
+        "lookup_order": 1
+      }
+    }
+  },
+  "baseline_version": 2,
+  "excluded_cases": {
+    "ca1": "skipped by the target: requires tool 'cancel_order' which this commit does not have",
+    "ca2": "skipped by the target: requires tool 'cancel_order' which this commit does not have",
+    "ca3": "skipped by the target: requires tool 'cancel_order' which this commit does not have",
+    "ms1": "skipped by the target: requires tool 'cancel_order' which this commit does not have",
+    "ms2": "skipped by the target: requires tool 'cancel_order' which this commit does not have",
+    "es2": "no run passed its deterministic checks (or reported tokens)"
+  }
+}

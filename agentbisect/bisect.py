@@ -184,6 +184,15 @@ def _discover_signature(store: StateStore, st: BisectState, runner: Runner, bad:
                             key=lambda x: (-x.fails, x.key))
         sigs = [x for x in everything if x.fails >= 2]
         st.metrics["signatures_unconfirmed"] = [x.to_dict() for x in everything if x not in sigs]
+    if runner.baseline is not None and any(s.check == "budget" for s in sigs):
+        if runner.baseline.has_tool_counts:  # tokens are inflated by every regression: blame the tool calls that rose
+            sigs = runner.refine_budget_signatures(bad, sigs)
+        else:
+            st.metrics.setdefault("warnings", []).append(
+                "baseline has no tool call counts (version 1): token budgets cannot be attributed to a tool; "
+                "re-run `agentbisect calibrate` to get a version 2 baseline")
+    if st.metrics.get("only_budget"):
+        sigs = [s for s in sigs if s.check == "budget"]
     st.metrics["signatures_discovered"] = True
     st.metrics["signatures"] = [s.to_dict() for s in sigs]
     st.spec.signature = runner.signature = pick_primary(sigs, st.spec.bad_case)

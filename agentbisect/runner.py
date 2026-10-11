@@ -22,7 +22,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable, Iterator, Protocol
 
-from .baseline import Baseline, BaselineError, budget_kind, median_over_budget, need_baseline_message
+from .baseline import (TOOL_EXCESS, TOOL_SHARE, Baseline, BaselineError, budget_kind, median_over_budget,
+                       need_baseline_message, need_tool_counts_message, tool_of)
 from .models import CommitResult, FailureSignature
 from .signature import failures_of_result, group_signatures
 from .state import BUILD_CASE, VerdictCache
@@ -61,6 +62,7 @@ class RunResult:
     tokens: int | None = None  # the budget metrics of the run (feed the median rule for budget signatures)
     steps: int | None = None
     max_steps: int | None = None
+    tool_counts: dict[str, int] | None = None  # calls per tool in this run (None = the report had no tool_calls)
 
 
 @dataclass
@@ -89,9 +91,20 @@ def parse_report(report: dict) -> list[RunResult]:
                       max_steps=(r.get("budget") or {}).get("max_steps"),
                       agent_model=r.get("agent_model") or report.get("agent_model"),
                       judge_model=r.get("judge_model") or report.get("judge_model"),
-                      reason=r.get("reason") or "",
+                      reason=r.get("reason") or "", tool_counts=_tool_counts(r),
                       failures=failures_of_result(r) if r.get("status") == "fail" else [])
             for r in report.get("results", [])]
+
+
+def _tool_counts(r: dict) -> dict[str, int] | None:
+    calls = r.get("tool_calls")
+    if not isinstance(calls, list):
+        return None
+    out: dict[str, int] = {}
+    for c in calls:
+        if isinstance(c, dict) and c.get("name"):
+            out[str(c["name"])] = out.get(str(c["name"]), 0) + 1
+    return out
 
 
 def _json_tail(out: str) -> str:
@@ -337,7 +350,8 @@ class Runner:
                 recs = r.failures or ([{"key": "case_fail", "check": "case_fail", "reason": r.reason}]
                                       if r.status == "fail" else [])  # a failing run always has a cause key
                 self.cache.add_run(sha, case, models, k, r.status, r.trace_id, {x["key"]: x for x in recs},
-                                   tokens=r.tokens, steps=r.steps, max_steps=r.max_steps)
+                                   tokens=r.tokens, steps=r.steps, max_steps=r.max_steps,
+                                   tool_counts=r.tool_counts)
                 k += 1
 
         try:
@@ -394,7 +408,8 @@ class Runner:
             repeats=self.cfg.budget_repeats if bkind else target,
             flaky_cases=flaky, failing_cases=[c for c, t in stats.items() if t["fails"] and not t["passes"]],
             case_stats=stats, from_cache=not ran,
-            budget=self._budget_summary(sha, list(stats), bkind) if bkind else {},
+            budget=(self._tool_summary(sha, list(stats), tool_of(sig.key)) if tool_of(sig.key)
+                    else self._budget_summary(sha, list(stats), bkind)) if bkind else {},
             failure_signatures=self._signatures(sha, cases),
             reason=(f"pass_rate {rate:.2f} inside band ({self.cfg.bad_max}, {self.cfg.good_min}) after "
                     f"{target} repeats" if verdict == "flaky" else ""))
@@ -403,6 +418,8 @@ class Runner:
         """Budget signatures are judged against the good commit's token medians: refuse to run without them."""
         if self.signature and budget_kind(self.signature.key) and self.baseline is None:
             raise BaselineError(need_baseline_message(self.signature.key))
+        if self.signature and tool_of(self.signature.key) and not self.baseline.has_tool_counts:
+            raise BaselineError(need_tool_counts_message(self.signature.key))
 
     def _want(self, case: str, target: int, budget_cases: set[str]) -> int:
         """Repeats wanted for a case: the current target, raised to judge_repeats / budget_repeats where they apply."""
@@ -423,7 +440,10 @@ class Runner:
                 continue
             runs = e.get("passes", 0) + e.get("fails", 0)
             fails = e.get("fails", 0)
-            if self.signature:
+            tool = tool_of(self.signature.key) if self.signature else None
+            if tool:  # tool-refined budget signature: decided by call counts (median over repeats), not tokens
+                fails = runs if self._tool_over(c, tool, e) else 0
+            elif self.signature:
                 key = self.signature.key  # a bare `budget:tokens` also covers the per-category `budget:tokens@cat`
                 cf = e.get("check_fails") or {}
                 fails = min(runs, sum(n for k, n in cf.items() if k == key or k.startswith(key + "@")))
@@ -449,6 +469,66 @@ class Runner:
         """Is the case over budget by the median rule? None = cannot say (no values or no limit): callers then
         keep the harness's own per-run flags."""
         return median_over_budget(self._budget_values(kind, entry), self._limit(kind, case, entry))
+
+    # -- tool-count signal (see baseline.py) --
+
+    def _tool_values(self, tool: str, entry: dict) -> list[int]:
+        return [d["tool_counts"].get(tool, 0) for d in entry.get("detail") or []
+                if d.get("status") in ("pass", "fail") and d.get("tool_counts") is not None]
+
+    def _tool_over(self, case: str, tool: str, entry: dict) -> bool | None:
+        """Median calls of `tool` per run vs the baseline's median for the case; over by >= TOOL_EXCESS calls."""
+        vals = self._tool_values(tool, entry)
+        base = self.baseline.tool_median(case, tool) if self.baseline else None
+        return None if not vals or base is None else statistics.median(vals) - base >= TOOL_EXCESS
+
+    def _tool_summary(self, sha: str, cases: list[str], tool: str) -> dict:
+        """Like _budget_summary but for call counts of `tool` (kind '<tool> calls')."""
+        rows = {}
+        for c in cases:
+            e = self.cache.get(sha, c, self.cfg.models) or {}
+            vals = self._tool_values(tool, e)
+            if vals:
+                rows[c] = {"median": statistics.median(vals), "baseline_median": self.baseline.tool_median(c, tool),
+                           "runs": len(vals), "over": self._tool_over(c, tool, e)}
+        decided = [r for r in rows.values() if r["over"] is not None]
+        med = lambda k: statistics.median(r[k] for r in rows.values()) if rows else None  # noqa: E731
+        return {"kind": f"{tool} calls", "repeats": max((r["runs"] for r in rows.values()), default=0), "cases": rows,
+                "median": med("median"), "baseline_median": med("baseline_median"), "ratio": None,
+                "within": sum(not r["over"] for r in decided), "total": len(decided)}
+
+    def refine_budget_signatures(self, sha: str, sigs: list[FailureSignature]) -> list[FailureSignature]:
+        """Attribute each firing token budget (`budget:tokens@cat`) to the tool(s) whose median call count rose vs
+        the baseline: one `budget:tokens@cat+tool:<name>` signature per tool that is over in at least TOOL_SHARE of
+        the signature's cases, biggest rise first. A budget with no tool rising (e.g. a longer prompt) stays as is.
+        Needs a version 2 baseline; without tool counts the signatures are returned unchanged."""
+        if not self.baseline or not self.baseline.has_tool_counts:
+            return list(sigs)
+        out: list[FailureSignature] = []
+        for s in sigs:
+            if budget_kind(s.key) != "tokens" or tool_of(s.key):
+                out.append(s)
+                continue
+            entries = {c: self.cache.get(sha, c, self.cfg.models) or {} for c in s.cases}
+            tools = sorted({t for e in entries.values() for d in e.get("detail") or []
+                            for t in (d.get("tool_counts") or {})})
+            rises = []
+            for t in tools:
+                over = [c for c, e in entries.items() if self._tool_over(c, t, e)]
+                if over and len(over) >= TOOL_SHARE * len(entries):
+                    gain = statistics.mean(statistics.median(self._tool_values(t, entries[c])) - self.baseline.tool_median(c, t)
+                                           for c in over)
+                    rises.append((gain, t, over))
+            if not rises:
+                out.append(s)
+                continue
+            for gain, t, over in sorted(rises, key=lambda x: (-x[0], x[1])):
+                runs = sum(entries[c].get("runs", 0) for c in s.cases)
+                out.append(FailureSignature(
+                    key=f"{s.key}+tool:{t}", check="budget", detail=f"{s.detail}+tool:{t}", cases=list(s.cases),
+                    fails=sum(entries[c].get("runs", 0) for c in over), runs=runs,
+                    reason=f"{s.reason}; calls to {t} rose by {gain:g} per run vs baseline in {len(over)}/{len(entries)} cases"))
+        return out
 
     def _budget_summary(self, sha: str, cases: list[str], kind: str) -> dict:
         """Per-case median metric vs limit at `sha`, aggregated: `median` is the median over cases of the per-case

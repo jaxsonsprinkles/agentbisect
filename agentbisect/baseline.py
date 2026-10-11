@@ -9,6 +9,10 @@ BUDGET RULE (used by the runner, the bisect and the revert test):
     (AGENTBISECT_BUDGET_REPEATS, default 3) per commit; behavioural signatures stay at `repeats` (default 1);
   * per case, the commit's metric is the MEDIAN over those repeats; the case is over budget when that median
     exceeds the limit (tokens: `token_factor` x the case's baseline median; steps: `max_steps`);
+  * a TOOL-REFINED budget signature (`budget:tokens@<category>+tool:<name>`, made at intake when a token budget fires
+    and the baseline (version 2) shows which tool's calls rose) is decided by call counts, not tokens: per case the
+    MEDIAN over the repeats of the tool's calls per run vs the baseline's per-case median; the case is over when it
+    exceeds it by >= TOOL_EXCESS (1) call. Same budget_repeats runs, nothing extra, no noisy token totals;
   * a commit's pass rate for the signature is the fraction of its cases within budget (a case is weighted by its
     executed runs, i.e. equally unless a repeat errored), and the usual confidence band (good >= 0.85, bad <= 0.5) turns it into good / bad / flaky.
 """
@@ -17,11 +21,16 @@ from __future__ import annotations
 import json
 import re
 import statistics
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 DEFAULT_TOKEN_FACTOR = 1.5
+BASELINE_VERSION = 2  # 2 = per-case per-tool call counts (`tool_counts`) next to the token medians
+TOOL_EXCESS = 1  # a case is over for a tool when its median call count exceeds the baseline's by >= this many
+TOOL_SHARE = 0.5  # a tool-refined signature fires when at least this share of the signature's cases are over
+_TOOL_SUFFIX = re.compile(r"\+tool:([\w.\-]+)$")
 
 
 class BaselineError(RuntimeError):
@@ -31,6 +40,12 @@ class BaselineError(RuntimeError):
 def budget_kind(key: str | None) -> str | None:
     """`budget:tokens@order_status` -> 'tokens'; None for any non-budget signature key."""
     m = re.match(r"budget:(\w+)", key or "")
+    return m.group(1) if m else None
+
+
+def tool_of(key: str | None) -> str | None:
+    """`budget:tokens@order_status+tool:cancel_order` -> 'cancel_order'; None for any other key."""
+    m = _TOOL_SUFFIX.search(key or "")
     return m.group(1) if m else None
 
 
@@ -72,6 +87,16 @@ class Baseline:
         c = self.cases.get(case)
         return float(c["median_tokens"]) if c and c.get("median_tokens") is not None else None
 
+    @property
+    def has_tool_counts(self) -> bool:
+        return int(self.data.get("baseline_version") or 1) >= BASELINE_VERSION and any(
+            "tool_counts" in c for c in self.cases.values())
+
+    def tool_median(self, case: str, tool: str) -> float | None:
+        """Median calls of `tool` per run of `case` at the good commit (0 when never called); None if not measured."""
+        tc = (self.cases.get(case) or {}).get("tool_counts")
+        return None if tc is None else float(tc.get(tool, 0))
+
     def limit(self, kind: str, case: str) -> float | None:
         if kind == "tokens":
             m = self.median_tokens(case)
@@ -83,6 +108,12 @@ class Baseline:
 
 def _same_sha(a: str, b: str) -> bool:
     return min(len(a), len(b)) >= 7 and (a.startswith(b) or b.startswith(a))
+
+
+def need_tool_counts_message(sig_key: str) -> str:
+    return (f"signature {sig_key} compares tool call counts, but the baseline has none (baseline_version < "
+            f"{BASELINE_VERSION}): re-run `agentbisect calibrate --repo R --good SHA` once to write a version "
+            f"{BASELINE_VERSION} baseline")
 
 
 def need_baseline_message(sig_key: str) -> str:
@@ -108,11 +139,16 @@ def build_baseline(entries: dict[str, dict], good_sha: str, models: dict[str, st
         caps += [d["max_steps"] for d in ok if d.get("max_steps")]
         cases[case] = {"median_tokens": statistics.median(d["tokens"] for d in ok),
                        "median_steps": statistics.median(steps) if steps else None, "n": len(ok)}
+        counted = [Counter(d["tool_counts"]) for d in ok if d.get("tool_counts") is not None]
+        if counted:  # per tool: median calls per run (0 for runs that did not call it)
+            tools = sorted({t for c in counted for t in c})
+            cases[case]["tool_counts"] = {t: statistics.median(c[t] for c in counted) for t in tools}
     now = datetime.now(timezone.utc)
     return {"schema_version": 1, "commit": good_sha, "good_sha": good_sha, "agent_model": models.get("agent_model"),
             "judge_model": models.get("judge_model"), "repeats": repeats, "provider": "anthropic",
             "created_at": now.isoformat(timespec="seconds"), "date": now.date().isoformat(),
             "token_factor": DEFAULT_TOKEN_FACTOR, "max_steps": max(caps) if caps else None, "cases": cases,
+            **({"baseline_version": BASELINE_VERSION} if any("tool_counts" in c for c in cases.values()) else {}),
             "excluded_cases": excluded}
 
 

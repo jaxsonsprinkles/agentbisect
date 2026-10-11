@@ -73,7 +73,7 @@ class VerdictCache:
     """Per (repo, sha, case, repeat, pinned model ids) run records, reusable across investigations on one repo.
 
     Run record: {"status": "pass"|"fail", "trace_id": str|None, "check_fails": [keys], "check_info": {key: record},
-    "tokens", "steps", "max_steps"} (the last three feed the budget median rule; absent in older records).
+    "tokens", "steps", "max_steps", "tool_counts"} (the last four feed the budget median rule; absent in older records).
     `get` folds the contiguous repeats 0..n-1 into the aggregate the runner reads:
     {"passes", "fails", "trace_ids", "check_fails": {key: failing runs}, "check_info", "runs": n,
     "detail": [per-repeat {status, tokens, steps, max_steps, fails: [keys]}]}. A build-failure
@@ -100,7 +100,8 @@ class VerdictCache:
                 if r.get("trace_id"):
                     agg["trace_ids"].append(r["trace_id"])
                 agg["detail"].append({"status": r["status"], "tokens": r.get("tokens"), "steps": r.get("steps"),
-                                      "max_steps": r.get("max_steps"), "fails": list(r.get("check_fails", []))})
+                                      "max_steps": r.get("max_steps"), "fails": list(r.get("check_fails", [])),
+                                      **({"tool_counts": r["tool_counts"]} if r.get("tool_counts") is not None else {})})
                 for k in r.get("check_fails", []):
                     agg["check_fails"][k] = agg["check_fails"].get(k, 0) + 1
                 for k, info in (r.get("check_info") or {}).items():
@@ -111,12 +112,14 @@ class VerdictCache:
 
     def add_run(self, sha: str, case: str, models: dict[str, str], repeat: int, status: str,
                 trace_id: str | None = None, failures: dict[str, dict[str, Any]] | None = None,
-                tokens: int | None = None, steps: int | None = None, max_steps: int | None = None) -> None:
+                tokens: int | None = None, steps: int | None = None, max_steps: int | None = None,
+                tool_counts: dict[str, int] | None = None) -> None:
         """Record repeat `repeat` of `case` at `sha` (idempotent: re-recording overwrites that repeat only)."""
         with self._lock:
             self._data[cache_key(self.repo, sha, case, models, repeat)] = {
                 "status": status, "trace_id": trace_id, "check_fails": sorted(failures or {}),
-                "check_info": dict(failures or {}), "tokens": tokens, "steps": steps, "max_steps": max_steps}
+                "check_info": dict(failures or {}), "tokens": tokens, "steps": steps, "max_steps": max_steps,
+                **({"tool_counts": tool_counts} if tool_counts is not None else {})}
             atomic_write_json(self.path, self._data)
 
     def set_case_skip(self, sha: str, case: str, models: dict[str, str], reason: str) -> None:
