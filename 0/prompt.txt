@@ -1,0 +1,5 @@
+First, explain what rw1, rw2, etc are. Then continue because rate limits just got reset
+
+---
+
+No, explain to me what rw1 rw2 are
