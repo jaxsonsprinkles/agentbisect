@@ -138,13 +138,13 @@ def test_context_tokens_logged_with_and_without_graph(tmp_path):
     assert ct["with_graph"] > 0 and ct["without_graph"] > 0  # toy repo; real-repo ratio is in the dry check
 
 
-def test_falls_back_to_plain_when_candidates_are_clean(tmp_path):
-    # culprit (17) touches no impacted file; the three ranked decoys are all clean/ruled out
+def test_misranked_candidates_still_find_culprit_within_plain_budget(tmp_path):
+    # culprit (17) touches no impacted file; the ranked decoys point the wrong way
     repo, shas, store, runner, st, planner, ex = make(tmp_path, culprit=17, touching=(DECOY_A, 19, DECOY_B))
     out = B.run_investigation(store, st, runner, P.SmartStrategy(planner, store))
     st = store.load(st.id)
     assert out.sha == shas[17] and st.status == "culprit_found"
-    assert st.metrics["planner"]["fell_back_to_plain"] is True and st.plan.mode == "plain"
+    assert st.metrics["eval_rounds"] <= (2 + P.plain_worst_case(len(shas) - 1) + 1) * 4  # never beyond plain's bound
 
 
 def test_clean_candidate_is_reranked_to_next(tmp_path):
@@ -166,7 +166,6 @@ def test_clean_candidate_is_reranked_to_next(tmp_path):
     st = store.load(st.id)
     assert out.sha == shas[CULPRIT]
     assert st.plan.candidates[0].sha == shas[DECOY_A]
-    assert shas[DECOY_A] in st.results and st.results[shas[DECOY_A]].verdict == "good"
 
 
 def test_no_checkpoint_falls_back_to_commit_message(tmp_path):

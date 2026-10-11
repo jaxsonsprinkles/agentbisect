@@ -18,8 +18,10 @@ the estimate of what reading the raw range diff would cost without it (`plan:wit
 """
 from __future__ import annotations
 
+import itertools
 import json
 import math
+import os
 import re
 import subprocess
 from dataclasses import dataclass, field
@@ -441,6 +443,40 @@ class Planner:
 
 # ---------------------------------------------------------------- 4. strategy
 
+SMART_SLACK = max(0, int(os.environ.get("AGENTBISECT_SMART_SLACK") or 0))  # extra probes allowed beyond plain's worst case
+
+
+def plain_worst_case(k: int) -> int:
+    """Probes plain bisect needs at most to isolate one culprit among k positions."""
+    return max(0, math.ceil(math.log2(k))) if k > 1 else 0
+
+
+def weighted_pick(history: list[str], n, scores: dict[str, float], budget_left: int) -> int:
+    """Index of the next commit to test: the one that splits the candidate probability mass of the open range
+    (lo, hi] in half. Mass of a commit = its rank score plus a small floor so unranked commits stay reachable.
+
+    Uniform scores make every commit weigh the same, which reduces to exactly plain bisect's midpoint (same ties).
+    Guard: with `budget_left` probes remaining (plain's worst case for the original range minus probes spent) the
+    probe must leave at most 2**(budget_left-1) positions on each side, so the whole search never takes more
+    probes than plain's worst case. If no untested commit satisfies it, fall back to plain's pick."""
+    lo, hi = n.lo, n.hi
+    pos = [scores.get(history[j], 0.0) for j in range(lo + 1, hi + 1)]
+    positive = [v for v in scores.values() if v > 0]
+    floor = 0.1 * (sum(positive) / len(positive)) if positive else 1.0
+    mass = [v + floor for v in pos]
+    cums = list(itertools.accumulate(mass))
+    total = cums[-1]
+    mid = (lo + hi) / 2
+    plain = min(n.untested, key=lambda i: (abs(i - mid), i))
+    if budget_left < 1:
+        return plain
+    cap = 2 ** (budget_left - 1)
+    allowed = [i for i in n.untested if i - lo <= cap and hi - i <= cap]
+    if not allowed:
+        return plain
+    return min(allowed, key=lambda i: (round(abs(cums[i - lo - 1] - total / 2) / total, 9), i))
+
+
 class SmartStrategy:
     """Plugs into bisect.Strategy. Plans once (persisted in `state.plan`, `metrics["planner"]`), then every
     decision is derived from the plan and recorded verdicts."""
@@ -486,18 +522,16 @@ class SmartStrategy:
         n = narrow(history, st.results)
         if n.done:
             return None
-        untested = {history[i]: i for i in n.untested}
-        ranked = [c.sha for c in st.plan.candidates]
-        # a candidate that came back bad: its parent decides whether it is the culprit
-        if n.hi - 1 in n.untested and history[n.hi] in ranked:
-            return history[n.hi - 1]
-        for sha in ranked:  # re-ranking = the plan order filtered to what the verdicts left open
-            if sha in untested:
-                return sha
-        if st.plan.mode != "plain":  # every ranked candidate was clean/skipped: plain bisect on what is left
-            st.plan.mode = "plain"
+        scores = {c.sha: c.score for c in st.plan.candidates}
+        if not any(v > 0 for v in scores.values()) and st.plan.mode != "plain":
+            st.plan.mode = "plain"  # the plan carries no signal: plain bisect
             st.metrics["planner"]["fell_back_to_plain"] = True
-        return PlainStrategy(history).next_commit(st)
+        sm = st.metrics.setdefault("smart", {})
+        if "budget" not in sm:  # plain's worst case on the original range, plus optional slack
+            sm["budget"] = plain_worst_case(len(history) - 1) + SMART_SLACK
+        used = sum(1 for h in history[1:-1] if h in st.results)
+        i = weighted_pick(history, n, scores, sm["budget"] - used)
+        return history[i]
 
     def update(self, st: BisectState, sha: str, result: CommitResult) -> None:
         pass
