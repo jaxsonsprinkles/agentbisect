@@ -29,9 +29,16 @@ The demo target is [`support-agent-demo`](https://github.com/jaxsonsprinkles/sup
 5. **Median budget checks.** Token and step regressions are judged against a per-case **median** from a one-time calibration run at the good commit (`agentbisect calibrate`), never recalibrated mid-investigation. A run is over budget past 1.5x the case median. Medians, not means, so one slow sample does not move the line.
 6. **Verifier (revert test).** The culprit is only reported with confidence if reverting it at the bad end flips the signature from failing to passing (before and after pass rates are recorded). Revert conflicts, partial reverts and unbuildable trees lower confidence or end as `inconclusive`.
 7. **Explain.** The culprit report quotes the Entire checkpoint (why the commit was written), the semantic diff, and the first span divergence, so the answer is "this commit, written to do X, causes Y", not just a SHA.
-8. **Fixer (upcoming).** A fresh agent that sees only the culprit diff, the stated intent, and the failing evidence (never the planted-regression metadata) proposes a fix that keeps the intent. **Not built yet.** `report --open-pr` is a dry run by default and needs `--confirm-open-pr` to push anything.
+8. **Fixer.** A fresh agent that sees only the culprit diff, the stated intent, and the failing evidence (never the planted-regression metadata) proposes a fix that keeps the intent, up to 3 attempts. An intent check runs inside the Fixer, so "revert the culprit" does not pass. Where the culprit *deliberately* changed a contract and the eval expectations are stale, the Fixer may update those expectations, narrowly and only for cases sharing the target's check; every such change is recorded and flagged "human review required". `report --open-pr` and `fix --open-draft-pr` are dry runs by default and push nothing without explicit confirmation.
+9. **Fix Verifier.** `agentbisect verify-fix` re-checks the fix commit on four counts: the target signature no longer reproduces, the regression suite still passes, held-out cases pass (the fix is not overfit), and a pinned intent judge says the culprit's intent survives. Any failure is NOT VERIFIED; a judge outage or missing held-out cases is inconclusive, never a pass.
 
 Roles, model pins and isolation rules are in [`ROLES.md`](ROLES.md). The agent and judge models are pinned and recorded in every result, and results produced under different pins are never mixed.
+
+### Fixer and Verifier: live results
+
+Run six times live on the R3 refund-amount culprit `b0be626` ([`evidence/fix-demo/README.md`](evidence/fix-demo/README.md)). Run 6 is **VERIFIED**: target pass, regression 13/13, held-out 1.00 (with 1 held-out expectation change), intent judge pass. Read what the fix is: **it changes no code.** The culprit deliberately moved `issue_refund` to integer cents, so the eval expectations were stale; the fix updates 4 eval expectations (rw1-rw3 target, rw4 held-out), all flagged for human review. A person should confirm that is the intended resolution.
+
+The earlier runs are the interesting part: the Fixer reverted the culprit and passed its own checks (the intent judge caught it), frozen evals made any fix impossible, and two bugs in our own guards turned up live. Each led to a change. 326 tests pass.
 
 ### Measured so far
 
@@ -83,6 +90,16 @@ uv run agentbisect summary --format md  # per-signature results table
 uv run agentbisect report ID            # Markdown + HTML report in evidence/
 ```
 
+```bash
+# Fix + verify on a saved investigation (default fd47af3916, the R3 refund-amount culprit).
+# Works on a throwaway clone of the demo repo; needs a logged-in `claude` CLI.
+scripts/demo_fix_verify.sh [investigation-id]
+
+# or step by step
+uv run agentbisect fix ID --llm-proxy auto --out DIR
+uv run agentbisect verify-fix ID --commit SHA --llm-proxy auto   # exit 0 verified, 1 not, 2 inconclusive
+```
+
 State lives in `.agentbisect/` (atomic writes, resumable mid-step). Run `uv run agentbisect --help` for all flags.
 
 ### Span divergence and the fixture fallback
@@ -110,7 +127,9 @@ Stated plainly, because the evidence says so:
 - **Smart is not always cheaper.** It used fewer eval rounds than plain on behavioural signatures (18 vs 24, 3 vs 4) but more on budget signatures (96 vs 84, 60 vs 54). The planner-context saving is measured on one investigation and one range.
 - **Noisy judge of "bad".** Haiku at non-zero temperature (the proxy cannot set it) is stochastic. Repeats, medians and a confidence band reduce but do not remove this; low-confidence culprits are labelled as such.
 - **Token counts for context savings are bytes/4 estimates**, comparable only within that metric, and the "without graph" side is an estimate, not a second run.
-- **Fixer is not built.** Culprit explanation and the revert test exist; automatic fix generation and fix verification do not.
+- **Fixer/Verifier evidence is thin.** One run per configuration (single sample), one culprit (R3), six runs in total, about $0.9 of model calls. The one VERIFIED result is an eval-expectation update, not a code fix.
+- **Eval-expectation edits need human review.** The Fixer's checks run the fix commit's own cases file, so an edited expectation is what they see; the Verifier flags the change rather than re-running against the old expectation. A wrong "deliberate contract change" judgement would pass quietly unless a person reads the flagged list.
+- **Budget regressions are unresolved.** The Fixer and Verifier were exercised on a behavioural signature only; the Verifier ignores `budget:*` flags in regression and held-out checks unless the target is itself a budget signature. A tool-count signal for token signatures is on an unmerged branch.
 - **One target repo.** Everything was exercised against `support-agent-demo`. The eval contract is generic, but nothing else has been tried.
 
 ## Repository map
