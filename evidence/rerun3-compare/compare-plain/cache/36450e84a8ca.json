@@ -1,0 +1,3204 @@
+{
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "18354 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 18354,
+    "trace_id": "c8f2cae9459692ac9c1a041b331ad570"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "21961 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 21961,
+    "trace_id": "f22386d361048ff803362cbd13e2b8e7"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "22535 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 22535,
+    "trace_id": "9f2fdae398c3a0343588de99143c21f8"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "22668 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 22668,
+    "trace_id": "e762a4bc32e8230f8b65929428d6c523"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "18127 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 18127,
+    "trace_id": "eacd68d34d5a9da75e7e4ef9df25f1e6"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "17992 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 17992,
+    "trace_id": "3bdce8493c0f187f049a0f80911e3667"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status",
+      "must_not_call",
+      "reply_contains"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "28004 tokens > limit 12294 (1.5x baseline median)"
+      },
+      "must_not_call": {
+        "check": "must_not_call",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "must_not_call",
+        "reason": "forbidden calls made: ['cancel_order']"
+      },
+      "reply_contains": {
+        "check": "reply_contains",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "reply_contains",
+        "reason": "reply missing ['processing']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 28004,
+    "trace_id": "b2c62605c819fe462089e8eb99a70d9a"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status",
+      "must_not_call"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "39885 tokens > limit 12294 (1.5x baseline median)"
+      },
+      "must_not_call": {
+        "check": "must_not_call",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "must_not_call",
+        "reason": "forbidden calls made: ['cancel_order']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 39885,
+    "trace_id": "c1beef1c038891df07acf576e48c8604"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status",
+      "must_not_call"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "25087 tokens > limit 12294 (1.5x baseline median)"
+      },
+      "must_not_call": {
+        "check": "must_not_call",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "must_not_call",
+        "reason": "forbidden calls made: ['cancel_order']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 25087,
+    "trace_id": "d3989e65b9c0e289c6f8e96e2b41093a"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os4|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "22384 tokens > limit 17850 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 22384,
+    "trace_id": "4db7de3544310ab710e59b5211942252"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os4|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 15762,
+    "trace_id": "00ce6cf2169f12c07f3b8b9da6813d05"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|os4|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "18849 tokens > limit 17850 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 18849,
+    "trace_id": "88a67197b2aadc2f6f86cbe66d10d20f"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|ro2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "22890 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 22890,
+    "trace_id": "42e583abe55e0fc9e0c38d67b99cd82c"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|ro2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "27061 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 27061,
+    "trace_id": "2bdd3c8c90091f53bb8ffd5ab9e8c225"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|ro2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 18914,
+    "trace_id": "7147b5226d340c1a89eff13ea692f242"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "39408 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Ceramic Mug Set arrived broken (damaged on delivery)'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 39408,
+    "trace_id": "31e5aadb02782dc35c36d14e723cde81"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "29852 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Customer reports item arrived broken (defective); order delivered 2026-09-26, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 29852,
+    "trace_id": "e57ae544bf396d488c325b5f74baaeb0"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "49943 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Customer reports order 1007 arrived damaged; delivered 2026-09-26, within 30-day window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 49943,
+    "trace_id": "243a1a521f29ddde1d2c475a2324438c"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "39841 tokens > limit 21896 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Backpack from order 1015 reported defective; delivered 2026-09-18, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 39841,
+    "trace_id": "e9e0b3319defc381af77d16910020e90"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "32316 tokens > limit 21896 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Customer reports backpack from order 1015 arrived defective; delivered 2026-09-18, within 30-day window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 32316,
+    "trace_id": "17f0d4badf769c6367095b51b9a4a36d"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "39306 tokens > limit 21896 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Customer reports backpack arrived defective; delivered 2026-09-18, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 39306,
+    "trace_id": "b4a585d0c9eeff3eb656a0e296dfad8f"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "31829 tokens > limit 21768 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "59.0",
+        "got": "5900",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [{'order_id': '1031', 'amount': 5900, 'reason': 'Bluetooth speaker not working (defective), delivered 2026-09-29, within 30-day return window'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 31829,
+    "trace_id": "42d31a8c67e5f21281c771378f574ff6"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "40121 tokens > limit 21768 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "59.0",
+        "got": "5900",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [{'order_id': '1031', 'amount': 5900, 'reason': 'Bluetooth Speaker not working (defective); delivered 2026-09-29, within 30-day refund window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 40121,
+    "trace_id": "72830a2b8fc838598c476075ffe793d4"
+  },
+  "v3|0ecffc0942a5554f963b38601206813855f6bc90|rw3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "23845 tokens > limit 21768 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "59.0",
+        "got": "5900",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [{'order_id': '1031', 'amount': 5900, 'reason': 'Customer reports Bluetooth Speaker in order 1031 is not working; delivered 2026-09-29, within 30-day window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 23845,
+    "trace_id": "bbd30fb3c6d486f4ba6265702f227b19"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 11688,
+    "trace_id": "af274885fdfd2be7d6a341c085d0ed74"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 8835,
+    "trace_id": "0fa8fe155b7f33b9649e40c704258f41"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 8848,
+    "trace_id": "853fb364ef672f24e39e148e952f35a1"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 8769,
+    "trace_id": "28724139ac54ba45b8453840d445c2f1"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 11754,
+    "trace_id": "3fa42934b2b8a17d4b958bddee240d55"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 8878,
+    "trace_id": "c9ddacca5e6397c0836a8f11dffabdd1"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 8855,
+    "trace_id": "1b14b1ad836ab593e8f596912992bff3"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 7537,
+    "trace_id": "d009e894aff556fd720c7df3e089f14b"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "reply_contains"
+    ],
+    "check_info": {
+      "reply_contains": {
+        "check": "reply_contains",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "reply_contains",
+        "reason": "reply missing ['processing']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 2,
+    "tokens": 11543,
+    "trace_id": "95d0476a38b069fd37b393fb5d23069b"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os4|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 8878,
+    "trace_id": "0fdaceed8457769124040c773e046275"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os4|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 11900,
+    "trace_id": "082728c76713fe8606dd9e1673c3a9d1"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|os4|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 12105,
+    "trace_id": "3b51f637d1750c044b43a964f8bf416e"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|ro2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15097,
+    "trace_id": "27aca652585729416165801975d095a2"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|ro2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15135,
+    "trace_id": "ead061ccc99a34ccdee5af6ba93fbdec"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|ro2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15279,
+    "trace_id": "e6b72a85e3259b9cb2da4230f5482023"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 17648,
+    "trace_id": "fb725e09faebf188694582788c0894e4"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 17594,
+    "trace_id": "4da4e93b6e139874e1babe71f9bd5b4e"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 14611,
+    "trace_id": "203a4a1e76f8f1372951b08cb037b205"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 14597,
+    "trace_id": "1153cb338b398b7d0ab241ba9c4c7a01"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 14529,
+    "trace_id": "5e477349abd513cdd6b4f8b3809ba5ff"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 18411,
+    "trace_id": "1e2c560281c054645b3cabdca7122eef"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 14449,
+    "trace_id": "f46de5e33a0e95d003af92570031b363"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 14657,
+    "trace_id": "2eeae60f5cd9b70d03720f0cf8e9d6b2"
+  },
+  "v3|1b40b27761bfad9a0b81ba694e36579ea09628c8|rw3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 14512,
+    "trace_id": "b40bc1e588381fba18dfaf5d30eff968"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "21487 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 21487,
+    "trace_id": "1c4615dbe292893e5d53ba3ab82b2762"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "17357 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 17357,
+    "trace_id": "1e6d6e3c418e2637bdee585613bd038c"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "18554 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 2,
+    "tokens": 18554,
+    "trace_id": "2907dbb2b53cb99b97c1e5d22614d107"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "20523 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 20523,
+    "trace_id": "680a3b6848a54967c07ed5b59b9ac47a"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "21378 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 21378,
+    "trace_id": "b4b998e3925a4898ff0d3d3363df4cae"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "17393 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 17393,
+    "trace_id": "a535d0410ad892dca406e160ea211a93"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16947 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16947,
+    "trace_id": "54791c2eeba3bc33cb2194f4813049b7"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "17169 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 17169,
+    "trace_id": "41492fc8209933b2c8eab31cef0d6df2"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status",
+      "reply_contains"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "14931 tokens > limit 12294 (1.5x baseline median)"
+      },
+      "reply_contains": {
+        "check": "reply_contains",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "reply_contains",
+        "reason": "reply missing ['processing']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 2,
+    "tokens": 14931,
+    "trace_id": "b7fc9e948c5fbc3b757083ef7a05a297"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os4|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 17629,
+    "trace_id": "54a4c479a0664cf5e9c296a0bc40e151"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os4|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 17116,
+    "trace_id": "bd5f53b4fd3047eb2a40fbe9dbf6d3ef"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|os4|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "27085 tokens > limit 17850 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 27085,
+    "trace_id": "c93f3935cbd8224f2914fa11900b9c27"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "31536 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Customer reports order 1007 (Ceramic Mug Set) arrived damaged; delivered 2026-09-26, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 31536,
+    "trace_id": "ca69afe42ef5d3c7ea12adfae93139ef"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Customer reports order 1007 (Ceramic Mug Set) arrived broken; delivered 2026-09-26, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 25660,
+    "trace_id": "b2763326e5e961124fa53d32375f8986"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Customer reports order 1007 arrived broken (damaged on delivery); delivered 2026-09-26, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 25626,
+    "trace_id": "396ea8bb8f4f947cdf050d55c80a05f9"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "36808 tokens > limit 21896 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Customer reports the backpack from order 1015 is defective. Delivered 2026-09-18, within the 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 36808,
+    "trace_id": "ca982d296e5f3cba9e2754a0d14ca566"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Customer reports backpack from order 1015 arrived defective; delivered 2026-09-18, within 30 days, not previously refunded.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 18664,
+    "trace_id": "2a83570ddb8127a04a26f6027e698acd"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "43459 tokens > limit 21896 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Customer reports backpack from order 1015 is defective; delivered 2026-09-18, within 30-day window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 43459,
+    "trace_id": "6d55b1fcc22633b0f0e6c082e554d769"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "call_args:issue_refund",
+      "call_counts",
+      "must_call"
+    ],
+    "check_info": {
+      "call_args:issue_refund": {
+        "check": "call_args",
+        "detail": "issue_refund",
+        "expected": "a call",
+        "got": "no call",
+        "key": "call_args:issue_refund",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [])"
+      },
+      "call_counts": {
+        "check": "call_counts",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "call_counts",
+        "reason": "wrong call counts (actual): {'issue_refund': 0}, expected {'issue_refund': 1}"
+      },
+      "must_call": {
+        "check": "must_call",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "must_call",
+        "reason": "missing calls: ['issue_refund']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 2,
+    "tokens": 21080,
+    "trace_id": "5c21c93b14831b8fe91363c05d6e7ae6"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "32831 tokens > limit 21768 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "59.0",
+        "got": "5900",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [{'order_id': '1031', 'amount': 5900, 'reason': 'Bluetooth speaker does not work (defective) - delivered 2026-09-29, within 30-day window'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 32831,
+    "trace_id": "c8dc3248791e5097de31ee7a418e62b5"
+  },
+  "v3|1cda36a34d48d484524d692ac96688f9b98953c9|rw3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "24769 tokens > limit 21768 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "59.0",
+        "got": "5900",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [{'order_id': '1031', 'amount': 5900, 'reason': 'Customer reports Bluetooth Speaker does not work (defective); delivered 2026-09-29, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 24769,
+    "trace_id": "5c660d034b9399eec207aba7b6404db3"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9487,
+    "trace_id": "183e48841b798d6759e15afe32cf6637"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9436,
+    "trace_id": "bd30732d7553f67d9a7fa0d2d162c282"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9583,
+    "trace_id": "edacf9c70373f8570fd748d8b98cf606"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 12734,
+    "trace_id": "e83e74a1e45f1502cf2e42a8bf85595d"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9618,
+    "trace_id": "79d1156c950e9834daa12d5f63e3cd40"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9681,
+    "trace_id": "54a21dedd77b23de2fecf8fba3a666ec"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9558,
+    "trace_id": "c51d05e19fb218eb63557dab6e178c60"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9561,
+    "trace_id": "ff33cda250315f0433679239af04a0bc"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9517,
+    "trace_id": "5910925d9a69e58554889648cd58f570"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os4|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 13205,
+    "trace_id": "f759bd3459c0efaef3c4a0281c5d3cc1"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os4|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9626,
+    "trace_id": "5023d4e15dc50eb5810f7b5aa0d485f8"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|os4|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 13125,
+    "trace_id": "d7cc30086676f441772eca5b848af025"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15473,
+    "trace_id": "c97b03588d80971c363524ad6183585c"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 19901,
+    "trace_id": "4d15b3bd2e93c9057a906f34acae8d4b"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15813,
+    "trace_id": "b2aed0edc0fabeedc2440e98a5ca51fc"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15404,
+    "trace_id": "bd818dd7f9dea36ed4e6abc7853ea279"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15748,
+    "trace_id": "5af73425d768042398d36a4d8bfdf92d"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15684,
+    "trace_id": "eb143ee2a0b3106a2eb3ff9d15e90388"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15546,
+    "trace_id": "9a23b2c042bf58fd7c41883d8356a694"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15459,
+    "trace_id": "11743ff439c13d000d43a729dccac70f"
+  },
+  "v3|2051557f27904a86306a4f3f7de3150e447edad7|rw3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15422,
+    "trace_id": "1d55e4fd5cf2f76c22a444c35790ede4"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "20179 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 20179,
+    "trace_id": "0df716a9b3765d949655b212630d2b3f"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "20197 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 20197,
+    "trace_id": "51e9e461833ccfebc1e6f1f287a3782f"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "17247 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 17247,
+    "trace_id": "f2abc30bcf5ffa0416eadf629f728783"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16226 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16226,
+    "trace_id": "7e50a49c0eb74c392dbb463317ca8d98"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16318 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16318,
+    "trace_id": "038da37221bde7eff93112e0950ea755"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16299 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16299,
+    "trace_id": "160232d190e33280560c6babfded6066"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16322 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16322,
+    "trace_id": "99d3e04f35d1b2b95508978039ba6c67"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16300 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16300,
+    "trace_id": "358bb55208c72593d96c082e790bbb90"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "20620 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 20620,
+    "trace_id": "a69af8d8eff6dda76c7dd8c9da0e5b09"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os4|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 16672,
+    "trace_id": "ad0ed664b36b33259028cfc532262a5f"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os4|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "27693 tokens > limit 17850 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 27693,
+    "trace_id": "5fb1f9a017d5cb22053986e65af5f5c4"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|os4|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "21012 tokens > limit 17850 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 21012,
+    "trace_id": "284c787ba17fea8fe206ff47d021cd74"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|ro2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "24573 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 24573,
+    "trace_id": "f359fbd08e67b73d4815d42966bdc926"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|ro2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 16894,
+    "trace_id": "369af63e52acfa535c9c9bb4335a0a87"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|ro2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 16859,
+    "trace_id": "3fd41295ac125b8ce2dbe597174f3a3a"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "28486 tokens > limit 26391 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 28486,
+    "trace_id": "315028a224422afd5b5159feb14b2560"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "31310 tokens > limit 26391 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 31310,
+    "trace_id": "9b603103eda6a246910b10d268c552db"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "31628 tokens > limit 26391 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 31628,
+    "trace_id": "09720e09600bb506e3eee6641c245191"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "36728 tokens > limit 21896 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 36728,
+    "trace_id": "fc0508dc99d04a281475aa195752c152"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "34993 tokens > limit 21896 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 34993,
+    "trace_id": "c72035112ee587e656a47bcab08b5798"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "32247 tokens > limit 21896 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 32247,
+    "trace_id": "a698e82dd37cac55fb02004c8d79f130"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "23899 tokens > limit 21768 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 23899,
+    "trace_id": "02f653646ac1a7f34d3649400a2de0f9"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "31415 tokens > limit 21768 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 31415,
+    "trace_id": "862d4cc28b285baf5f26d2082d233fe8"
+  },
+  "v3|22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962|rw3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "24540 tokens > limit 21768 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 24540,
+    "trace_id": "8683841f820c4fc96eb0383839f62cf4"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9617,
+    "trace_id": "6905fb8e3c7f3ed3460885d2efd39273"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9650,
+    "trace_id": "13d28a378f608a696b60ed20b9487f73"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9621,
+    "trace_id": "0aad2a25671e068844722c459484d6fd"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 12994,
+    "trace_id": "0f6c85df45623e9613b42deaa9ae283a"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9636,
+    "trace_id": "9010186987592e9f1eab8c5299f575eb"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 13104,
+    "trace_id": "8a61ef3bb2a5bf28ace9fbbcdab08d14"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9686,
+    "trace_id": "57c3c099d4caccb4cee3a09ef5aae98c"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9609,
+    "trace_id": "c619f8b185f02dfd7cfae270f24e9738"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9548,
+    "trace_id": "0fe0df9977b50631a7541c84b83d8152"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os4|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9961,
+    "trace_id": "87c33fa8a5b04f5a3bdf2941ee6737f4"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os4|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 9728,
+    "trace_id": "0ff4620bc3ddc3346ed71b4b2d23f418"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|os4|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 13412,
+    "trace_id": "aafab060fe1c64467cd0b6494cd0727b"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15740,
+    "trace_id": "58e7bd9f3448fd0b03f93de0c40d3f48"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15805,
+    "trace_id": "5c7e67af2a8d2c0b281621b6e0c90da6"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15695,
+    "trace_id": "f1eddc5c773adabe594fa0a08b40489f"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15908,
+    "trace_id": "dde33dc9e0160f1fd82aa813cbca179b"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 19911,
+    "trace_id": "5f5322f3803211d11f83b1c1f737f9fd"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15951,
+    "trace_id": "0621c4e856e3954e5ca26e300b525c60"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15608,
+    "trace_id": "f04f8bb982491f4c3ebc7218366147c6"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 19894,
+    "trace_id": "533826bf91679cbf869bf68b858be87d"
+  },
+  "v3|2f49adb5354949f7c6b3320e4edae0ab0166c507|rw3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 15712,
+    "trace_id": "83b4262a5ccf2fe19b60c7d17f9b0898"
+  },
+  "v3|432b0836560343823c8de54f20431177cd5ff4b3|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "32963 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Customer reports order 1007 arrived broken; delivered 2026-09-26, within 30-day return window'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 32963,
+    "trace_id": "c0bc842afd8d7f5868029bb715c37aaa"
+  },
+  "v3|432b0836560343823c8de54f20431177cd5ff4b3|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "22809 tokens > limit 21896 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Customer reports backpack from order 1015 arrived defective; delivered 2026-09-18, within 30-day refund window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 22809,
+    "trace_id": "bf026482ffaaa9103d4485e53dabdae2"
+  },
+  "v3|432b0836560343823c8de54f20431177cd5ff4b3|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "25263 tokens > limit 21768 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "59.0",
+        "got": "5900",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [{'order_id': '1031', 'amount': 5900, 'reason': 'Bluetooth Speaker reported not working (defective); delivered 2026-09-29, within 30-day return window'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 25263,
+    "trace_id": "920600180134e57f9275626116d7966a"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "24263 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 24263,
+    "trace_id": "5f84afe8eafc12edc3281a4596e11667"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16767 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16767,
+    "trace_id": "c05a0a1b4bf8aae44d1d78096ba87751"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16477 tokens > limit 13272 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16477,
+    "trace_id": "70ebc9fa15d27a1273f20f80e49cbe8f"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16461 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16461,
+    "trace_id": "5742d20560e1bdc5e5047f5afed9f5a1"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16697 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16697,
+    "trace_id": "2fbcd6e56a1867212b8feaef372f8718"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16550 tokens > limit 13317 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16550,
+    "trace_id": "1c4cb04893fb342934d9b47f45c36e2c"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16124 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16124,
+    "trace_id": "5c6470eda194719eaae364c119b3215a"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "20332 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 20332,
+    "trace_id": "595551df5ec1841411a61876e0cd1a19"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16073 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16073,
+    "trace_id": "0a7995fc86484912c3442c04a393d0f1"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os4|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 16186,
+    "trace_id": "616c58bebfb01d7d1a2b075556bfc000"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os4|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 2,
+    "tokens": 13942,
+    "trace_id": "019d49d41e1b3be1e1a7af9e873b2011"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|os4|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "19976 tokens > limit 17850 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 19976,
+    "trace_id": "53d850aa7b5a53e5ed4f3a6f03f60f55"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "31137 tokens > limit 26391 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 31137,
+    "trace_id": "8707c626cfab739d56057c0538d9f10f"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw1|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund",
+      "call_counts",
+      "must_call"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "33117 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund": {
+        "check": "call_args",
+        "detail": "issue_refund",
+        "expected": "a call",
+        "got": "no call",
+        "key": "call_args:issue_refund",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [])"
+      },
+      "call_counts": {
+        "check": "call_counts",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "call_counts",
+        "reason": "wrong call counts (actual): {'issue_refund': 0}, expected {'issue_refund': 1}"
+      },
+      "must_call": {
+        "check": "must_call",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "must_call",
+        "reason": "missing calls: ['issue_refund']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 33117,
+    "trace_id": "8cffc50e5dcd6fe88a7655c1263a9fc6"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw1|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund",
+      "call_counts",
+      "must_call"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "38021 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund": {
+        "check": "call_args",
+        "detail": "issue_refund",
+        "expected": "a call",
+        "got": "no call",
+        "key": "call_args:issue_refund",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [])"
+      },
+      "call_counts": {
+        "check": "call_counts",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "call_counts",
+        "reason": "wrong call counts (actual): {'issue_refund': 0}, expected {'issue_refund': 1}"
+      },
+      "must_call": {
+        "check": "must_call",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "must_call",
+        "reason": "missing calls: ['issue_refund']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 38021,
+    "trace_id": "3cf6134d59f650456367a63b7fca24b5"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "call_args:issue_refund",
+      "call_counts",
+      "must_call"
+    ],
+    "check_info": {
+      "call_args:issue_refund": {
+        "check": "call_args",
+        "detail": "issue_refund",
+        "expected": "a call",
+        "got": "no call",
+        "key": "call_args:issue_refund",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [])"
+      },
+      "call_counts": {
+        "check": "call_counts",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "call_counts",
+        "reason": "wrong call counts (actual): {'issue_refund': 0}, expected {'issue_refund': 1}"
+      },
+      "must_call": {
+        "check": "must_call",
+        "detail": "",
+        "expected": "",
+        "got": "",
+        "key": "must_call",
+        "reason": "missing calls: ['issue_refund']"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 21787,
+    "trace_id": "4bb3ac608c15ac3cfd424b5953a3a243"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "24276 tokens > limit 21896 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 24276,
+    "trace_id": "e9db9065ee784f81230449456081603e"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 21750,
+    "trace_id": "885d1f47017ed1708fbb15314f173cf0"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "23646 tokens > limit 21768 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 23646,
+    "trace_id": "668dd23d44f0332c001cc1a2e6cfabb6"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw3|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "29573 tokens > limit 21768 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 29573,
+    "trace_id": "f2967cfa7d978a74fbeadc6c4d70cadc"
+  },
+  "v3|59c8b10ccbd078f574b98a4770c84ef2b1d2bad2|rw3|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "30760 tokens > limit 21768 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 30760,
+    "trace_id": "6a5eedb211e8b3cd4daedc67e08730e2"
+  },
+  "v3|5cee99b62464515ef4e5f5bd60fd28ca136a3c6d|ro2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 17831,
+    "trace_id": "fb0d80d1861a604f0b6b9549fa4b3ddf"
+  },
+  "v3|5cee99b62464515ef4e5f5bd60fd28ca136a3c6d|ro2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "25461 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 25461,
+    "trace_id": "6ff26e86e22e907e8dc8042af0e00c56"
+  },
+  "v3|5cee99b62464515ef4e5f5bd60fd28ca136a3c6d|ro2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "33268 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 33268,
+    "trace_id": "f9c0c3d20a163034742972778a92c5a6"
+  },
+  "v3|67f35219b2a9464f3f978e188b0a22bae8d1d49b|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "21288 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 21288,
+    "trace_id": "173ae2fc0529e42522da5f837652e6c2"
+  },
+  "v3|875f4bd19ab61f472faa07236851ccf39f441e94|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "31796 tokens > limit 26391 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 31796,
+    "trace_id": "78915ade9b9de2c2910ec7d04161ced8"
+  },
+  "v3|875f4bd19ab61f472faa07236851ccf39f441e94|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "28849 tokens > limit 21896 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 28849,
+    "trace_id": "bae32a9b8df96470aba44e1d10faf239"
+  },
+  "v3|875f4bd19ab61f472faa07236851ccf39f441e94|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "27895 tokens > limit 21768 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 27895,
+    "trace_id": "462cab30a74fca8e4916d466806771d6"
+  },
+  "v3|997886d3561f040cd770965103f38dabdf838322|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16391 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16391,
+    "trace_id": "88257788744683ec24d2ba595430b736"
+  },
+  "v3|b0be626692328e15644a54f3100ab7ad6fc09a5b|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "33047 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Customer reports order arrived broken (damaged on delivery); delivered 2026-09-26, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 33047,
+    "trace_id": "5a56194dec231333150230061394809f"
+  },
+  "v3|b0be626692328e15644a54f3100ab7ad6fc09a5b|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "33358 tokens > limit 21896 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Defective backpack reported by customer; delivered 2026-09-18, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 33358,
+    "trace_id": "bdd8bcb2900ce47cabee10688a5f3f36"
+  },
+  "v3|b0be626692328e15644a54f3100ab7ad6fc09a5b|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "33387 tokens > limit 21768 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "59.0",
+        "got": "5900",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [{'order_id': '1031', 'amount': 5900, 'reason': 'Bluetooth speaker reported defective; delivered 2026-09-29, within 30-day return window'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 33387,
+    "trace_id": "2999778ccb1eaf3c16d726c9dc3e48ae"
+  },
+  "v3|d9b1680e5c22ce061f752ad7b1ac54fe94d386f5|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "16984 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 16984,
+    "trace_id": "e4c4010caa25807d400959a9b9553053"
+  },
+  "v3|d9b1680e5c22ce061f752ad7b1ac54fe94d386f5|ro2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "25604 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 25604,
+    "trace_id": "fb04b08d95cb197f528a58b308eff1f8"
+  },
+  "v3|d9b1680e5c22ce061f752ad7b1ac54fe94d386f5|ro2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "28829 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 28829,
+    "trace_id": "79de2843b385b9aef9de967985d003ea"
+  },
+  "v3|d9b1680e5c22ce061f752ad7b1ac54fe94d386f5|ro2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "26268 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 26268,
+    "trace_id": "9ed34df9a7d07e4bd795b63ca50a538a"
+  },
+  "v3|f7d82b789e2cb42d7911e4e2831331c5be7dcecc|ro2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 18012,
+    "trace_id": "4472f29147ca6f54b7b077ce23eea877"
+  },
+  "v3|f7d82b789e2cb42d7911e4e2831331c5be7dcecc|ro2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "25808 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 25808,
+    "trace_id": "cf7f0282d29abad1c1d623f63db4af55"
+  },
+  "v3|f7d82b789e2cb42d7911e4e2831331c5be7dcecc|ro2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [
+      "budget:tokens@refund_outside_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_outside_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_outside_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_outside_policy",
+        "reason": "25781 tokens > limit 22702 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 25781,
+    "trace_id": "9e83f18120b8e291b22e91e5b0409463"
+  },
+  "v3|f95fc868f7486818b672fd71c0005f91189989ad|os3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@order_status"
+    ],
+    "check_info": {
+      "budget:tokens@order_status": {
+        "check": "budget",
+        "detail": "tokens@order_status",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@order_status",
+        "reason": "17072 tokens > limit 12294 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 3,
+    "tokens": 17072,
+    "trace_id": "90e81c2619974edea43aa9a4bf16d5b5"
+  },
+  "v3|f95fc868f7486818b672fd71c0005f91189989ad|ro2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 17908,
+    "trace_id": "2df1e33cd42be8ad1af02ee8f724caeb"
+  },
+  "v3|f95fc868f7486818b672fd71c0005f91189989ad|ro2|claude-haiku-5-5|claude-sonnet-5-5|r1": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 17672,
+    "trace_id": "0e46144cb0b11f7b9157502d2b0c07d5"
+  },
+  "v3|f95fc868f7486818b672fd71c0005f91189989ad|ro2|claude-haiku-5-5|claude-sonnet-5-5|r2": {
+    "check_fails": [],
+    "check_info": {},
+    "max_steps": 6,
+    "status": "pass",
+    "steps": 3,
+    "tokens": 17941,
+    "trace_id": "03931de3d4cd51169000f8b1269d6ac8"
+  },
+  "v3|f95fc868f7486818b672fd71c0005f91189989ad|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "32229 tokens > limit 26391 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "64.0",
+        "got": "6400",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1007', 'amount': 64.0} (saw [{'order_id': '1007', 'amount': 6400, 'reason': 'Customer reports item arrived broken (defective); delivered 2026-09-26, within 30-day return window.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 32229,
+    "trace_id": "10ea34033f112940ef324812d5206151"
+  },
+  "v3|f95fc868f7486818b672fd71c0005f91189989ad|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "38199 tokens > limit 21896 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "79.99",
+        "got": "7999",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1015', 'amount': 79.99} (saw [{'order_id': '1015', 'amount': 7999, 'reason': 'Customer reports the backpack from order 1015 arrived defective.'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 38199,
+    "trace_id": "3b73d7f6e9a5d02085314d6f993c669e"
+  },
+  "v3|f95fc868f7486818b672fd71c0005f91189989ad|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy",
+      "call_args:issue_refund.amount"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "32345 tokens > limit 21768 (1.5x baseline median)"
+      },
+      "call_args:issue_refund.amount": {
+        "check": "call_args",
+        "detail": "issue_refund.amount",
+        "expected": "59.0",
+        "got": "5900",
+        "key": "call_args:issue_refund.amount",
+        "reason": "no issue_refund call matching {'order_id': '1031', 'amount': 59.0} (saw [{'order_id': '1031', 'amount': 5900, 'reason': 'Bluetooth speaker reported as not working (defective); delivered 2026-09-29, within 30-day window'}])"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 32345,
+    "trace_id": "fe288386b2ed07ce2bf76d90121e589d"
+  },
+  "v3|fd61e9c89ae471782d19dd894217ea49ecc6e16c|rw1|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "35105 tokens > limit 26391 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 35105,
+    "trace_id": "75db22c0e1bd5d95f8748958ae120438"
+  },
+  "v3|fd61e9c89ae471782d19dd894217ea49ecc6e16c|rw2|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "32054 tokens > limit 21896 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 5,
+    "tokens": 32054,
+    "trace_id": "527dd6db1b035ed20feb8e4f823a879e"
+  },
+  "v3|fd61e9c89ae471782d19dd894217ea49ecc6e16c|rw3|claude-haiku-5-5|claude-sonnet-5-5|r0": {
+    "check_fails": [
+      "budget:tokens@refund_within_policy"
+    ],
+    "check_info": {
+      "budget:tokens@refund_within_policy": {
+        "check": "budget",
+        "detail": "tokens@refund_within_policy",
+        "expected": "",
+        "got": "",
+        "key": "budget:tokens@refund_within_policy",
+        "reason": "29849 tokens > limit 21768 (1.5x baseline median)"
+      }
+    },
+    "max_steps": 6,
+    "status": "fail",
+    "steps": 4,
+    "tokens": 29849,
+    "trace_id": "910c4afd0bd291faf32a1db594bccb95"
+  }
+}

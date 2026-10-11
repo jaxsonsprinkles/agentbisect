@@ -1,0 +1,1049 @@
+{
+  "bad_sha": "0ecffc0942a5554f963b38601206813855f6bc90",
+  "context_tokens_per_step": [
+    {
+      "label": "plan:graph:rank",
+      "step": 3,
+      "tokens": 23746
+    },
+    {
+      "label": "plan:without_graph",
+      "step": 3,
+      "tokens": 43882
+    }
+  ],
+  "created_at": "2026-10-11T11:59:26+00:00",
+  "culprit": {
+    "analyzed": true,
+    "checkpoint_intent": "Prompt: Customers who ask about an order that has not shipped yet often come back later annoyed that it is still sitting in processing. Make the support agent proactive about this: when a customer asks for the status of an order and the lookup shows it has not shipped yet, the agent should go ahead and cancel that order for them right away with cancel_order, and tell them in the reply that it was cancelled so they will not be left waiting and can reorder if they still want it. Update the system prompt Rules accordingly and add unit tests (scripted provider) covering an unshipped order (cancelled and mentioned in the reply) and a shipped order (status reported, nothing cancelled). Do not change the refund, escalation, or policy behavior.\n\nReasoning:\nNow the tests, placed after the existing cancel loop test:\nI added the auto-cancel rule and the two tests, and committed it as `0ecffc0`. The full suite passes (291 tests). Nothing was pushed.",
+    "confidence": "high",
+    "failing_evidence": [
+      "failing trace: e2dad5356ed1bc49c59bc0446442df54",
+      "pass rate with the culprit: 0.00 over 3 runs",
+      "failing cases: os3",
+      "failing trace id: 49002f6a721610b69d6a7dad023a22f6",
+      "failing trace id: 60704a7318438e2d1637d40ead0979e8",
+      "failing trace id: ce757af3a30eed825c3ae48fbaac56c1",
+      "pass rate before the culprit: 1.00",
+      "pass/fail rule: {\"budget\": {\"max_steps\": 6, \"token_factor\": 1.5}, \"checks\": [{\"case_id\": \"os1\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"1042\"}, \"tool\": \"lookup_order\"}], \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\"], \"must_not_call\": [\"issue_refund\", \"escalate_to_human\", \"cancel_order\"], \"reply_contains\": [\"TRK-884201\", \"shipped\"]}}, {\"case_id\": \"os2\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"1007\"}, \"tool\": \"lookup_order\"}], \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\"], \"must_not_call\": [\"issue_refund\", \"escalate_to_human\", \"cancel_order\"], \"reply_contains\": [\"TRK-660418\", \"delivered\"]}}, {\"case_id\": \"os3\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"1050\"}, \"tool\": \"lookup_order\"}], \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\"], \"must_not_call\": [\"issue_refund\", \"escalate_to_human\", \"cancel_order\"], \"reply_contains\": [\"processing\"]}}, {\"case_id\": \"os4\", \"checks\": {\"call_args\": [{\"args\": {\"email\": \"dev.patel@example.com\"}, \"tool\": \"lookup_order\"}], \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\"], \"must_not_call\": [\"issue_refund\", \"escalate_to_human\", \"cancel_order\"], \"reply_contains\": [\"TRK-771930\"]}}, {\"case_id\": \"rw1\", \"checks\": {\"call_args\": [{\"args\": {\"amount\": 64.0, \"order_id\": \"1007\"}, \"tool\": \"issue_refund\"}], \"call_counts\": {\"issue_refund\": 1}, \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\", \"issue_refund\"], \"must_not_call\": [\"escalate_to_human\", \"cancel_order\"], \"reply_not_regex\": [\"6,?400\"], \"reply_regex\": [\"\\\\$\\\\s?64(\\\\.00)?(?![\\\\d,])\"]}}, {\"case_id\": \"rw2\", \"checks\": {\"call_args\": [{\"args\": {\"amount\": 79.99, \"order_id\": \"1015\"}, \"tool\": \"issue_refund\"}], \"call_counts\": {\"issue_refund\": 1}, \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\", \"issue_refund\"], \"must_not_call\": [\"escalate_to_human\", \"cancel_order\"], \"reply_not_regex\": [\"7,?999\"], \"reply_regex\": [\"\\\\$\\\\s?79\\\\.99\"]}}, {\"case_id\": \"rw3\", \"checks\": {\"call_args\": [{\"args\": {\"amount\": 59.0, \"order_id\": \"1031\"}, \"tool\": \"issue_refund\"}], \"call_counts\": {\"issue_refund\": 1}, \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\", \"issue_refund\"], \"must_not_call\": [\"escalate_to_human\", \"cancel_order\"], \"reply_not_regex\": [\"5,?900\"], \"reply_regex\": [\"\\\\$\\\\s?59(\\\\.00)?(?![\\\\d,])\"]}}, {\"case_id\": \"ro1\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"0991\"}, \"tool\": \"lookup_order\"}], \"must_call\": [\"lookup_order\"], \"must_not_call\": [\"issue_refund\", \"cancel_order\"], \"reply_regex\": [\"30[- ]day|window|human|escalat|review\"]}}, {\"case_id\": \"ro2\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"0975\"}, \"tool\": \"lookup_order\"}], \"must_call\": [\"lookup_order\"], \"must_not_call\": [\"issue_refund\", \"cancel_order\"], \"reply_regex\": [\"30[- ]day|window|human|escalat|review\"]}}, {\"case_id\": \"ca1\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"1050\"}, \"tool\": \"cancel_order\"}], \"call_counts\": {\"cancel_order\": 1}, \"call_sequence\": [\"lookup_order\", \"cancel_order\"], \"must_call\": [\"lookup_order\", \"cancel_order\"], \"must_not_call\": [\"issue_refund\"], \"reply_regex\": [\"cancel\"]}}, {\"case_id\": \"ca2\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"1042\"}, \"tool\": \"lookup_order\"}], \"must_call\": [\"lookup_order\"], \"must_not_call\": [\"cancel_order\", \"issue_refund\"], \"reply_regex\": [\"return\", \"can'?t|cannot|unable|no longer|already shipped\"]}}, {\"case_id\": \"po1\", \"checks\": {\"must_call\": [\"search_help\"], \"must_not_call\": [\"issue_refund\", \"escalate_to_human\", \"cancel_order\"], \"reply_regex\": [\"30[- ]days?\"]}}, {\"case_id\": \"po2\", \"checks\": {\"must_call\": [\"search_help\"], \"must_not_call\": [\"issue_refund\", \"escalate_to_human\", \"cancel_order\"], \"reply_regex\": [\"3\\\\s?-\\\\s?5 business days\"]}}, {\"case_id\": \"po3\", \"checks\": {\"must_call\": [\"search_help\"], \"must_not_call\": [\"issue_refund\", \"escalate_to_human\", \"cancel_order\"], \"reply_regex\": [\"1[- ]year|one[- ]year|12 months\"]}}, {\"case_id\": \"es1\", \"checks\": {\"call_args\": [{\"args\": {\"priority\": {\"in\": [\"high\", \"urgent\"]}}, \"tool\": \"escalate_to_human\"}], \"must_call\": [\"escalate_to_human\"], \"must_not_call\": [\"issue_refund\", \"cancel_order\"]}}, {\"case_id\": \"es2\", \"checks\": {\"call_args\": [{\"args\": {\"priority\": {\"in\": [\"high\", \"urgent\"]}}, \"tool\": \"escalate_to_human\"}, {\"args\": {\"summary\": {\"contains\": \"1088\"}}, \"tool\": \"escalate_to_human\"}], \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\", \"escalate_to_human\"], \"must_not_call\": [\"issue_refund\", \"cancel_order\"]}}, {\"case_id\": \"ms1\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"1042\"}, \"tool\": \"lookup_order\"}], \"first_call\": \"lookup_order\", \"must_call\": [\"lookup_order\"], \"must_not_call\": [\"cancel_order\", \"issue_refund\"], \"reply_contains\": [\"shipped\", \"TRK-884201\"]}}, {\"case_id\": \"ms2\", \"checks\": {\"call_args\": [{\"args\": {\"order_id\": \"1050\"}, \"tool\": \"cancel_order\"}], \"call_counts\": {\"cancel_order\": 1}, \"call_sequence\": [\"lookup_order\", \"cancel_order\"], \"must_call\": [\"lookup_order\", \"cancel_order\"], \"must_not_call\": [\"issue_refund\"], \"reply_regex\": [\"cancel\"]}}], \"order\": [\"checks\", \"budget\", \"rubric\"], \"rubric\": null}"
+    ],
+    "flags": [],
+    "impacted_symbols": [
+      "agent/prompt.py"
+    ],
+    "intent_source": "checkpoint",
+    "revert_details": {
+      "analysis_notes": [],
+      "baseline_pass_rate": 1.0,
+      "culprit_pass_rate": 0.0,
+      "detail": "",
+      "kind": "clean",
+      "rejected_hunks": 0,
+      "reverted_commit": "5ba0130498e6bf21e16dfa105bf28a591dc63b08",
+      "reverted_pass_rate": 1.0,
+      "reverted_trace_ids": [
+        "dc5c35e387e0231f963b308a3f43e424"
+      ],
+      "reverted_verdict": "good",
+      "signature": "must_not_call",
+      "signature_label": "check=must_not_call",
+      "target_pass_rate": 0.9
+    },
+    "revert_test_passed": true,
+    "semantic_diff": "agent/prompt.py: body_changed module agent/prompt.py\ntests/test_agent.py: added function test_status_question_on_unshipped_order_cancels_it\ntests/test_agent.py: added function test_status_question_on_shipped_order_cancels_nothing",
+    "sha": "0ecffc0942a5554f963b38601206813855f6bc90",
+    "trace_divergence": [
+      "trace divergence unavailable: empty trace"
+    ]
+  },
+  "error": null,
+  "fix_attempts": [],
+  "good_sha": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+  "id": "3c44624bfe",
+  "in_flight": null,
+  "metrics": {
+    "cache_hits": 3,
+    "commits_evaluated": 3,
+    "comparison": {
+      "plain": {
+        "commits_evaluated": 4,
+        "context_tokens": null,
+        "cost_usd": 0.008,
+        "culprit": "0ecffc0942a5554f963b38601206813855f6bc90",
+        "eval_rounds": 4,
+        "fell_back_to_plain": false,
+        "outcome": "culprit",
+        "steps": 7
+      },
+      "same_culprit": true,
+      "saved_rounds": 1,
+      "smart": {
+        "commits_evaluated": 3,
+        "context_tokens": {
+          "with_graph": 23746,
+          "without_graph": 43882
+        },
+        "cost_usd": 0.006,
+        "culprit": "0ecffc0942a5554f963b38601206813855f6bc90",
+        "eval_rounds": 3,
+        "fell_back_to_plain": false,
+        "outcome": "culprit",
+        "steps": 6
+      }
+    },
+    "confidence_band": {
+      "bad_pass_rate": 0.0,
+      "good_pass_rate": 1.0
+    },
+    "cost_usd": 0.008,
+    "eval_rounds": 4,
+    "no_baseline": false,
+    "planner": {
+      "candidates": 25,
+      "context_tokens": {
+        "with_graph": 23746,
+        "without_graph": 43882
+      },
+      "graph_available": true,
+      "graph_unavailable": false,
+      "hints": [],
+      "planned": true,
+      "via": "none"
+    },
+    "revert_test": {
+      "baseline_pass_rate": 1.0,
+      "budget": null,
+      "culprit_pass_rate": 0.0,
+      "eval_rounds": 1,
+      "kind": "clean",
+      "passed": true,
+      "reverted_pass_rate": 1.0
+    },
+    "signature_group": "fd47af3916",
+    "signatures_discovered": true,
+    "smart": {
+      "budget": 5
+    },
+    "source": {
+      "fixtures": null,
+      "project": null
+    },
+    "strategy": "smart",
+    "warnings": []
+  },
+  "pinned_models": {},
+  "plan": {
+    "candidates": [
+      {
+        "reason": "no code link; checkpoint match 0.06: Include an estimated delivery date for shipped orders in the lookup_order result, computed",
+        "score": 0.0431,
+        "sha": "22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.05: Make the agent more thorough: it should always verify its answers with a help-center searc",
+        "score": 0.0345,
+        "sha": "59c8b10ccbd078f574b98a4770c84ef2b1d2bad2"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.04: Customers write order numbers as '#1042' or 'order 1042'. Normalise order ids in lookup_or",
+        "score": 0.0298,
+        "sha": "2790cf2aac58c67b1b3eed707d095cbc4590d280"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.04: Customers who ask about an order that has not shipped yet often come back later annoyed th",
+        "score": 0.0255,
+        "sha": "0ecffc0942a5554f963b38601206813855f6bc90"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.04: Write extra unit tests for cancel_order edge cases: unknown order, already shipped, alread",
+        "score": 0.0255,
+        "sha": "d73d989a1bf2b9640a1bd5ee882d16a69dea89b5"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.04: Customers want to cancel orders that have not shipped. Add a cancel_order tool (order id i",
+        "score": 0.0255,
+        "sha": "ec19917417dd698353933ed7c40637895b49a8fd"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.03: The new tone rules (friendly acknowledgement, closing question) are sometimes making repli",
+        "score": 0.0176,
+        "sha": "f7d82b789e2cb42d7911e4e2831331c5be7dcecc"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.03: Add a help-center article about international shipping (which regions we ship to, customs ",
+        "score": 0.0176,
+        "sha": "f95fc868f7486818b672fd71c0005f91189989ad"
+      },
+      {
+        "reason": "no code link; commit_message match 0.02: Add deliberately flaky search_help (30% timeout, seeded per case/repeat) with retry guidan",
+        "score": 0.0144,
+        "sha": "997886d3561f040cd770965103f38dabdf838322"
+      },
+      {
+        "reason": "no code link; commit_message match 0.02: Trace each eval case as one neatlogs trace: support_case parent span with tool:<name> and ",
+        "score": 0.0144,
+        "sha": "67f35219b2a9464f3f978e188b0a22bae8d1d49b"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.02: Cap the customer message length at 2000 characters; longer input should be truncated with ",
+        "score": 0.0144,
+        "sha": "ca150c73c62dc5946ca7b64a7de53fdd7f49792c"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.02: Add a --verbose flag to the CLI that also prints each tool call and its result in readable",
+        "score": 0.0144,
+        "sha": "2051557f27904a86306a4f3f7de3150e447edad7"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Help-center search results for ambiguous questions depend on the order of entries in data/",
+        "score": 0.0097,
+        "sha": "d9b1680e5c22ce061f752ad7b1ac54fe94d386f5"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Make escalation tickets more useful: the escalate_to_human summary should include the orde",
+        "score": 0.0097,
+        "sha": "1cda36a34d48d484524d692ac96688f9b98953c9"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Add a help-center article on changing a shipping address after ordering (possible only whi",
+        "score": 0.0097,
+        "sha": "2f49adb5354949f7c6b3320e4edae0ab0166c507"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: When a tool reports an unknown order id, the reply should apologise and ask the customer t",
+        "score": 0.0097,
+        "sha": "96de44a0d622d2fff27c1de9f2521b8475a54183"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Add a help-center article about gift cards (how to buy, redeem, and that they never expire",
+        "score": 0.0097,
+        "sha": "c4bbc0ea8628e6f18eb366aec7909d09ac2c0538"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Customers often type their email with different capitalisation or stray spaces. Make order",
+        "score": 0.0097,
+        "sha": "deba2d571258eaabfa09af61dc25568cb6cc8885"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Customers got conflicting answers about when refunds arrive: the system prompt says refund",
+        "score": 0.0,
+        "sha": "432b0836560343823c8de54f20431177cd5ff4b3"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Update the README with a short tools reference and a changelog section summarising recent ",
+        "score": 0.0,
+        "sha": "5cee99b62464515ef4e5f5bd60fd28ca136a3c6d"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Add unit tests covering issue_refund policy limits (over total, outside 30 days, already r",
+        "score": 0.0,
+        "sha": "d80dad7f9e6a1d78b7a4eab3cee69dda38b25651"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Return refund amounts in cents to match Stripe: issue_refund should take and return intege",
+        "score": 0.0,
+        "sha": "b0be626692328e15644a54f3100ab7ad6fc09a5b"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: After a refund is issued, the reply should mention that the money typically appears within",
+        "score": 0.0,
+        "sha": "fd61e9c89ae471782d19dd894217ea49ecc6e16c"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Report latency: the CLI JSON output should include total wall-clock time in milliseconds. ",
+        "score": 0.0,
+        "sha": "875f4bd19ab61f472faa07236851ccf39f441e94"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Make the agent sound a little warmer: open replies with a brief friendly acknowledgement a",
+        "score": 0.0,
+        "sha": "99c4f3834e7c90c51d8d80431b9fa6ab745660e5"
+      }
+    ],
+    "divergent_span": null,
+    "impacted_symbols": [],
+    "mode": "smart"
+  },
+  "repo": "/Users/jaxson/Downloads/codingprojects/support-agent-demo",
+  "results": {
+    "0ecffc0942a5554f963b38601206813855f6bc90": {
+      "budget": {},
+      "case_stats": {
+        "os3": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        }
+      },
+      "executed": 3,
+      "failing_cases": [
+        "os3"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "28004 tokens > limit 12294 (1.5x baseline median)",
+          "runs": 3
+        },
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "must_not_call",
+          "detail": "",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "must_not_call",
+          "reason": "forbidden calls made: ['cancel_order']",
+          "runs": 3
+        },
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "reply_contains",
+          "detail": "",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "reply_contains",
+          "reason": "reply missing ['processing']",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": true,
+      "pass_rate": 0.0,
+      "reason": "",
+      "repeats": 1,
+      "trace_ids": [
+        "49002f6a721610b69d6a7dad023a22f6",
+        "60704a7318438e2d1637d40ead0979e8",
+        "ce757af3a30eed825c3ae48fbaac56c1"
+      ],
+      "verdict": "bad"
+    },
+    "1b40b27761bfad9a0b81ba694e36579ea09628c8": {
+      "budget": {},
+      "case_stats": {
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 3,
+      "failing_cases": [],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "reply_contains",
+          "detail": "",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "reply_contains",
+          "reason": "reply missing ['processing']",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": true,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 1,
+      "trace_ids": [
+        "75c94a87d2f82c5e2127d41cb5c18a55",
+        "c14d8b695b3608e79fece8e277917946",
+        "50eb91154737299d0a98d4aaecf4ec76"
+      ],
+      "verdict": "good"
+    },
+    "59c8b10ccbd078f574b98a4770c84ef2b1d2bad2": {
+      "budget": {},
+      "case_stats": {
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 3,
+      "failing_cases": [],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "16124 tokens > limit 12294 (1.5x baseline median)",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": true,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 1,
+      "trace_ids": [
+        "62436eea7891dc99096a221a828b2e7d",
+        "730e07c0cc9f5bdad58aaf0daadeed1b",
+        "233b6e8edf475802ee0f51cad7544c8c"
+      ],
+      "verdict": "good"
+    },
+    "997886d3561f040cd770965103f38dabdf838322": {
+      "budget": {},
+      "case_stats": {
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 1
+        }
+      },
+      "executed": 1,
+      "failing_cases": [],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "16391 tokens > limit 12294 (1.5x baseline median)",
+          "runs": 1
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 1,
+      "trace_ids": [
+        "f53533232c5589b836ee91336e9d228f"
+      ],
+      "verdict": "good"
+    },
+    "f7d82b789e2cb42d7911e4e2831331c5be7dcecc": {
+      "budget": {},
+      "case_stats": {
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 1
+        }
+      },
+      "executed": 1,
+      "failing_cases": [],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "21228 tokens > limit 12294 (1.5x baseline median)",
+          "runs": 1
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 1,
+      "trace_ids": [
+        "b66a4af47c9a496b23398a12c9872d6f"
+      ],
+      "verdict": "good"
+    },
+    "f95fc868f7486818b672fd71c0005f91189989ad": {
+      "budget": {},
+      "case_stats": {
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 1
+        }
+      },
+      "executed": 1,
+      "failing_cases": [],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "17072 tokens > limit 12294 (1.5x baseline median)",
+          "runs": 1
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 1,
+      "trace_ids": [
+        "a4da1e4a65daa39ab3a73432ef851bb5"
+      ],
+      "verdict": "good"
+    }
+  },
+  "spec": {
+    "bad_case": "rw1",
+    "bad_trace_id": "e2dad5356ed1bc49c59bc0446442df54",
+    "cases": [
+      "os1",
+      "os2",
+      "os3",
+      "os4",
+      "rw1",
+      "rw2",
+      "rw3",
+      "ro1",
+      "ro2",
+      "ca1",
+      "ca2",
+      "po1",
+      "po2",
+      "po3",
+      "es1",
+      "es2",
+      "ms1",
+      "ms2"
+    ],
+    "good_trace_ids": [
+      "7ee39f48220c98ed7c085c2a4122917e",
+      "beceaa3710382c6a7738f6e930fe1fd7"
+    ],
+    "held_out": [
+      "os5",
+      "rw4",
+      "ro3",
+      "ca3",
+      "po4",
+      "es3"
+    ],
+    "metric": "pass_rate",
+    "predicate": {
+      "budget": {
+        "max_steps": 6,
+        "token_factor": 1.5
+      },
+      "checks": [
+        {
+          "case_id": "os1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-884201",
+              "shipped"
+            ]
+          }
+        },
+        {
+          "case_id": "os2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1007"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-660418",
+              "delivered"
+            ]
+          }
+        },
+        {
+          "case_id": "os3",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "processing"
+            ]
+          }
+        },
+        {
+          "case_id": "os4",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "email": "dev.patel@example.com"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-771930"
+            ]
+          }
+        },
+        {
+          "case_id": "rw1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 64.0,
+                  "order_id": "1007"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "6,?400"
+            ],
+            "reply_regex": [
+              "\\$\\s?64(\\.00)?(?![\\d,])"
+            ]
+          }
+        },
+        {
+          "case_id": "rw2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 79.99,
+                  "order_id": "1015"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "7,?999"
+            ],
+            "reply_regex": [
+              "\\$\\s?79\\.99"
+            ]
+          }
+        },
+        {
+          "case_id": "rw3",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 59.0,
+                  "order_id": "1031"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "5,?900"
+            ],
+            "reply_regex": [
+              "\\$\\s?59(\\.00)?(?![\\d,])"
+            ]
+          }
+        },
+        {
+          "case_id": "ro1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "0991"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]day|window|human|escalat|review"
+            ]
+          }
+        },
+        {
+          "case_id": "ro2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "0975"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]day|window|human|escalat|review"
+            ]
+          }
+        },
+        {
+          "case_id": "ca1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "cancel_order"
+              }
+            ],
+            "call_counts": {
+              "cancel_order": 1
+            },
+            "call_sequence": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_call": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_not_call": [
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "cancel"
+            ]
+          }
+        },
+        {
+          "case_id": "ca2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "cancel_order",
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "return",
+              "can'?t|cannot|unable|no longer|already shipped"
+            ]
+          }
+        },
+        {
+          "case_id": "po1",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]days?"
+            ]
+          }
+        },
+        {
+          "case_id": "po2",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "3\\s?-\\s?5 business days"
+            ]
+          }
+        },
+        {
+          "case_id": "po3",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "1[- ]year|one[- ]year|12 months"
+            ]
+          }
+        },
+        {
+          "case_id": "es1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "priority": {
+                    "in": [
+                      "high",
+                      "urgent"
+                    ]
+                  }
+                },
+                "tool": "escalate_to_human"
+              }
+            ],
+            "must_call": [
+              "escalate_to_human"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ]
+          }
+        },
+        {
+          "case_id": "es2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "priority": {
+                    "in": [
+                      "high",
+                      "urgent"
+                    ]
+                  }
+                },
+                "tool": "escalate_to_human"
+              },
+              {
+                "args": {
+                  "summary": {
+                    "contains": "1088"
+                  }
+                },
+                "tool": "escalate_to_human"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "escalate_to_human"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ]
+          }
+        },
+        {
+          "case_id": "ms1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "cancel_order",
+              "issue_refund"
+            ],
+            "reply_contains": [
+              "shipped",
+              "TRK-884201"
+            ]
+          }
+        },
+        {
+          "case_id": "ms2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "cancel_order"
+              }
+            ],
+            "call_counts": {
+              "cancel_order": 1
+            },
+            "call_sequence": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_call": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_not_call": [
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "cancel"
+            ]
+          }
+        }
+      ],
+      "order": [
+        "checks",
+        "budget",
+        "rubric"
+      ],
+      "rubric": null
+    },
+    "signature": {
+      "cases": [
+        "os3"
+      ],
+      "check": "must_not_call",
+      "detail": "",
+      "expected": "",
+      "fails": 3,
+      "got": "",
+      "key": "must_not_call",
+      "reason": "forbidden calls made: ['cancel_order']",
+      "runs": 3
+    },
+    "source": "trace"
+  },
+  "status": "culprit_found",
+  "step": 8,
+  "updated_at": "2026-10-11T12:30:53+00:00"
+}

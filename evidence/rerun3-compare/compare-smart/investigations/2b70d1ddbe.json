@@ -1,0 +1,1077 @@
+{
+  "bad_sha": "0ecffc0942a5554f963b38601206813855f6bc90",
+  "context_tokens_per_step": [
+    {
+      "label": "plan:graph:impact",
+      "step": 3,
+      "tokens": 618
+    },
+    {
+      "label": "plan:graph:fallback",
+      "step": 3,
+      "tokens": 103
+    },
+    {
+      "label": "plan:graph:rank",
+      "step": 3,
+      "tokens": 20001
+    },
+    {
+      "label": "plan:without_graph",
+      "step": 3,
+      "tokens": 45137
+    }
+  ],
+  "created_at": "2026-10-11T12:28:49+00:00",
+  "culprit": {
+    "analyzed": false,
+    "checkpoint_intent": "",
+    "confidence": "high",
+    "failing_evidence": [],
+    "flags": [],
+    "impacted_symbols": [],
+    "intent_source": "",
+    "revert_details": {},
+    "revert_test_passed": null,
+    "semantic_diff": "",
+    "sha": "5cee99b62464515ef4e5f5bd60fd28ca136a3c6d",
+    "trace_divergence": []
+  },
+  "error": null,
+  "fix_attempts": [],
+  "good_sha": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+  "id": "2b70d1ddbe",
+  "in_flight": null,
+  "metrics": {
+    "cache_hits": 0,
+    "commits_evaluated": 7,
+    "confidence_band": {
+      "bad_pass_rate": 0.0,
+      "good_pass_rate": 1.0
+    },
+    "cost_usd": 0.042,
+    "eval_rounds": 21,
+    "no_baseline": false,
+    "planner": {
+      "candidates": 20,
+      "context_tokens": {
+        "with_graph": 20722,
+        "without_graph": 45137
+      },
+      "files": [
+        "agent/prompt.py",
+        "data/articles.json",
+        "evals/cases.jsonl",
+        "evals/reference.py",
+        "tools/impl.py"
+      ],
+      "graph_available": true,
+      "graph_empty": true,
+      "graph_unavailable": false,
+      "graph_unavailable_reason": null,
+      "hints": [
+        "refund"
+      ],
+      "planned": true,
+      "via": "git"
+    },
+    "smart": {
+      "budget": 5
+    },
+    "strategy": "smart",
+    "warnings": []
+  },
+  "pinned_models": {},
+  "plan": {
+    "candidates": [
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.08: Add unit tests covering issue_refund policy limits (over total, outside 30 days, already r",
+        "score": 0.3561,
+        "sha": "d80dad7f9e6a1d78b7a4eab3cee69dda38b25651"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.03: The new tone rules (friendly acknowledgement, closing question) are sometimes making repli",
+        "score": 0.3215,
+        "sha": "f7d82b789e2cb42d7911e4e2831331c5be7dcecc"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.02: Make the agent more thorough: it should always verify its answers with a help-center searc",
+        "score": 0.3157,
+        "sha": "59c8b10ccbd078f574b98a4770c84ef2b1d2bad2"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.02: Customers want to cancel orders that have not shipped. Add a cancel_order tool (order id i",
+        "score": 0.3121,
+        "sha": "ec19917417dd698353933ed7c40637895b49a8fd"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.02: Add a help-center article about gift cards (how to buy, redeem, and that they never expire",
+        "score": 0.3121,
+        "sha": "c4bbc0ea8628e6f18eb366aec7909d09ac2c0538"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.01: Return refund amounts in cents to match Stripe: issue_refund should take and return intege",
+        "score": 0.3093,
+        "sha": "b0be626692328e15644a54f3100ab7ad6fc09a5b"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.01: After a refund is issued, the reply should mention that the money typically appears within",
+        "score": 0.3093,
+        "sha": "fd61e9c89ae471782d19dd894217ea49ecc6e16c"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.00: Update the README with a short tools reference and a changelog section summarising recent ",
+        "score": 0.3,
+        "sha": "5cee99b62464515ef4e5f5bd60fd28ca136a3c6d"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.00: Make escalation tickets more useful: the escalate_to_human summary should include the orde",
+        "score": 0.3,
+        "sha": "1cda36a34d48d484524d692ac96688f9b98953c9"
+      },
+      {
+        "reason": "changes impacted symbol; checkpoint match 0.00: When a tool reports an unknown order id, the reply should apologise and ask the customer t",
+        "score": 0.3,
+        "sha": "96de44a0d622d2fff27c1de9f2521b8475a54183"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.03: Help-center search results for ambiguous questions depend on the order of entries in data/",
+        "score": 0.1743,
+        "sha": "d9b1680e5c22ce061f752ad7b1ac54fe94d386f5"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.03: Customers who ask about an order that has not shipped yet often come back later annoyed th",
+        "score": 0.1715,
+        "sha": "0ecffc0942a5554f963b38601206813855f6bc90"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.02: Add a help-center article about international shipping (which regions we ship to, customs ",
+        "score": 0.1621,
+        "sha": "f95fc868f7486818b672fd71c0005f91189989ad"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.01: Customers got conflicting answers about when refunds arrive: the system prompt says refund",
+        "score": 0.1593,
+        "sha": "432b0836560343823c8de54f20431177cd5ff4b3"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.01: Include an estimated delivery date for shipped orders in the lookup_order result, computed",
+        "score": 0.1593,
+        "sha": "22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962"
+      },
+      {
+        "reason": "touches impacted file; commit_message match 0.00: Add deliberately flaky search_help (30% timeout, seeded per case/repeat) with retry guidan",
+        "score": 0.15,
+        "sha": "997886d3561f040cd770965103f38dabdf838322"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.00: Add a help-center article on changing a shipping address after ordering (possible only whi",
+        "score": 0.15,
+        "sha": "2f49adb5354949f7c6b3320e4edae0ab0166c507"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.00: Customers write order numbers as '#1042' or 'order 1042'. Normalise order ids in lookup_or",
+        "score": 0.15,
+        "sha": "2790cf2aac58c67b1b3eed707d095cbc4590d280"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.00: Make the agent sound a little warmer: open replies with a brief friendly acknowledgement a",
+        "score": 0.15,
+        "sha": "99c4f3834e7c90c51d8d80431b9fa6ab745660e5"
+      },
+      {
+        "reason": "touches impacted file; checkpoint match 0.00: Customers often type their email with different capitalisation or stray spaces. Make order",
+        "score": 0.15,
+        "sha": "deba2d571258eaabfa09af61dc25568cb6cc8885"
+      }
+    ],
+    "divergent_span": null,
+    "impacted_symbols": [
+      "refund_id"
+    ],
+    "mode": "smart"
+  },
+  "repo": "/Users/jaxson/Downloads/codingprojects/support-agent-demo",
+  "results": {
+    "0ecffc0942a5554f963b38601206813855f6bc90": {
+      "budget": {
+        "baseline_median": 15135.0,
+        "cases": {
+          "ro2": {
+            "baseline_median": 15135.0,
+            "limit": 22702.5,
+            "median": 22890,
+            "over": true,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 22890,
+        "ratio": 1.512,
+        "repeats": 3,
+        "total": 1,
+        "within": 0
+      },
+      "case_stats": {
+        "ro2": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        }
+      },
+      "executed": 3,
+      "failing_cases": [
+        "ro2"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "ro2"
+          ],
+          "check": "budget",
+          "detail": "tokens@refund_outside_policy",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "budget:tokens@refund_outside_policy",
+          "reason": "22890 tokens > limit 22702 (1.5x baseline median)",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 0.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "84acff1bb25cf2f070def40f571be9a6",
+        "bfb7946fe98437f74581c646d38dd2c9",
+        "5d62ffe918362ef600bfbff1b1fdb823"
+      ],
+      "verdict": "bad"
+    },
+    "1b40b27761bfad9a0b81ba694e36579ea09628c8": {
+      "budget": {
+        "baseline_median": 15135.0,
+        "cases": {
+          "ro2": {
+            "baseline_median": 15135.0,
+            "limit": 22702.5,
+            "median": 15135,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 15135,
+        "ratio": 1.0,
+        "repeats": 3,
+        "total": 1,
+        "within": 1
+      },
+      "case_stats": {
+        "ro2": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 3,
+      "failing_cases": [],
+      "failure_signatures": [],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "e6f336e9ee5afad5c769143638f8b230",
+        "1b0c000ccbeaa6d324c688f9a0dde8b0",
+        "f987cea469e820442559e7fa9db7738a"
+      ],
+      "verdict": "good"
+    },
+    "5cee99b62464515ef4e5f5bd60fd28ca136a3c6d": {
+      "budget": {
+        "baseline_median": 15135.0,
+        "cases": {
+          "ro2": {
+            "baseline_median": 15135.0,
+            "limit": 22702.5,
+            "median": 25461,
+            "over": true,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 25461,
+        "ratio": 1.682,
+        "repeats": 3,
+        "total": 1,
+        "within": 0
+      },
+      "case_stats": {
+        "ro2": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        }
+      },
+      "executed": 3,
+      "failing_cases": [
+        "ro2"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "ro2"
+          ],
+          "check": "budget",
+          "detail": "tokens@refund_outside_policy",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "budget:tokens@refund_outside_policy",
+          "reason": "25461 tokens > limit 22702 (1.5x baseline median)",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 0.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "aa9ffc7cd567bb64a3e9e657bbcc8643",
+        "2ca464507ea71e3d9561439a8dc0a01b",
+        "a5ab1bb90119acbdd2d89f43f6469532"
+      ],
+      "verdict": "bad"
+    },
+    "d9b1680e5c22ce061f752ad7b1ac54fe94d386f5": {
+      "budget": {
+        "baseline_median": 15135.0,
+        "cases": {
+          "ro2": {
+            "baseline_median": 15135.0,
+            "limit": 22702.5,
+            "median": 26268,
+            "over": true,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 26268,
+        "ratio": 1.736,
+        "repeats": 3,
+        "total": 1,
+        "within": 0
+      },
+      "case_stats": {
+        "ro2": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        }
+      },
+      "executed": 3,
+      "failing_cases": [
+        "ro2"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "ro2"
+          ],
+          "check": "budget",
+          "detail": "tokens@refund_outside_policy",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "budget:tokens@refund_outside_policy",
+          "reason": "25604 tokens > limit 22702 (1.5x baseline median)",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 0.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "390ecb7dca89b9ab51f998c171e44b45",
+        "e290ba70d710a7183927c7cd7e47add1",
+        "456dc4f6b6a6fafadc09e0b60a0f7710"
+      ],
+      "verdict": "bad"
+    },
+    "f7d82b789e2cb42d7911e4e2831331c5be7dcecc": {
+      "budget": {
+        "baseline_median": 15135.0,
+        "cases": {
+          "ro2": {
+            "baseline_median": 15135.0,
+            "limit": 22702.5,
+            "median": 25781,
+            "over": true,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 25781,
+        "ratio": 1.703,
+        "repeats": 3,
+        "total": 1,
+        "within": 0
+      },
+      "case_stats": {
+        "ro2": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        }
+      },
+      "executed": 3,
+      "failing_cases": [
+        "ro2"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "ro2"
+          ],
+          "check": "budget",
+          "detail": "tokens@refund_outside_policy",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "budget:tokens@refund_outside_policy",
+          "reason": "25808 tokens > limit 22702 (1.5x baseline median)",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 0.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "1372e6950667598b66a113df6912298b",
+        "8c9b61285d164d6c72c9d4dbd55383c4",
+        "f396d8e5db8ae6f9236aafa745f7e3da"
+      ],
+      "verdict": "bad"
+    },
+    "f95fc868f7486818b672fd71c0005f91189989ad": {
+      "budget": {
+        "baseline_median": 15135.0,
+        "cases": {
+          "ro2": {
+            "baseline_median": 15135.0,
+            "limit": 22702.5,
+            "median": 17908,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 17908,
+        "ratio": 1.183,
+        "repeats": 3,
+        "total": 1,
+        "within": 1
+      },
+      "case_stats": {
+        "ro2": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 3,
+      "failing_cases": [],
+      "failure_signatures": [],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "b753db7327841fa312c20d0728390e5f",
+        "dca6c2b3d203da50f6c1974aceb1d202",
+        "c6e7a143699fbf3639f27ff51784697d"
+      ],
+      "verdict": "good"
+    },
+    "fd61e9c89ae471782d19dd894217ea49ecc6e16c": {
+      "budget": {
+        "baseline_median": 15135.0,
+        "cases": {
+          "ro2": {
+            "baseline_median": 15135.0,
+            "limit": 22702.5,
+            "median": 21099,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 21099,
+        "ratio": 1.394,
+        "repeats": 3,
+        "total": 1,
+        "within": 1
+      },
+      "case_stats": {
+        "ro2": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 3,
+      "failing_cases": [],
+      "failure_signatures": [],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "d2555826fd997c6766a42ab11486e971",
+        "24db3adfc820a1cff717238e27229526",
+        "b32612885c7b36222aeb69cfd37a828c"
+      ],
+      "verdict": "good"
+    }
+  },
+  "spec": {
+    "bad_case": "rw1",
+    "bad_trace_id": "e2dad5356ed1bc49c59bc0446442df54",
+    "cases": [
+      "os1",
+      "os2",
+      "os3",
+      "os4",
+      "rw1",
+      "rw2",
+      "rw3",
+      "ro1",
+      "ro2",
+      "ca1",
+      "ca2",
+      "po1",
+      "po2",
+      "po3",
+      "es1",
+      "es2",
+      "ms1",
+      "ms2"
+    ],
+    "good_trace_ids": [
+      "7ee39f48220c98ed7c085c2a4122917e",
+      "beceaa3710382c6a7738f6e930fe1fd7"
+    ],
+    "held_out": [
+      "os5",
+      "rw4",
+      "ro3",
+      "ca3",
+      "po4",
+      "es3"
+    ],
+    "metric": "pass_rate",
+    "predicate": {
+      "budget": {
+        "max_steps": 6,
+        "token_factor": 1.5
+      },
+      "checks": [
+        {
+          "case_id": "os1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-884201",
+              "shipped"
+            ]
+          }
+        },
+        {
+          "case_id": "os2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1007"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-660418",
+              "delivered"
+            ]
+          }
+        },
+        {
+          "case_id": "os3",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "processing"
+            ]
+          }
+        },
+        {
+          "case_id": "os4",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "email": "dev.patel@example.com"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-771930"
+            ]
+          }
+        },
+        {
+          "case_id": "rw1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 64.0,
+                  "order_id": "1007"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "6,?400"
+            ],
+            "reply_regex": [
+              "\\$\\s?64(\\.00)?(?![\\d,])"
+            ]
+          }
+        },
+        {
+          "case_id": "rw2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 79.99,
+                  "order_id": "1015"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "7,?999"
+            ],
+            "reply_regex": [
+              "\\$\\s?79\\.99"
+            ]
+          }
+        },
+        {
+          "case_id": "rw3",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 59.0,
+                  "order_id": "1031"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "5,?900"
+            ],
+            "reply_regex": [
+              "\\$\\s?59(\\.00)?(?![\\d,])"
+            ]
+          }
+        },
+        {
+          "case_id": "ro1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "0991"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]day|window|human|escalat|review"
+            ]
+          }
+        },
+        {
+          "case_id": "ro2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "0975"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]day|window|human|escalat|review"
+            ]
+          }
+        },
+        {
+          "case_id": "ca1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "cancel_order"
+              }
+            ],
+            "call_counts": {
+              "cancel_order": 1
+            },
+            "call_sequence": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_call": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_not_call": [
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "cancel"
+            ]
+          }
+        },
+        {
+          "case_id": "ca2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "cancel_order",
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "return",
+              "can'?t|cannot|unable|no longer|already shipped"
+            ]
+          }
+        },
+        {
+          "case_id": "po1",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]days?"
+            ]
+          }
+        },
+        {
+          "case_id": "po2",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "3\\s?-\\s?5 business days"
+            ]
+          }
+        },
+        {
+          "case_id": "po3",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "1[- ]year|one[- ]year|12 months"
+            ]
+          }
+        },
+        {
+          "case_id": "es1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "priority": {
+                    "in": [
+                      "high",
+                      "urgent"
+                    ]
+                  }
+                },
+                "tool": "escalate_to_human"
+              }
+            ],
+            "must_call": [
+              "escalate_to_human"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ]
+          }
+        },
+        {
+          "case_id": "es2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "priority": {
+                    "in": [
+                      "high",
+                      "urgent"
+                    ]
+                  }
+                },
+                "tool": "escalate_to_human"
+              },
+              {
+                "args": {
+                  "summary": {
+                    "contains": "1088"
+                  }
+                },
+                "tool": "escalate_to_human"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "escalate_to_human"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ]
+          }
+        },
+        {
+          "case_id": "ms1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "cancel_order",
+              "issue_refund"
+            ],
+            "reply_contains": [
+              "shipped",
+              "TRK-884201"
+            ]
+          }
+        },
+        {
+          "case_id": "ms2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "cancel_order"
+              }
+            ],
+            "call_counts": {
+              "cancel_order": 1
+            },
+            "call_sequence": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_call": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_not_call": [
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "cancel"
+            ]
+          }
+        }
+      ],
+      "order": [
+        "checks",
+        "budget",
+        "rubric"
+      ],
+      "rubric": null
+    },
+    "signature": {
+      "cases": [
+        "ro2"
+      ],
+      "check": "budget",
+      "detail": "tokens@refund_outside_policy",
+      "expected": "",
+      "fails": 3,
+      "got": "",
+      "key": "budget:tokens@refund_outside_policy",
+      "reason": "22890 tokens > limit 22702 (1.5x baseline median)",
+      "runs": 3
+    },
+    "source": "trace"
+  },
+  "status": "culprit_found",
+  "step": 7,
+  "updated_at": "2026-10-11T12:29:51+00:00"
+}

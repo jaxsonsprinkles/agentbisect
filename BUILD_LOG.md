@@ -89,3 +89,7 @@ See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 9 complete 
 - U5 `agentbisect summary [state_dir] [--id ID] [--format text|md|json] [--out F]` and a "Per-signature results" section in reports for signature groups (`summary.py`). Nothing hardcoded; verified by running it against the saved rerun state.
 - Reviewer passes (correctness, simplification, tests) ran for U1, U2, U4, U5; U3 was small and had none. Findings fixed: budget cases escalating, steps cap default, silent calibrate drops, stale refusal evidence. Known leftover: `summary.revert_cell` duplicates some formatting of `verify.budget_line`.
 - Not verified live: calibrate, 3-repeat medians and refusal against support-agent-demo (fake executors on throwaway git repos only). Tests: 206.
+
+## Re-run 3: calibrated baseline, budget medians, bad end 0ecffc0 (evidence/rerun3-summary.md)
+- One calibrate at 1b40b27 (`evidence/baseline-1b40b27.json`), then smart investigation --all-signatures --all-categories (budget 3 repeats) and per-signature compare. 6 signatures: 4 correct against the private key, 2 wrong (order_status budget -> 59c8b10 instead of the R1 commit; ro2 budget -> noise commit 5cee99b). R3 and R1b isolated with passing revert tests; es2 correctly refused.
+- Smart beat plain on behavioural signatures (24/18, 4/3) but lost on budget ones (84/96, 54/60). 0 rate-limit events. 1991 proxy calls (770 real, rest cache replays, including most of compare).

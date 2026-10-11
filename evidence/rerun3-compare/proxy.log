@@ -1,0 +1,1 @@
+agentbisect llm-proxy on http://127.0.0.1:8799 (concurrency 4, cache on); use ANTHROPIC_BASE_URL=http://127.0.0.1:8799 ANTHROPIC_API_KEY=agentbisect-proxy; GET /stats for counters

@@ -1,0 +1,656 @@
+{
+  "bad_sha": "0ecffc0942a5554f963b38601206813855f6bc90",
+  "context_tokens_per_step": [],
+  "created_at": "2026-10-11T11:59:26+00:00",
+  "culprit": null,
+  "error": null,
+  "fix_attempts": [],
+  "good_sha": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+  "id": "6237e76f2b",
+  "in_flight": null,
+  "metrics": {
+    "cache_hits": 2,
+    "commits_evaluated": 0,
+    "cost_usd": 0.0,
+    "eval_rounds": 0,
+    "known_preexisting": {
+      "failing_cases": [
+        "es2"
+      ],
+      "fails": 3,
+      "good_pass_rate": 0.0,
+      "good_sha": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+      "label": "check=call_args(escalate_to_human.priority) expected {'in': ['high', 'urgent']} got normal",
+      "message": "known pre-existing failure \u2014 correctly refused: check=call_args(escalate_to_human.priority) expected {'in': ['high', 'urgent']} got normal already fails in 3/3 runs (cases es2) at the good commit 1b40b27761, so it is not a regression introduced in this range",
+      "reason": "no escalate_to_human call matching {'priority': {'in': ['high', 'urgent']}} (saw [{'priority': 'normal', 'summary': 'Customer requests a full refund of $800.00 on order 1088 (1 x 4K Monitor), saying the monitor is not what they expected. Lookup shows status: delivered on 2026-09-27 (shipped 2026-09-",
+      "runs": 3,
+      "signature": "call_args:escalate_to_human.priority"
+    },
+    "no_baseline": false,
+    "signature_group": "fd47af3916",
+    "signatures_discovered": true,
+    "source": {
+      "fixtures": null,
+      "project": null
+    },
+    "strategy": "smart"
+  },
+  "pinned_models": {},
+  "plan": {
+    "candidates": [],
+    "divergent_span": null,
+    "impacted_symbols": [],
+    "mode": "plain"
+  },
+  "repo": "/Users/jaxson/Downloads/codingprojects/support-agent-demo",
+  "results": {
+    "0ecffc0942a5554f963b38601206813855f6bc90": {
+      "budget": {},
+      "case_stats": {
+        "es2": {
+          "errors": 0,
+          "fails": 2,
+          "passes": 0
+        }
+      },
+      "executed": 2,
+      "failing_cases": [
+        "es2"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "es2"
+          ],
+          "check": "call_args",
+          "detail": "escalate_to_human.priority",
+          "expected": "{'in': ['high', 'urgent']}",
+          "fails": 2,
+          "got": "normal",
+          "key": "call_args:escalate_to_human.priority",
+          "reason": "no escalate_to_human call matching {'priority': {'in': ['high', 'urgent']}} (saw [{'order_id': '1088', 'summary': 'Order 1088: Customer wants a full refund of $800.00 (4K Monitor, delivered 2026-09-27, tracking TRK-700555) because the monitor is not what they expected. The order is within the 30-day",
+          "runs": 2
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": true,
+      "pass_rate": 0.0,
+      "reason": "",
+      "repeats": 1,
+      "trace_ids": [
+        "62b168608c34299f75c98703b3e87703",
+        "7c781e01275d8c52a5a38774a688865d"
+      ],
+      "verdict": "bad"
+    },
+    "1b40b27761bfad9a0b81ba694e36579ea09628c8": {
+      "budget": {},
+      "case_stats": {
+        "es2": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        }
+      },
+      "executed": 3,
+      "failing_cases": [
+        "es2"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "es2"
+          ],
+          "check": "call_args",
+          "detail": "escalate_to_human.priority",
+          "expected": "{'in': ['high', 'urgent']}",
+          "fails": 3,
+          "got": "normal",
+          "key": "call_args:escalate_to_human.priority",
+          "reason": "no escalate_to_human call matching {'priority': {'in': ['high', 'urgent']}} (saw [{'priority': 'normal', 'summary': 'Customer requests a full refund of $800.00 on order 1088 (1 x 4K Monitor), saying the monitor is not what they expected. Lookup shows status: delivered on 2026-09-27 (shipped 2026-09-",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": true,
+      "pass_rate": 0.0,
+      "reason": "",
+      "repeats": 1,
+      "trace_ids": [
+        "817b1cd3c30b45adc6f5e9ae84596f11",
+        "5c4eccbdb9ccd5581c79f64b42cc598e",
+        "7e97f48a6d2914a0ee22ba9741d72c31"
+      ],
+      "verdict": "bad"
+    }
+  },
+  "spec": {
+    "bad_case": "rw1",
+    "bad_trace_id": "e2dad5356ed1bc49c59bc0446442df54",
+    "cases": [
+      "os1",
+      "os2",
+      "os3",
+      "os4",
+      "rw1",
+      "rw2",
+      "rw3",
+      "ro1",
+      "ro2",
+      "ca1",
+      "ca2",
+      "po1",
+      "po2",
+      "po3",
+      "es1",
+      "es2",
+      "ms1",
+      "ms2"
+    ],
+    "good_trace_ids": [
+      "7ee39f48220c98ed7c085c2a4122917e",
+      "beceaa3710382c6a7738f6e930fe1fd7"
+    ],
+    "held_out": [
+      "os5",
+      "rw4",
+      "ro3",
+      "ca3",
+      "po4",
+      "es3"
+    ],
+    "metric": "pass_rate",
+    "predicate": {
+      "budget": {
+        "max_steps": 6,
+        "token_factor": 1.5
+      },
+      "checks": [
+        {
+          "case_id": "os1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-884201",
+              "shipped"
+            ]
+          }
+        },
+        {
+          "case_id": "os2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1007"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-660418",
+              "delivered"
+            ]
+          }
+        },
+        {
+          "case_id": "os3",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "processing"
+            ]
+          }
+        },
+        {
+          "case_id": "os4",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "email": "dev.patel@example.com"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-771930"
+            ]
+          }
+        },
+        {
+          "case_id": "rw1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 64.0,
+                  "order_id": "1007"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "6,?400"
+            ],
+            "reply_regex": [
+              "\\$\\s?64(\\.00)?(?![\\d,])"
+            ]
+          }
+        },
+        {
+          "case_id": "rw2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 79.99,
+                  "order_id": "1015"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "7,?999"
+            ],
+            "reply_regex": [
+              "\\$\\s?79\\.99"
+            ]
+          }
+        },
+        {
+          "case_id": "rw3",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 59.0,
+                  "order_id": "1031"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "5,?900"
+            ],
+            "reply_regex": [
+              "\\$\\s?59(\\.00)?(?![\\d,])"
+            ]
+          }
+        },
+        {
+          "case_id": "ro1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "0991"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]day|window|human|escalat|review"
+            ]
+          }
+        },
+        {
+          "case_id": "ro2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "0975"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]day|window|human|escalat|review"
+            ]
+          }
+        },
+        {
+          "case_id": "ca1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "cancel_order"
+              }
+            ],
+            "call_counts": {
+              "cancel_order": 1
+            },
+            "call_sequence": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_call": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_not_call": [
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "cancel"
+            ]
+          }
+        },
+        {
+          "case_id": "ca2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "cancel_order",
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "return",
+              "can'?t|cannot|unable|no longer|already shipped"
+            ]
+          }
+        },
+        {
+          "case_id": "po1",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]days?"
+            ]
+          }
+        },
+        {
+          "case_id": "po2",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "3\\s?-\\s?5 business days"
+            ]
+          }
+        },
+        {
+          "case_id": "po3",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "1[- ]year|one[- ]year|12 months"
+            ]
+          }
+        },
+        {
+          "case_id": "es1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "priority": {
+                    "in": [
+                      "high",
+                      "urgent"
+                    ]
+                  }
+                },
+                "tool": "escalate_to_human"
+              }
+            ],
+            "must_call": [
+              "escalate_to_human"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ]
+          }
+        },
+        {
+          "case_id": "es2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "priority": {
+                    "in": [
+                      "high",
+                      "urgent"
+                    ]
+                  }
+                },
+                "tool": "escalate_to_human"
+              },
+              {
+                "args": {
+                  "summary": {
+                    "contains": "1088"
+                  }
+                },
+                "tool": "escalate_to_human"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "escalate_to_human"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ]
+          }
+        },
+        {
+          "case_id": "ms1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "cancel_order",
+              "issue_refund"
+            ],
+            "reply_contains": [
+              "shipped",
+              "TRK-884201"
+            ]
+          }
+        },
+        {
+          "case_id": "ms2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "cancel_order"
+              }
+            ],
+            "call_counts": {
+              "cancel_order": 1
+            },
+            "call_sequence": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_call": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_not_call": [
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "cancel"
+            ]
+          }
+        }
+      ],
+      "order": [
+        "checks",
+        "budget",
+        "rubric"
+      ],
+      "rubric": null
+    },
+    "signature": {
+      "cases": [
+        "es2"
+      ],
+      "check": "call_args",
+      "detail": "escalate_to_human.priority",
+      "expected": "{'in': ['high', 'urgent']}",
+      "fails": 2,
+      "got": "normal",
+      "key": "call_args:escalate_to_human.priority",
+      "reason": "no escalate_to_human call matching {'priority': {'in': ['high', 'urgent']}} (saw [{'order_id': '1088', 'summary': 'Order 1088: Customer wants a full refund of $800.00 (4K Monitor, delivered 2026-09-27, tracking TRK-700555) because the monitor is not what they expected. The order is within the 30-day",
+      "runs": 2
+    },
+    "source": "trace"
+  },
+  "status": "refused",
+  "step": 2,
+  "updated_at": "2026-10-11T12:18:07+00:00"
+}

@@ -1,0 +1,68 @@
+llm proxy (own claude login) at http://127.0.0.1:53272
+investigation fd47af3916 created (status=created); spec: 18 cases, 6 held out, 2 good traces, range good=59c8b10ccbd078f574b98a4770c84ef2b1d2bad2 bad=f7d82b789e2cb42d7911e4e2831331c5be7dcecc
+  - trace maps to case rw1 (refund_within_policy)
+  - good traces are 'status ok' only (no explicit pass signal); bisect re-confirms the good end
+  - suite spans every category (18 cases): failing checks of other features are separate signatures
+  - bad trace carries no failing-check detail: the failure signature is taken from the bad end's eval results (the check that fails in the trace's case)
+[fd47af3916] culprit b0be6266 (confidence high)
+  bisected on failure signature: check=call_args(issue_refund.amount) expected 64.0 got 6400 (cases: rw1, rw2, rw3)
+  strategy=smart steps=7 eval_rounds=47 cost~$0.094 cache_hits=2
+  culprit: b0be626692328e15644a54f3100ab7ad6fc09a5b (confidence medium)
+  revert test: PASSED (regression disappears)  eval rounds=3
+    pass rate: culprit 0.0 -> reverted 1.0 (good commit 1.0)
+  intent source: checkpoint
+  flag: revert conflicts
+2026-10-11 06:59:26 - neatlogs - INFO - Neatlogs SDK shutdown complete
+
+sibling investigation 96092ca97e for failure signature check=budget(tokens@order_status)
+[96092ca97e] culprit 59c8b10c (confidence medium)
+  bisected on failure signature: check=budget(tokens@order_status) (cases: os1, os2, os3, os4)
+  strategy=smart steps=8 eval_rounds=72 cost~$0.144 cache_hits=2
+  culprit: 59c8b10ccbd078f574b98a4770c84ef2b1d2bad2 (confidence low)
+  revert test: FAILED (regression remains)  eval rounds=12
+    pass rate: culprit 0.25 -> reverted 0.0 (good commit 1.0)
+    median tokens: HEAD 20,405 -> reverted 22,861 (good commit 8,866); within budget 0/4 -> 0/4 (3 repeats per case)
+  intent source: checkpoint
+  flag: revert conflicts
+  flag: multiple regressions likely: reverting the culprit did not remove the regression
+2026-10-11 07:04:03 - neatlogs - INFO - Neatlogs SDK shutdown complete
+
+sibling investigation 64df3527b6 for failure signature check=budget(tokens@refund_within_policy)
+[64df3527b6] culprit 59c8b10c (confidence high)
+  bisected on failure signature: check=budget(tokens@refund_within_policy) (cases: rw1, rw2, rw3)
+  strategy=smart steps=8 eval_rounds=48 cost~$0.096 cache_hits=2
+  culprit: 59c8b10ccbd078f574b98a4770c84ef2b1d2bad2 (confidence low)
+  revert test: FAILED (regression remains)  eval rounds=9
+    pass rate: culprit 0.3333333333333333 -> reverted 0.0 (good commit 1.0)
+    median tokens: HEAD 39,306 -> reverted 35,195 (good commit 14,597); within budget 0/3 -> 0/3 (3 repeats per case)
+  intent source: checkpoint
+  flag: revert conflicts
+  flag: multiple regressions likely: reverting the culprit did not remove the regression
+2026-10-11 07:09:45 - neatlogs - INFO - Neatlogs SDK shutdown complete
+
+sibling investigation 3d7f0da05c for failure signature check=budget(tokens@refund_outside_policy)
+[3d7f0da05c] culprit 5cee99b6 (confidence high)
+  bisected on failure signature: check=budget(tokens@refund_outside_policy) (cases: ro2)
+  strategy=smart steps=7 eval_rounds=15 cost~$0.03 cache_hits=2
+  culprit: 5cee99b62464515ef4e5f5bd60fd28ca136a3c6d (confidence medium)
+  revert test: inconclusive  eval rounds=0
+  intent source: checkpoint
+  flag: revert conflicts
+2026-10-11 07:17:10 - neatlogs - INFO - Neatlogs SDK shutdown complete
+
+sibling investigation 3c44624bfe for failure signature check=must_not_call
+[3c44624bfe] culprit 0ecffc09 (confidence high)
+  bisected on failure signature: check=must_not_call (cases: os3)
+  strategy=smart steps=6 eval_rounds=3 cost~$0.006 cache_hits=3
+  culprit: 0ecffc0942a5554f963b38601206813855f6bc90 (confidence high)
+  revert test: PASSED (regression disappears)  eval rounds=1
+    pass rate: culprit 0.0 -> reverted 1.0 (good commit 1.0)
+  intent source: checkpoint
+2026-10-11 07:18:07 - neatlogs - INFO - Neatlogs SDK shutdown complete
+
+sibling investigation 6237e76f2b for failure signature check=call_args(escalate_to_human.priority) expected {'in': ['high', 'urgent']} got normal
+[6237e76f2b] known pre-existing failure — correctly refused: check=call_args(escalate_to_human.priority) expected {'in': ['high', 'urgent']} got normal already fails in 3/3 runs (cases es2) at the good commit 1b40b27761, so it is not a regression introduced in this range
+  bisected on failure signature: check=call_args(escalate_to_human.priority) expected {'in': ['high', 'urgent']} got normal (cases: es2)
+  strategy=smart steps=2 eval_rounds=0 cost~$0.0 cache_hits=2
+2026-10-11 07:18:07 - neatlogs - INFO - Neatlogs SDK shutdown complete
+llm proxy stats: {"calls": 659, "cli_calls": 564, "cache_hits": 96, "input_tokens": 3452145, "output_tokens": 290299, "cost_usd": 0.382487, "rate_limit_events": 0, "retries": 0, "errors": 1, "invalid_output_retries": 2, "latency_s_total": 2175.155602657411, "max_concurrent": 4, "in_flight": 0, "temperatures": {"0": 659}, "avg_latency_s": 3.857}

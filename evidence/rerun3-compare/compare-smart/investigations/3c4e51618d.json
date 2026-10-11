@@ -1,0 +1,1577 @@
+{
+  "bad_sha": "0ecffc0942a5554f963b38601206813855f6bc90",
+  "context_tokens_per_step": [
+    {
+      "label": "plan:graph:rank",
+      "step": 3,
+      "tokens": 23746
+    },
+    {
+      "label": "plan:without_graph",
+      "step": 3,
+      "tokens": 43882
+    }
+  ],
+  "created_at": "2026-10-11T12:22:38+00:00",
+  "culprit": {
+    "analyzed": false,
+    "checkpoint_intent": "",
+    "confidence": "medium",
+    "failing_evidence": [],
+    "flags": [],
+    "impacted_symbols": [],
+    "intent_source": "",
+    "revert_details": {},
+    "revert_test_passed": null,
+    "semantic_diff": "",
+    "sha": "59c8b10ccbd078f574b98a4770c84ef2b1d2bad2",
+    "trace_divergence": []
+  },
+  "error": null,
+  "fix_attempts": [],
+  "good_sha": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+  "id": "3c4e51618d",
+  "in_flight": null,
+  "metrics": {
+    "cache_hits": 0,
+    "commits_evaluated": 8,
+    "confidence_band": {
+      "bad_pass_rate": 0.25,
+      "good_pass_rate": 1.0
+    },
+    "cost_usd": 0.192,
+    "eval_rounds": 96,
+    "no_baseline": false,
+    "planner": {
+      "candidates": 25,
+      "context_tokens": {
+        "with_graph": 23746,
+        "without_graph": 43882
+      },
+      "graph_available": true,
+      "graph_unavailable": false,
+      "hints": [],
+      "planned": true,
+      "via": "none"
+    },
+    "smart": {
+      "budget": 5
+    },
+    "strategy": "smart",
+    "warnings": []
+  },
+  "pinned_models": {},
+  "plan": {
+    "candidates": [
+      {
+        "reason": "no code link; checkpoint match 0.05: Customers want to cancel orders that have not shipped. Add a cancel_order tool (order id i",
+        "score": 0.0375,
+        "sha": "ec19917417dd698353933ed7c40637895b49a8fd"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.04: Customers who ask about an order that has not shipped yet often come back later annoyed th",
+        "score": 0.0245,
+        "sha": "0ecffc0942a5554f963b38601206813855f6bc90"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.03: Help-center search results for ambiguous questions depend on the order of entries in data/",
+        "score": 0.021,
+        "sha": "d9b1680e5c22ce061f752ad7b1ac54fe94d386f5"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.03: Add a help-center article about gift cards (how to buy, redeem, and that they never expire",
+        "score": 0.021,
+        "sha": "c4bbc0ea8628e6f18eb366aec7909d09ac2c0538"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.02: Add unit tests covering issue_refund policy limits (over total, outside 30 days, already r",
+        "score": 0.0165,
+        "sha": "d80dad7f9e6a1d78b7a4eab3cee69dda38b25651"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.02: Make the agent more thorough: it should always verify its answers with a help-center searc",
+        "score": 0.0165,
+        "sha": "59c8b10ccbd078f574b98a4770c84ef2b1d2bad2"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.02: Add a help-center article about international shipping (which regions we ship to, customs ",
+        "score": 0.0129,
+        "sha": "f95fc868f7486818b672fd71c0005f91189989ad"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Make escalation tickets more useful: the escalate_to_human summary should include the orde",
+        "score": 0.008,
+        "sha": "1cda36a34d48d484524d692ac96688f9b98953c9"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Include an estimated delivery date for shipped orders in the lookup_order result, computed",
+        "score": 0.008,
+        "sha": "22f7fbd223555ae4d10eb2e37e1cd7b7ffa71962"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Add a help-center article on changing a shipping address after ordering (possible only whi",
+        "score": 0.008,
+        "sha": "2f49adb5354949f7c6b3320e4edae0ab0166c507"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Write extra unit tests for cancel_order edge cases: unknown order, already shipped, alread",
+        "score": 0.008,
+        "sha": "d73d989a1bf2b9640a1bd5ee882d16a69dea89b5"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: When a tool reports an unknown order id, the reply should apologise and ask the customer t",
+        "score": 0.008,
+        "sha": "96de44a0d622d2fff27c1de9f2521b8475a54183"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Customers write order numbers as '#1042' or 'order 1042'. Normalise order ids in lookup_or",
+        "score": 0.008,
+        "sha": "2790cf2aac58c67b1b3eed707d095cbc4590d280"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.01: Customers often type their email with different capitalisation or stray spaces. Make order",
+        "score": 0.008,
+        "sha": "deba2d571258eaabfa09af61dc25568cb6cc8885"
+      },
+      {
+        "reason": "no code link; commit_message match 0.00: Add deliberately flaky search_help (30% timeout, seeded per case/repeat) with retry guidan",
+        "score": 0.0,
+        "sha": "997886d3561f040cd770965103f38dabdf838322"
+      },
+      {
+        "reason": "no code link; commit_message match 0.00: Trace each eval case as one neatlogs trace: support_case parent span with tool:<name> and ",
+        "score": 0.0,
+        "sha": "67f35219b2a9464f3f978e188b0a22bae8d1d49b"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: The new tone rules (friendly acknowledgement, closing question) are sometimes making repli",
+        "score": 0.0,
+        "sha": "f7d82b789e2cb42d7911e4e2831331c5be7dcecc"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Customers got conflicting answers about when refunds arrive: the system prompt says refund",
+        "score": 0.0,
+        "sha": "432b0836560343823c8de54f20431177cd5ff4b3"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Update the README with a short tools reference and a changelog section summarising recent ",
+        "score": 0.0,
+        "sha": "5cee99b62464515ef4e5f5bd60fd28ca136a3c6d"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Return refund amounts in cents to match Stripe: issue_refund should take and return intege",
+        "score": 0.0,
+        "sha": "b0be626692328e15644a54f3100ab7ad6fc09a5b"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: After a refund is issued, the reply should mention that the money typically appears within",
+        "score": 0.0,
+        "sha": "fd61e9c89ae471782d19dd894217ea49ecc6e16c"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Report latency: the CLI JSON output should include total wall-clock time in milliseconds. ",
+        "score": 0.0,
+        "sha": "875f4bd19ab61f472faa07236851ccf39f441e94"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Cap the customer message length at 2000 characters; longer input should be truncated with ",
+        "score": 0.0,
+        "sha": "ca150c73c62dc5946ca7b64a7de53fdd7f49792c"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Add a --verbose flag to the CLI that also prints each tool call and its result in readable",
+        "score": 0.0,
+        "sha": "2051557f27904a86306a4f3f7de3150e447edad7"
+      },
+      {
+        "reason": "no code link; checkpoint match 0.00: Make the agent sound a little warmer: open replies with a brief friendly acknowledgement a",
+        "score": 0.0,
+        "sha": "99c4f3834e7c90c51d8d80431b9fa6ab745660e5"
+      }
+    ],
+    "divergent_span": null,
+    "impacted_symbols": [],
+    "mode": "smart"
+  },
+  "repo": "/Users/jaxson/Downloads/codingprojects/support-agent-demo",
+  "results": {
+    "0ecffc0942a5554f963b38601206813855f6bc90": {
+      "budget": {
+        "baseline_median": 8863.0,
+        "cases": {
+          "os1": {
+            "baseline_median": 8848.0,
+            "limit": 13272.0,
+            "median": 21961,
+            "over": true,
+            "runs": 3
+          },
+          "os2": {
+            "baseline_median": 8878.0,
+            "limit": 13317.0,
+            "median": 18127,
+            "over": true,
+            "runs": 3
+          },
+          "os3": {
+            "baseline_median": 8196.0,
+            "limit": 12294.0,
+            "median": 28004,
+            "over": true,
+            "runs": 3
+          },
+          "os4": {
+            "baseline_median": 11900.0,
+            "limit": 17850.0,
+            "median": 18849,
+            "over": true,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 20405.0,
+        "ratio": 2.262,
+        "repeats": 3,
+        "total": 4,
+        "within": 0
+      },
+      "case_stats": {
+        "os1": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os2": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os3": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os4": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        }
+      },
+      "executed": 12,
+      "failing_cases": [
+        "os1",
+        "os2",
+        "os3",
+        "os4"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os1",
+            "os2",
+            "os3",
+            "os4"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 12,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "18354 tokens > limit 13272 (1.5x baseline median)",
+          "runs": 12
+        },
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "must_not_call",
+          "detail": "",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "must_not_call",
+          "reason": "forbidden calls made: ['cancel_order']",
+          "runs": 3
+        },
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "reply_contains",
+          "detail": "",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "reply_contains",
+          "reason": "reply missing ['processing']",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 0.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "660422094bf4076cd77917e852d2785c",
+        "6b3f583ad7aa719b6fdb2850952dd4c3",
+        "e7f4bcdb68b7b3e476d6471302240ca3",
+        "81b6d1ade924aab05a92a3ee0441436a",
+        "0e1e4f44d44bfc534de4d0e3c344da3a",
+        "1806fb66822371fc569ee739a79127a6",
+        "acb80825fae330d0c0bcf21036c698a5",
+        "5a7abdd2d4e513b31ee751e752c60a53",
+        "dffd07277f14c6d0d623bfccf72c5628",
+        "fa99333049f9950833b80c5498841a3d",
+        "6375e83bda8e606c69fd9d7f8aeb046b",
+        "8e44a6d1f37b3c30d27d9052a8e2ed4d"
+      ],
+      "verdict": "bad"
+    },
+    "1b40b27761bfad9a0b81ba694e36579ea09628c8": {
+      "budget": {
+        "baseline_median": 8863.0,
+        "cases": {
+          "os1": {
+            "baseline_median": 8848.0,
+            "limit": 13272.0,
+            "median": 8848,
+            "over": false,
+            "runs": 3
+          },
+          "os2": {
+            "baseline_median": 8878.0,
+            "limit": 13317.0,
+            "median": 8878,
+            "over": false,
+            "runs": 3
+          },
+          "os3": {
+            "baseline_median": 8196.0,
+            "limit": 12294.0,
+            "median": 8855,
+            "over": false,
+            "runs": 3
+          },
+          "os4": {
+            "baseline_median": 11900.0,
+            "limit": 17850.0,
+            "median": 11900,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 8866.5,
+        "ratio": 1.0,
+        "repeats": 3,
+        "total": 4,
+        "within": 4
+      },
+      "case_stats": {
+        "os1": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os2": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os4": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 12,
+      "failing_cases": [],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "reply_contains",
+          "detail": "",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "reply_contains",
+          "reason": "reply missing ['processing']",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "5cab2559d63fc896a35565acfdb1b9eb",
+        "18880403569298fc769dae935aad0182",
+        "8eef400783e879989239ef0888db3cee",
+        "0438804014de95ee9b978156289f11bf",
+        "4560d3982f4e6ef1c99c8f65f103046f",
+        "9b25f32d44836e45bbfcd17dbdbbb989",
+        "0ee0d4e2e1688f7c9f4799df378b0ee7",
+        "8d9c33643effbec7e2163b4767159991",
+        "f29a29801afa47f44540569b5969d24f",
+        "0fb34209443f55d61c0bf1a8678784e5",
+        "b77fc254b03acfebdc820c737629350a",
+        "00308b440cf135697b8d3b2d870fb033"
+      ],
+      "verdict": "good"
+    },
+    "1cda36a34d48d484524d692ac96688f9b98953c9": {
+      "budget": {
+        "baseline_median": 8863.0,
+        "cases": {
+          "os1": {
+            "baseline_median": 8848.0,
+            "limit": 13272.0,
+            "median": 18554,
+            "over": true,
+            "runs": 3
+          },
+          "os2": {
+            "baseline_median": 8878.0,
+            "limit": 13317.0,
+            "median": 20523,
+            "over": true,
+            "runs": 3
+          },
+          "os3": {
+            "baseline_median": 8196.0,
+            "limit": 12294.0,
+            "median": 16947,
+            "over": true,
+            "runs": 3
+          },
+          "os4": {
+            "baseline_median": 11900.0,
+            "limit": 17850.0,
+            "median": 17629,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 18091.5,
+        "ratio": 2.082,
+        "repeats": 3,
+        "total": 4,
+        "within": 1
+      },
+      "case_stats": {
+        "os1": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os2": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os3": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os4": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 12,
+      "failing_cases": [
+        "os1",
+        "os2",
+        "os3"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os1",
+            "os2",
+            "os3"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 9,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "21487 tokens > limit 13272 (1.5x baseline median)",
+          "runs": 9
+        },
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "reply_contains",
+          "detail": "",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "reply_contains",
+          "reason": "reply missing ['processing']",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 0.25,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "209d61ca453b89161f9d28003d8385a7",
+        "c10977e44c98adf3b245654b332ea31b",
+        "e563a4fc79b3929e44252e1534a7d404",
+        "2337cabc2d302f2366504e2c5c032135",
+        "773e8eceaec5bac199439531e51619a3",
+        "51faa05a9f4b482bf863ca8f0ac5d8fe",
+        "7e912fe8af89e552a5872b1e221a3bc5",
+        "b21c9c572ebaf2b39f788fa40017b4f6",
+        "2ee8d40192f515cb80c5ddfdadde4b84",
+        "515b5e3e09f3c130992688daeb496879",
+        "b569f4c9628fb1d3cb68a6ff6e185c40",
+        "568baca0eeb8bf9396f61134deca0658"
+      ],
+      "verdict": "bad"
+    },
+    "2f49adb5354949f7c6b3320e4edae0ab0166c507": {
+      "budget": {
+        "baseline_median": 8863.0,
+        "cases": {
+          "os1": {
+            "baseline_median": 8848.0,
+            "limit": 13272.0,
+            "median": 9621,
+            "over": false,
+            "runs": 3
+          },
+          "os2": {
+            "baseline_median": 8878.0,
+            "limit": 13317.0,
+            "median": 12994,
+            "over": false,
+            "runs": 3
+          },
+          "os3": {
+            "baseline_median": 8196.0,
+            "limit": 12294.0,
+            "median": 9609,
+            "over": false,
+            "runs": 3
+          },
+          "os4": {
+            "baseline_median": 11900.0,
+            "limit": 17850.0,
+            "median": 9961,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 9791.0,
+        "ratio": 1.13,
+        "repeats": 3,
+        "total": 4,
+        "within": 4
+      },
+      "case_stats": {
+        "os1": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os2": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os4": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 12,
+      "failing_cases": [],
+      "failure_signatures": [],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "a305051177608c17b1c0a54deb865104",
+        "a46cbc1efa1f61b72b9c76643e41c3cf",
+        "778ab2671e2f171922095f178c564f19",
+        "e4c287e57288b4f404f0444b8896d549",
+        "223e42db27514f166ec5aadfd4c2089f",
+        "232390c29678489e695c53da3ea12879",
+        "4b6402741e25fb87c92a92f344a886b5",
+        "2c85e727189ebd93dd3fac504e6850df",
+        "6fe9562db8a45e2c52ba1b5e71cfcc55",
+        "557d25ed2d841d61ae51d2d25238ea08",
+        "de69f6171dcfdafe040aa1daca7f49bd",
+        "a60f209085e660317a39798f14deea34"
+      ],
+      "verdict": "good"
+    },
+    "59c8b10ccbd078f574b98a4770c84ef2b1d2bad2": {
+      "budget": {
+        "baseline_median": 8863.0,
+        "cases": {
+          "os1": {
+            "baseline_median": 8848.0,
+            "limit": 13272.0,
+            "median": 16767,
+            "over": true,
+            "runs": 3
+          },
+          "os2": {
+            "baseline_median": 8878.0,
+            "limit": 13317.0,
+            "median": 16550,
+            "over": true,
+            "runs": 3
+          },
+          "os3": {
+            "baseline_median": 8196.0,
+            "limit": 12294.0,
+            "median": 16124,
+            "over": true,
+            "runs": 3
+          },
+          "os4": {
+            "baseline_median": 11900.0,
+            "limit": 17850.0,
+            "median": 16186,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 16368.0,
+        "ratio": 1.88,
+        "repeats": 3,
+        "total": 4,
+        "within": 1
+      },
+      "case_stats": {
+        "os1": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os2": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os3": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os4": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 12,
+      "failing_cases": [
+        "os1",
+        "os2",
+        "os3"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os1",
+            "os2",
+            "os3"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 9,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "24263 tokens > limit 13272 (1.5x baseline median)",
+          "runs": 9
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 0.25,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "2ca83fc6749829ef22c42a12eb912ec4",
+        "2901dd640e9bbd4412a79a1b90596f24",
+        "8aa9313f58351ca2d60a4b2d789f4fa7",
+        "5e08ff02c69513b6e58d51ec29e1ce6a",
+        "91517580a919132732b1d1584781c731",
+        "1683523f599368139bf6827ade5c3ddc",
+        "e13dda7db884e701df016d8936e319c0",
+        "1be02a01917b45d91ed1b2cd8b174b64",
+        "af40fc724ea43e8ab1b9574c389cb347",
+        "1b3b0da7d78b0f24753389dc1b7b2a3c",
+        "e8d3d0f8dc84edf64424fea4db7369ee",
+        "5cdb6ca8a93938562ab6b8fc5a3c38cf"
+      ],
+      "verdict": "bad"
+    },
+    "96de44a0d622d2fff27c1de9f2521b8475a54183": {
+      "budget": {
+        "baseline_median": 8863.0,
+        "cases": {
+          "os1": {
+            "baseline_median": 8848.0,
+            "limit": 13272.0,
+            "median": 9586,
+            "over": false,
+            "runs": 3
+          },
+          "os2": {
+            "baseline_median": 8878.0,
+            "limit": 13317.0,
+            "median": 9655,
+            "over": false,
+            "runs": 3
+          },
+          "os3": {
+            "baseline_median": 8196.0,
+            "limit": 12294.0,
+            "median": 9577,
+            "over": false,
+            "runs": 3
+          },
+          "os4": {
+            "baseline_median": 11900.0,
+            "limit": 17850.0,
+            "median": 9736,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 9620.5,
+        "ratio": 1.085,
+        "repeats": 3,
+        "total": 4,
+        "within": 4
+      },
+      "case_stats": {
+        "os1": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os2": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os4": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 12,
+      "failing_cases": [],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "reply_contains",
+          "detail": "",
+          "expected": "",
+          "fails": 2,
+          "got": "",
+          "key": "reply_contains",
+          "reason": "reply missing ['processing']",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "316d0360b4f85d78977a20112411ea36",
+        "4def5d826c71a205937782e282848ba1",
+        "608fd498fe8cecc02a2354d9d351be10",
+        "f2a13541fd1b9a86fbff035c0eac974a",
+        "f8ddbd10d13a246f786694bbc81220f1",
+        "11ede7b04b4b07c62d4a3930f7268c3f",
+        "7946c732c955953b37060256f97e2ce8",
+        "36fb021c2477206f5e76795907cf80c8",
+        "74853c8692c617734b6363534f12df51",
+        "25448f01e3e7ba5eb7cc9e71857cdcb0",
+        "a63e09ef4fb4eaf3bbf65af413ae74dc",
+        "ee2f6a75e672fa1517329e11a62e82e2"
+      ],
+      "verdict": "good"
+    },
+    "d73d989a1bf2b9640a1bd5ee882d16a69dea89b5": {
+      "budget": {
+        "baseline_median": 8863.0,
+        "cases": {
+          "os1": {
+            "baseline_median": 8848.0,
+            "limit": 13272.0,
+            "median": 12942,
+            "over": false,
+            "runs": 3
+          },
+          "os2": {
+            "baseline_median": 8878.0,
+            "limit": 13317.0,
+            "median": 9823,
+            "over": false,
+            "runs": 3
+          },
+          "os3": {
+            "baseline_median": 8196.0,
+            "limit": 12294.0,
+            "median": 12893,
+            "over": true,
+            "runs": 3
+          },
+          "os4": {
+            "baseline_median": 11900.0,
+            "limit": 17850.0,
+            "median": 9847,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 11370.0,
+        "ratio": 1.285,
+        "repeats": 3,
+        "total": 4,
+        "within": 3
+      },
+      "case_stats": {
+        "os1": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os2": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os3": {
+          "errors": 0,
+          "fails": 3,
+          "passes": 0
+        },
+        "os4": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 12,
+      "failing_cases": [
+        "os3"
+      ],
+      "failure_signatures": [
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "budget",
+          "detail": "tokens@order_status",
+          "expected": "",
+          "fails": 3,
+          "got": "",
+          "key": "budget:tokens@order_status",
+          "reason": "12988 tokens > limit 12294 (1.5x baseline median)",
+          "runs": 3
+        },
+        {
+          "cases": [
+            "os3"
+          ],
+          "check": "reply_contains",
+          "detail": "",
+          "expected": "",
+          "fails": 1,
+          "got": "",
+          "key": "reply_contains",
+          "reason": "reply missing ['processing']",
+          "runs": 3
+        }
+      ],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 0.75,
+      "reason": "pass_rate 0.75 inside band (0.5, 0.85) after 1 repeats",
+      "repeats": 3,
+      "trace_ids": [
+        "90bd41440934511c73f6d7c7a9ffd990",
+        "fb445f4f017a872c69d9b50615d31899",
+        "84431c07b23738a8b1f9b2997ebf076e",
+        "491c4fb475f07833755914ac9ef2072c",
+        "2ea406b731e673c8a137d8e4a397477a",
+        "a4b08e6dc5a93f9937b3553a02911622",
+        "ceefc63a45108ce40230e1bd62df6c28",
+        "aae599ee89bfb2b10948dfc81d11289e",
+        "0cfd4bfe4bcac0e7827cb8b27fff8e4b",
+        "8548f81b8be6b5f698b528c63b8ee6e9",
+        "3a7d562ec16eacf07a5d5d7aebf367d0",
+        "dd756ed52edb97ea70427713db07af4d"
+      ],
+      "verdict": "flaky"
+    },
+    "ec19917417dd698353933ed7c40637895b49a8fd": {
+      "budget": {
+        "baseline_median": 8863.0,
+        "cases": {
+          "os1": {
+            "baseline_median": 8848.0,
+            "limit": 13272.0,
+            "median": 9606,
+            "over": false,
+            "runs": 3
+          },
+          "os2": {
+            "baseline_median": 8878.0,
+            "limit": 13317.0,
+            "median": 9603,
+            "over": false,
+            "runs": 3
+          },
+          "os3": {
+            "baseline_median": 8196.0,
+            "limit": 12294.0,
+            "median": 9552,
+            "over": false,
+            "runs": 3
+          },
+          "os4": {
+            "baseline_median": 11900.0,
+            "limit": 17850.0,
+            "median": 9731,
+            "over": false,
+            "runs": 3
+          }
+        },
+        "kind": "tokens",
+        "median": 9604.5,
+        "ratio": 1.084,
+        "repeats": 3,
+        "total": 4,
+        "within": 4
+      },
+      "case_stats": {
+        "os1": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os2": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os3": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        },
+        "os4": {
+          "errors": 0,
+          "fails": 0,
+          "passes": 3
+        }
+      },
+      "executed": 12,
+      "failing_cases": [],
+      "failure_signatures": [],
+      "flaky_cases": [],
+      "from_cache": false,
+      "pass_rate": 1.0,
+      "reason": "",
+      "repeats": 3,
+      "trace_ids": [
+        "ba44199e489d987142180dfcc3fd49c9",
+        "0c0c0d71199888af1752d7f0a23575ca",
+        "2139f4c301b9053a2fb523dc2d7fb786",
+        "7aad99dc274248b6953136980345db83",
+        "af097b65869df933a99a56692d7e8ecc",
+        "a2672488887927ca2d71b521c127e922",
+        "d3c2e36df2a176033499bd8d6a9adcb7",
+        "0ca4bb7d93ebeb7eee32cbebf69f8e5e",
+        "35fe4bb41e7b65571a5e21d5b960f5df",
+        "84ab3076914cd8c611e14698c37b4d60",
+        "5fca7a4e53c1b9a5c61c5bea995c7388",
+        "157dca15986c86fc5fd522642b4e6c58"
+      ],
+      "verdict": "good"
+    }
+  },
+  "spec": {
+    "bad_case": "rw1",
+    "bad_trace_id": "e2dad5356ed1bc49c59bc0446442df54",
+    "cases": [
+      "os1",
+      "os2",
+      "os3",
+      "os4",
+      "rw1",
+      "rw2",
+      "rw3",
+      "ro1",
+      "ro2",
+      "ca1",
+      "ca2",
+      "po1",
+      "po2",
+      "po3",
+      "es1",
+      "es2",
+      "ms1",
+      "ms2"
+    ],
+    "good_trace_ids": [
+      "7ee39f48220c98ed7c085c2a4122917e",
+      "beceaa3710382c6a7738f6e930fe1fd7"
+    ],
+    "held_out": [
+      "os5",
+      "rw4",
+      "ro3",
+      "ca3",
+      "po4",
+      "es3"
+    ],
+    "metric": "pass_rate",
+    "predicate": {
+      "budget": {
+        "max_steps": 6,
+        "token_factor": 1.5
+      },
+      "checks": [
+        {
+          "case_id": "os1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-884201",
+              "shipped"
+            ]
+          }
+        },
+        {
+          "case_id": "os2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1007"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-660418",
+              "delivered"
+            ]
+          }
+        },
+        {
+          "case_id": "os3",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "processing"
+            ]
+          }
+        },
+        {
+          "case_id": "os4",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "email": "dev.patel@example.com"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_contains": [
+              "TRK-771930"
+            ]
+          }
+        },
+        {
+          "case_id": "rw1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 64.0,
+                  "order_id": "1007"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "6,?400"
+            ],
+            "reply_regex": [
+              "\\$\\s?64(\\.00)?(?![\\d,])"
+            ]
+          }
+        },
+        {
+          "case_id": "rw2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 79.99,
+                  "order_id": "1015"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "7,?999"
+            ],
+            "reply_regex": [
+              "\\$\\s?79\\.99"
+            ]
+          }
+        },
+        {
+          "case_id": "rw3",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "amount": 59.0,
+                  "order_id": "1031"
+                },
+                "tool": "issue_refund"
+              }
+            ],
+            "call_counts": {
+              "issue_refund": 1
+            },
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "issue_refund"
+            ],
+            "must_not_call": [
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_not_regex": [
+              "5,?900"
+            ],
+            "reply_regex": [
+              "\\$\\s?59(\\.00)?(?![\\d,])"
+            ]
+          }
+        },
+        {
+          "case_id": "ro1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "0991"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]day|window|human|escalat|review"
+            ]
+          }
+        },
+        {
+          "case_id": "ro2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "0975"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]day|window|human|escalat|review"
+            ]
+          }
+        },
+        {
+          "case_id": "ca1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "cancel_order"
+              }
+            ],
+            "call_counts": {
+              "cancel_order": 1
+            },
+            "call_sequence": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_call": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_not_call": [
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "cancel"
+            ]
+          }
+        },
+        {
+          "case_id": "ca2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "cancel_order",
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "return",
+              "can'?t|cannot|unable|no longer|already shipped"
+            ]
+          }
+        },
+        {
+          "case_id": "po1",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "30[- ]days?"
+            ]
+          }
+        },
+        {
+          "case_id": "po2",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "3\\s?-\\s?5 business days"
+            ]
+          }
+        },
+        {
+          "case_id": "po3",
+          "checks": {
+            "must_call": [
+              "search_help"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "escalate_to_human",
+              "cancel_order"
+            ],
+            "reply_regex": [
+              "1[- ]year|one[- ]year|12 months"
+            ]
+          }
+        },
+        {
+          "case_id": "es1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "priority": {
+                    "in": [
+                      "high",
+                      "urgent"
+                    ]
+                  }
+                },
+                "tool": "escalate_to_human"
+              }
+            ],
+            "must_call": [
+              "escalate_to_human"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ]
+          }
+        },
+        {
+          "case_id": "es2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "priority": {
+                    "in": [
+                      "high",
+                      "urgent"
+                    ]
+                  }
+                },
+                "tool": "escalate_to_human"
+              },
+              {
+                "args": {
+                  "summary": {
+                    "contains": "1088"
+                  }
+                },
+                "tool": "escalate_to_human"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order",
+              "escalate_to_human"
+            ],
+            "must_not_call": [
+              "issue_refund",
+              "cancel_order"
+            ]
+          }
+        },
+        {
+          "case_id": "ms1",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1042"
+                },
+                "tool": "lookup_order"
+              }
+            ],
+            "first_call": "lookup_order",
+            "must_call": [
+              "lookup_order"
+            ],
+            "must_not_call": [
+              "cancel_order",
+              "issue_refund"
+            ],
+            "reply_contains": [
+              "shipped",
+              "TRK-884201"
+            ]
+          }
+        },
+        {
+          "case_id": "ms2",
+          "checks": {
+            "call_args": [
+              {
+                "args": {
+                  "order_id": "1050"
+                },
+                "tool": "cancel_order"
+              }
+            ],
+            "call_counts": {
+              "cancel_order": 1
+            },
+            "call_sequence": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_call": [
+              "lookup_order",
+              "cancel_order"
+            ],
+            "must_not_call": [
+              "issue_refund"
+            ],
+            "reply_regex": [
+              "cancel"
+            ]
+          }
+        }
+      ],
+      "order": [
+        "checks",
+        "budget",
+        "rubric"
+      ],
+      "rubric": null
+    },
+    "signature": {
+      "cases": [
+        "os1",
+        "os2",
+        "os3",
+        "os4"
+      ],
+      "check": "budget",
+      "detail": "tokens@order_status",
+      "expected": "",
+      "fails": 12,
+      "got": "",
+      "key": "budget:tokens@order_status",
+      "reason": "18354 tokens > limit 13272 (1.5x baseline median)",
+      "runs": 12
+    },
+    "source": "trace"
+  },
+  "status": "culprit_found",
+  "step": 8,
+  "updated_at": "2026-10-11T12:24:08+00:00"
+}

@@ -1,0 +1,30 @@
+== fd47af3916
+strategy  rounds  cost_usd  steps  culprit
+plain         24     0.048      8  b0be6266
+smart         18     0.036      6  b0be6266
+smart saved 6 eval rounds; same culprit: True
+planner context tokens: 22778 with graph vs 47438 reading the raw range
+== 96092ca97e
+strategy  rounds  cost_usd  steps  culprit
+plain         84     0.168      7  59c8b10c
+smart         96     0.192      8  59c8b10c
+smart saved -12 eval rounds; same culprit: True
+planner context tokens: 23746 with graph vs 43882 reading the raw range
+== 64df3527b6
+strategy  rounds  cost_usd  steps  culprit
+plain         54     0.108      7  59c8b10c
+smart         60      0.12      8  59c8b10c
+smart saved -6 eval rounds; same culprit: True
+planner context tokens: 20722 with graph vs 45137 reading the raw range
+== 3d7f0da05c
+strategy  rounds  cost_usd  steps  culprit
+plain         21     0.042      7  5cee99b6
+smart         21     0.042      7  5cee99b6
+smart saved 0 eval rounds; same culprit: True
+planner context tokens: 20722 with graph vs 45137 reading the raw range
+== 3c44624bfe
+strategy  rounds  cost_usd  steps  culprit
+plain          4     0.008      7  0ecffc09
+smart          3     0.006      6  0ecffc09
+smart saved 1 eval rounds; same culprit: True
+planner context tokens: 23746 with graph vs 43882 reading the raw range
