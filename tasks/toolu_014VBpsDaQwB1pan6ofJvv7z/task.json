@@ -1,0 +1,19 @@
+{
+  "tool_use_id": "toolu_014VBpsDaQwB1pan6ofJvv7z",
+  "agent_id": "a4e2cc61bb44b7fa4",
+  "task_description": "Docs, demo script, span fixture",
+  "files": [
+    "README.md",
+    "docs/demo-script.md",
+    "docs/storyboard.md"
+  ],
+  "token_usage": {
+    "input_tokens": 78,
+    "cache_creation_tokens": 112337,
+    "cache_read_tokens": 2868837,
+    "output_tokens": 33368,
+    "api_call_count": 39
+  },
+  "started_at": "2026-10-11T07:38:57.309425-05:00",
+  "completed_at": "2026-10-11T07:47:21.358251-05:00"
+}

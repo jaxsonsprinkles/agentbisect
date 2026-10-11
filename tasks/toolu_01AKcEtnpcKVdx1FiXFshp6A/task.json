@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01AKcEtnpcKVdx1FiXFshp6A",
+  "agent_id": "a9eea27b1f63eb76e",
+  "subagent_type": "general-purpose",
+  "task_description": "Review docs correctness",
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 48308,
+    "cache_read_tokens": 177556,
+    "output_tokens": 1591,
+    "api_call_count": 5
+  },
+  "started_at": "2026-10-11T07:47:15.476523-05:00",
+  "completed_at": "2026-10-11T07:47:46.446073-05:00"
+}
