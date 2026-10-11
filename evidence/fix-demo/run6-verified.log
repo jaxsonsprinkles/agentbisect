@@ -1,0 +1,27 @@
+llm proxy (own claude login) at http://127.0.0.1:55873
+llm proxy stats: {"calls": 30, "cli_calls": 30, "cache_hits": 0, "input_tokens": 205798, "output_tokens": 15219, "cost_usd": 0.074665, "rate_limit_events": 0, "retries": 0, "errors": 0, "invalid_output_retries": 0, "latency_s_total": 117.35910304094432, "max_concurrent": 4, "in_flight": 0, "temperatures": {"0": 30}, "avg_latency_s": 3.912}
+attempt 1: checks passed
+fix PASSED the Fixer checks; branch=agentbisect/fix-b0be6266 verifier_input={"repo": "/private/tmp/agentbisect-demo/repo", "commit": "4cf956908bad5dbd1fc465f9a416666668971e88"}
+EXPECTATION CHANGED (human review required):
+  case rw1: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1007", "amount": 64.0}}] -> [{"tool": "issue_refund", "args": {"order_id": "1007", "amount": 6400}}] (reason: Intent changed issue_refund to take integer cents; $64.00 is 6400.)
+  case rw2: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1015", "amount": 79.99}}] -> [{"tool": "issue_refund", "args": {"order_id": "1015", "amount": 7999}}] (reason: Intent changed issue_refund to take integer cents; $79.99 is 7999.)
+  case rw3: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1031", "amount": 59.0}}] -> [{"tool": "issue_refund", "args": {"order_id": "1031", "amount": 5900}}] (reason: Intent changed issue_refund to take integer cents; $59.00 is 5900.)
+HELD-OUT EXPECTATION CHANGED (human review required):
+  case rw4: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1060", "amount": 36.0}}] -> [{"tool": "issue_refund", "args": {"order_id": "1060", "amount": 3600}}] (reason: Same cents contract applied to held-out refund case; $36.00 is 3600.)
+patch: /tmp/agentbisect-demo/fix/fix-fd47af3916.patch  pr body: /tmp/agentbisect-demo/fix/fix-fd47af3916-pr.md  pr: not opened
+fix commit: 4cf956908bad5dbd1fc465f9a416666668971e88
+llm proxy (own claude login) at http://127.0.0.1:56484
+llm proxy stats: {"calls": 289, "cli_calls": 157, "cache_hits": 132, "input_tokens": 1138551, "output_tokens": 95101, "cost_usd": 0.140676, "rate_limit_events": 0, "retries": 0, "errors": 0, "invalid_output_retries": 0, "latency_s_total": 670.1648135862197, "max_concurrent": 4, "in_flight": 0, "temperatures": {"0": 289}, "avg_latency_s": 4.269}
+fix 4cf956908b: VERIFIED  eval rounds=83
+  [PASS] target: check=call_args(issue_refund.amount) expected 64.0 got 6400 no longer reproduces in any of 3 cases (pass rate 1.00)
+  [PASS] regression: all 13 previously passing cases still pass (5 flaky re-run); budget:* flags ignored (target is not a budget signature)
+  [PASS] held_out: held-out pass rate 1.00 over os5, rw4, ro3, ca3, po4, es3; budget:* flags ignored (target is not a budget signature); passes with 1 held-out expectation change(s)
+  [PASS] intent: judge (claude-sonnet-5-5; intent from checkpoint): The fix only updates the eval cases' expected refund amounts to integer cents (6400, 7999, 5900, 3600), aligning the scripted eval with the culprit's new cents API. The culprit's integer-cents behavior in the tool, schema and tests remains untouched, so the intent is preserved.
+  EXPECTATION CHANGED (human review required):
+    case rw1: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1007", "amount": 64.0}}] -> [{"tool": "issue_refund", "args": {"order_id": "1007", "amount": 6400}}]
+    case rw2: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1015", "amount": 79.99}}] -> [{"tool": "issue_refund", "args": {"order_id": "1015", "amount": 7999}}]
+    case rw3: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1031", "amount": 59.0}}] -> [{"tool": "issue_refund", "args": {"order_id": "1031", "amount": 5900}}]
+  HELD-OUT EXPECTATION CHANGED (human review required):
+    case rw4: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1060", "amount": 36.0}}] -> [{"tool": "issue_refund", "args": {"order_id": "1060", "amount": 3600}}]
+state/outputs in /tmp/agentbisect-demo
+exit 0

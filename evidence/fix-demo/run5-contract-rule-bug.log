@@ -1,0 +1,12 @@
+llm proxy (own claude login) at http://127.0.0.1:54868
+llm proxy stats: {"calls": 66, "cli_calls": 35, "cache_hits": 31, "input_tokens": 268166, "output_tokens": 22582, "cost_usd": 0.029021, "rate_limit_events": 0, "retries": 0, "errors": 0, "invalid_output_retries": 0, "latency_s_total": 165.5861390842474, "max_concurrent": 4, "in_flight": 0, "temperatures": {"0": 66}, "avg_latency_s": 4.731}
+attempt 1: failed (held-out cases failing (same check as the target): rw4; held-out failing check budget:tokens@order_status: expected  got  (22211 tokens > limit 13377 (1.5x baseline median)))
+attempt 2: failed (held-out eval edit refused: held-out case rw4: call_args is not the same check/tool/argument contract as an edited target case)
+attempt 3: failed (held-out cases failing (same check as the target): rw4, es3; held-out failing check budget:tokens@order_status: expected  got  (18373 tokens > limit 13377 (1.5x baseline median)))
+fix did NOT pass; branch=agentbisect/fix-b0be6266 verifier_input={"repo": "/private/tmp/agentbisect-demo/repo", "commit": "606c9aa84166060ad193a8aabb5367c9df6f56fe"}
+EXPECTATION CHANGED (human review required):
+  case rw1: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1007", "amount": 64.0}}] -> [{"tool": "issue_refund", "args": {"order_id": "1007", "amount": 6400}}] (reason: Intent deliberately switched issue_refund to integer cents; $64.00 is 6400.)
+  case rw2: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1015", "amount": 79.99}}] -> [{"tool": "issue_refund", "args": {"order_id": "1015", "amount": 7999}}] (reason: Intent deliberately switched issue_refund to integer cents; $79.99 is 7999.)
+  case rw3: call_args expected [{"tool": "issue_refund", "args": {"order_id": "1031", "amount": 59.0}}] -> [{"tool": "issue_refund", "args": {"order_id": "1031", "amount": 5900}}] (reason: Intent deliberately switched issue_refund to integer cents; $59.00 is 5900.)
+patch: /tmp/agentbisect-demo/fix/fix-fd47af3916.patch  pr body: /tmp/agentbisect-demo/fix/fix-fd47af3916-pr.md  pr: not opened
+exit 1
