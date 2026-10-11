@@ -7,7 +7,7 @@
 Built for neatHack (Oct 10, 2026).
 
 > Every figure below is copied from a file in `evidence/` (final re-run: [`evidence/rerun3-summary.md`](evidence/rerun3-summary.md)).
-> Open the HTML reports with `open evidence/report-<id>.html`; `evidence/dogfooding.md` (if present in your checkout) covers using AgentBisect on its own build.
+> Open the HTML reports with `open evidence/report-<id>.html`; `evidence/dogfooding.md` covers using AgentBisect on its own build.
 
 ## What it is
 
