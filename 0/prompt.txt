@@ -1,0 +1,75 @@
+<task-notification>
+<task-id>a31c996f223a18751</task-id>
+<tool-use-id>toolu_01GFxhawG9sVkdhRMjuYTr6r</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a31c996f223a18751.output</output-file>
+<status>completed</status>
+<summary>Agent "Signature bisect, weighted, backoff" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>All six units are done and pushed to origin main (`37c9144`), with 141 tests passing. None of the new signature, weighted-bisect or repeat paths has run against support-agent-demo or a real investigation; they were exercised only with fake executors on throwaway git repos.
+
+**Commits**
+- `4217407` U1: `evidence/entire-context-savings.md`. The 51.3% cut is 12,869 vs 26,420 planner tokens (bytes/4 estimates, one range).
+- `86ae902` U2: failure signatures. Bisect now asks whether this specific failing check reproduces, and other failures such as R2's budget misses count as a pass. The revert test uses the same predicate. The default `--all-signatures` spawns a sibling investigation per extra signature. `--signature KEY` forces one. The planner gets signature keywords, and the report says it separates overlapping regressions by failure signature.
+- Follow-up commit, U2 review fixes:
+  - Siblings now run even if the primary fails.
+  - The bad-end error names the signature.
+  - Unused fields are removed.
+- U3: weighted bisect that probes the commit splitting the rank-score mass in half. With uniform scores it matches plain bisect exactly. For any scores it never exceeds plain's worst-case rounds, and it is within one probe of plain on any single culprit.
+- U4:
+  - The verdict cache is now keyed (commit, case, repeat). The key format changed, so old caches are ignored and re-run.
+  - Repeats default to 1, with extras only for borderline results or judge-graded cases. `AGENTBISECT_REPEATS` still overrides.
+  - Each repeat gets its own salted proxy cache entry, so repeats actually differ.
+- U5: `AGENTBISECT_MODEL_CONCURRENCY` (default 4) and exponential backoff with jitter on model calls. Backoff and recovery events are saved to the investigation state (`metrics["throttle"]`) and the report. This was only tested against a fake failing `claude`.
+- U6: `agentbisect judge-smoke`. I ran it live once and it recorded `claude-sonnet-5-5`, matching the pin (750 tokens in, 9 out).
+- Final commit: BUILD_LOG.md entries for all six units.
+
+**Reviewer rounds:** I ran the three-angle review (correctness, simplification, test coverage) on U2 and a single combined pass on U3, U4 and U5. Blocking findings were fixed before each commit. U2's review fixes landed after the coordinator had already committed U2, so they are in a separate commit. U6 had no review round, only the unit test and the one live call.
+
+**Caveats**
+- Real neatlogs traces don't carry failing-check detail, so the signature is taken from the bad end's eval results when the trace has no hint.
+- An explicit `--signature` or a signature taken from a trace skips discovery, so no siblings are spawned in that case.
+- The new tests and the U5 reviewer-fix changes were not re-reviewed after the fixes.</result>
+<usage><subagent_tokens>237856</subagent_tokens><tool_uses>34</tool_uses><duration_ms>1103559</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ae753f4a104b201d3</task-id>
+<tool-use-id>toolu_01QcLpJpFGxbezidxr62NeKh</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ae753f4a104b201d3.output</output-file>
+<status>completed</status>
+<summary>Agent "Demo parent-trace spans" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The multi-span `dlq` is a backend problem, not the demo's tracing. There is no fix to make in the demo, so I made no new commit; the working tree is clean and the llm-proxy on 8791 is stopped.
+
+The SDK side is clean: `get_delivery_diagnostics()` reported 0 export failures and 0 drops. The backend finalized exactly one shape, a root `WORKFLOW` span with one `TOOL` child. The same shape was later dead-lettered.
+
+I ran each variant as a bare `neatlogs.trace()` script, with no model calls or demo code involved.
+
+| Variant | Trace ids | Result |
+|---|---|---|
+| `WORKFLOW` + 1 `TOOL` child, with attrs (C) | `af41536424d272b3696bdc616e40143e` | finalized, 2 spans |
+| `WORKFLOW` + 1 `TOOL` child, int attr (E) | `f6ad1cdd02a5ec5d7bbfb8cd2be44e08` | finalized, 2 spans |
+| Exact repeat of C | `99a3a8d5ad662f4bac4cbc47e964ffc5`, `a25f8e0c33f84eaa716ac6eab355050e` | dlq, 0 spans |
+| `WORKFLOW` + 2 `TOOL` siblings | `c29bcec815dab4068db3766f06beab6d`, `fadd81a6bba43dc8a84215164a66c0d2` (flushed between spans) | dlq |
+| Nested or 3+ spans (`WORKFLOW` &gt; `CHAIN` &gt; `TOOL`, `TOOL` &gt; `TOOL`, 3 flat `TOOL` children) | `ed094ad96d4c040d4ef645f5f01d633a`, `75ad436dc68f7541fa76743668031d99`, `2e1c41856ca841bc5d6d2d9605b29c26` | dlq |
+| Real demo run | `5ad517664ed4dbd323aaf32526ceacbf` | dlq |
+| Real demo run | `dca67a22affcc988c9af943794aae4fe` | dlq |
+| Real demo run | `f502464ebbce39102545d28ddae32435` | never ingested (NOT_FOUND) |
+| Single `WORKFLOW`, `WORKFLOW` + `CHAIN`, `WORKFLOW` + `AGENT`, non-empty tags, `WORKFLOW` + `CHAIN` + `TOOL` sibling | `2efe8dec27efcadc3bce6466972b912b`, `66be775a76c204969e15d8f947d2a10e`, `a155af5daf3848ccf7bc667ea06874c1`, `91b8c7dfc660f1032c34685f19cae705`, `353ec64dcc8643d324c44031ada21bc5` | never ingested (NOT_FOUND) |
+
+- **Repeat of C:** both repeats sat at `pending` for about 7 minutes, then went to `dlq`. Same code and shape as the finalized trace.
+- **Attribute types:** attribute type (string, int, JSON) made no difference.
+- **Model calls:** the failures also occurred without `neatlogs.wrap`'d model calls.
+- **Earlier runs:** the older single-span traces from the previous design finalized at 21:23 to 21:24, so the backend was healthy earlier.
+
+**Repro:** `/tmp/bis4.py C2` (`/tmp/bis.py` has the C and E shapes). It opens one `WORKFLOW` span with one `TOOL` child, then calls `flush()` and `shutdown()`.
+
+**Where this leaves the demo:** the `support_case` &gt; `agent.run` &gt; `tool:*` / model-call structure in `67f3521` is correct on the SDK side. A live read-back with `spansCount` &gt; 0 and a non-dlq status isn't possible until neatlogs fixes finalization. The ids above should go to them, along with the `dlq` list from `neatlogs traces list`.</result>
+<usage><subagent_tokens>109881</subagent_tokens><tool_uses>13</tool_uses><duration_ms>2154479</duration_ms></usage>
+</task-notification>
+
+---
+
+First - make the message, then do the re-run

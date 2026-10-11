@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01C7C5i1dgdLJaoYsBteQPaf",
+  "agent_id": "a31c996f223a18751",
+  "subagent_type": "general-purpose",
+  "task_description": "Signature bisect, weighted, backoff",
+  "token_usage": {
+    "input_tokens": 148,
+    "cache_creation_tokens": 393106,
+    "cache_read_tokens": 11273465,
+    "output_tokens": 86829,
+    "api_call_count": 75
+  },
+  "started_at": "2026-10-10T18:29:51.703024-05:00",
+  "completed_at": "2026-10-10T19:30:02.720919-05:00"
+}

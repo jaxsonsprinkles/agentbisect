@@ -1,0 +1,14 @@
+{
+  "tool_use_id": "toolu_017n24RwGqH1TjC3c4W6PeQV",
+  "agent_id": "af1813bac19f52bfe",
+  "task_description": "Review signature fixes",
+  "token_usage": {
+    "input_tokens": 12,
+    "cache_creation_tokens": 45680,
+    "cache_read_tokens": 208866,
+    "output_tokens": 4046,
+    "api_call_count": 6
+  },
+  "started_at": "2026-10-10T20:34:58.308621-05:00",
+  "completed_at": "2026-10-10T20:35:38.847697-05:00"
+}
