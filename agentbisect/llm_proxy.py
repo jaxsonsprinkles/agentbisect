@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import random
 import re
 import subprocess
 import tempfile
@@ -219,10 +220,38 @@ class Stats:
         return d
 
 
+def _env_num(name: str, default: float, conv=float) -> float:
+    try:
+        return conv(os.environ[name]) if os.environ.get(name) else default
+    except ValueError:
+        return default
+
+
+DEFAULT_CONCURRENCY = 4  # override with $AGENTBISECT_MODEL_CONCURRENCY (read when a proxy is constructed)
+MAX_EVENTS = 500  # backoff events kept in memory / reported
+
+
 class LLMProxy:
-    def __init__(self, claude_bin: str = "claude", concurrency: int = 3, cache_dir: str | None = None,
-                 timeout: float = 180.0, max_retries: int = 3, backoff: float = 2.0, retry_after: float = 5.0,
-                 debug_dump: str | None = None):
+    """Throttling: at most `concurrency` model calls in flight (env AGENTBISECT_MODEL_CONCURRENCY, default 4). A
+    rate-limited / overloaded call (429, 529, usage limit text) is retried up to `max_retries` times with
+    exponential backoff and equal jitter (wait = d/2 + U(0, d/2), d = backoff * 2^attempt, capped at
+    AGENTBISECT_BACKOFF_MAX, default 60 s; AGENTBISECT_BACKOFF / AGENTBISECT_MAX_RETRIES set the base and count),
+    then the client gets HTTP 429 + retry-after so SDK retries behave. Every backoff, recovery and give-up is
+    appended to `events` (GET /events) so a run can cite it as evidence of recovering from throttling."""
+
+    def __init__(self, claude_bin: str = "claude", concurrency: int | None = None, cache_dir: str | None = None,
+                 timeout: float = 180.0, max_retries: int | None = None, backoff: float | None = None,
+                 retry_after: float = 5.0, debug_dump: str | None = None, max_backoff: float | None = None,
+                 rng: random.Random | None = None, sleep=time.sleep):
+        concurrency = max(1, concurrency or int(_env_num("AGENTBISECT_MODEL_CONCURRENCY", DEFAULT_CONCURRENCY, int)))
+        max_retries = max(0, int(_env_num("AGENTBISECT_MAX_RETRIES", 3, int)) if max_retries is None else max_retries)
+        backoff = _env_num("AGENTBISECT_BACKOFF", 2.0) if backoff is None else backoff
+        self.max_backoff = _env_num("AGENTBISECT_BACKOFF_MAX", 60.0) if max_backoff is None else max_backoff
+        self.concurrency, self.rng, self._sleep = concurrency, rng or random.Random(), sleep
+        self.events: list[dict] = []  # newest MAX_EVENTS; `totals` and `_seq` are never capped
+        self.totals = {"backoff": 0, "recovered": 0, "gave_up": 0, "waited_s": 0.0}
+        self._seq = 0
+        self._ev_lock = threading.Lock()
         self.claude_bin, self.timeout = claude_bin, timeout
         self.debug_dump = Path(debug_dump) if debug_dump else None  # DEBUG ONLY: writes full prompts to disk
         if self.debug_dump:
@@ -234,6 +263,19 @@ class LLMProxy:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.stats = Stats()
         self.httpd: ThreadingHTTPServer | None = None
+
+    def _event(self, kind: str, model: str, attempt: int, wait: float = 0.0, reason: str = "") -> None:
+        with self._ev_lock:
+            self.totals[kind] += 1
+            self.totals["waited_s"] = round(self.totals["waited_s"] + wait, 3)
+            self.events.append({"seq": self._seq, "ts": round(time.time(), 3), "kind": kind, "model": model, "attempt": attempt,
+                                "wait_s": round(wait, 3), "reason": reason[:160]})
+            self._seq += 1
+            del self.events[:-MAX_EVENTS]
+
+    def _wait(self, attempt: int) -> float:
+        d = min(self.max_backoff, self.backoff * (2 ** attempt))
+        return d / 2 + self.rng.uniform(0, d / 2)
 
     # -- CLI call --
     def _cli_once(self, prompt: str, system: str, model: str, schema: dict | None) -> dict:
@@ -269,6 +311,7 @@ class LLMProxy:
 
     def _cli(self, prompt: str, system: str, model: str, schema: dict | None) -> tuple[dict, float]:
         """One CLI call under the concurrency cap, retrying rate-limit-style failures with exponential backoff."""
+        last: Exception | None = None
         for attempt in range(self.max_retries + 1):
             with self.sem:
                 with self.stats.lock:
@@ -279,6 +322,8 @@ class LLMProxy:
                     data = self._cli_once(prompt, system, model, schema)
                     dt = time.perf_counter() - t0
                     self.stats.add(cli_calls=1, latency_s_total=dt)
+                    if attempt:
+                        self._event("recovered", model, attempt)
                     return data, dt
                 except CLIError as e:
                     if not e.rate_limited:
@@ -291,7 +336,10 @@ class LLMProxy:
                         self.stats.d["in_flight"] -= 1
             if attempt < self.max_retries:
                 self.stats.add(retries=1)
-                time.sleep(self.backoff * (2 ** attempt))
+                wait = self._wait(attempt)
+                self._event("backoff", model, attempt, wait, str(last))
+                self._sleep(wait)
+        self._event("gave_up", model, self.max_retries, 0.0, str(last))
         self.stats.add(errors=1)
         raise ProxyError(429, "rate_limit_error", f"claude CLI rate limited after retries: {last}",
                          retry_after=self.retry_after)
@@ -418,6 +466,10 @@ class LLMProxy:
             def do_GET(self):
                 if self.path == "/stats":
                     self._send(200, proxy.stats.snapshot())
+                elif self.path == "/events":
+                    with proxy._ev_lock:
+                        self._send(200, {"events": list(proxy.events), "concurrency": proxy.concurrency,
+                                         "totals": dict(proxy.totals), "next_seq": proxy._seq})
                 elif self.path in ("/health", "/"):
                     self._send(200, {"ok": True})
                 else:
@@ -458,12 +510,12 @@ class LLMProxy:
             self.httpd.server_close()
 
 
-def run_forever(port: int, concurrency: int, cache: bool, cache_dir: str | None, claude_bin: str = "claude",
+def run_forever(port: int, concurrency: int | None, cache: bool, cache_dir: str | None, claude_bin: str = "claude",
                 debug_dump: str | None = None) -> int:
     px = LLMProxy(claude_bin=claude_bin, concurrency=concurrency, debug_dump=debug_dump,
                   cache_dir=(cache_dir or DEFAULT_CACHE_DIR) if cache else None)
     px.serve(port)
-    print(f"agentbisect llm-proxy on {px.url} (concurrency {concurrency}, cache {'on' if cache else 'off'}); "
+    print(f"agentbisect llm-proxy on {px.url} (concurrency {px.concurrency}, cache {'on' if cache else 'off'}); "
           f"use ANTHROPIC_BASE_URL={px.url} ANTHROPIC_API_KEY={DUMMY_API_KEY}; GET /stats for counters", flush=True)
     try:
         while True:

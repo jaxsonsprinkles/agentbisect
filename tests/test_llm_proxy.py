@@ -200,3 +200,83 @@ def test_salt_makes_repeats_distinct_samples_but_replays_cache(px):
     assert not any("abc.case" in f.read_text() for f in px.calls_dir.glob("call*"))  # salt never reaches the model
     s, _, _ = post(px, b, "/salt/bad%20salt/v1/messages")
     assert s == 404
+
+
+def test_backoff_is_exponential_with_equal_jitter_and_logged(px):
+    import random
+    waits = []
+    px.max_retries, px.backoff, px._sleep, px.rng = 3, 2.0, waits.append, random.Random(1)
+    (px.calls_dir / "mode").write_text("ratelimit")
+    s, _, _ = post(px, body("x"))
+    assert s == 429 and len(waits) == 3
+    for attempt, w in enumerate(waits):  # d/2 <= wait <= d, d = 2 * 2^attempt
+        d = 2.0 * 2 ** attempt
+        assert d / 2 <= w <= d
+    assert len(set(waits)) == 3
+    kinds = [e["kind"] for e in px.events]
+    assert kinds == ["backoff"] * 3 + ["gave_up"] and px.events[0]["wait_s"] == round(waits[0], 3)
+    with urllib.request.urlopen(px.url + "/events") as f:
+        d = json.loads(f.read())
+    assert [e["kind"] for e in d["events"]] == kinds and d["concurrency"] == px.concurrency
+
+
+def test_backoff_capped_and_recovery_event(px):
+    px.max_backoff, px.backoff, px._sleep = 3.0, 100.0, lambda w: None
+    (px.calls_dir / "mode").write_text("ratelimit_once")
+    s, _, _ = post(px, body("x"))
+    assert s == 200
+    assert [e["kind"] for e in px.events] == ["backoff", "recovered"] and px.events[0]["wait_s"] <= 3.0
+
+
+def test_concurrency_default_and_env(monkeypatch):
+    from agentbisect import llm_proxy as lp
+    monkeypatch.delenv("AGENTBISECT_MODEL_CONCURRENCY", raising=False)
+    assert lp.LLMProxy().concurrency == 4
+    monkeypatch.setenv("AGENTBISECT_MODEL_CONCURRENCY", "7")
+    assert lp.LLMProxy().concurrency == 7 and lp.LLMProxy(concurrency=2).concurrency == 2
+    for bad in ("abc", "-3", "0"):
+        monkeypatch.setenv("AGENTBISECT_MODEL_CONCURRENCY", bad)
+        assert lp.LLMProxy().concurrency >= 1
+    monkeypatch.setenv("AGENTBISECT_MAX_RETRIES", "-5")
+    assert lp.LLMProxy().max_retries == 0
+
+
+def test_event_totals_survive_the_cap(monkeypatch):
+    from agentbisect import llm_proxy as lp
+    p = lp.LLMProxy()
+    for i in range(lp.MAX_EVENTS + 20):
+        p._event("backoff", "m", 0, 1.0)
+    assert len(p.events) == lp.MAX_EVENTS and p.totals["backoff"] == lp.MAX_EVENTS + 20 and p._seq == lp.MAX_EVENTS + 20
+
+
+def test_throttle_deltas_do_not_double_count_across_investigations(px, tmp_path, monkeypatch):
+    from agentbisect import cli
+    from agentbisect.report import build_report
+    from agentbisect.state import StateStore
+    px.backoff, px._sleep = 1.0, lambda w: None
+    monkeypatch.setenv("AGENTBISECT_LLM_PROXY_URL", px.url)
+    store = StateStore(tmp_path / "ab")
+    first, second = store.create(str(tmp_path)), store.create(str(tmp_path))
+    mark = cli._proxy_events()
+    (px.calls_dir / "mode").write_text("ratelimit_once")
+    post(px, body("x"))
+    cli.record_throttle(store, first, mark)
+    mark2 = cli._proxy_events()  # sibling starts after: sees nothing new
+    post(px, body("y"))
+    cli.record_throttle(store, second, mark2)
+    assert store.load(second.id).metrics.get("throttle") is None
+    t = store.load(first.id).metrics["throttle"]
+    assert t["backoffs"] == 1 and t["recovered"] == 1 and t["gave_up"] == 0 and t["events"][0]["kind"] == "backoff"
+    assert "1 backoff(s)" in build_report(store.load(first.id))["throttle"]
+    cli.record_throttle(store, first, mark)  # resume-style second call with the same mark adds the delta again only
+    assert build_report(store.load(second.id))["throttle"] is None
+    monkeypatch.delenv("AGENTBISECT_LLM_PROXY_URL")
+    cli.record_throttle(store, second, mark)  # no proxy: no-op
+
+
+def test_slot_not_held_during_backoff_and_cap_enforced(px, monkeypatch):
+    monkeypatch.setenv("FAKE_SLEEP", "0.2")
+    ts = [threading.Thread(target=post, args=(px, body(f"c{i}"))) for i in range(5)]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert px.stats.snapshot()["max_concurrent"] <= px.concurrency

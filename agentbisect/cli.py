@@ -106,7 +106,8 @@ def _parser() -> argparse.ArgumentParser:
     rp.add_argument("--draft", action="store_true", help="force a draft PR (default: draft iff the fix is unverified)")
     lp = sub.add_parser("llm-proxy", help="serve an Anthropic-compatible API backed by your logged-in `claude` CLI")
     lp.add_argument("--port", type=int, default=8787)
-    lp.add_argument("--concurrency", type=int, default=3)
+    lp.add_argument("--concurrency", type=int, default=None,
+                    help="max model calls in flight (default $AGENTBISECT_MODEL_CONCURRENCY or 4)")
     lp.add_argument("--cache", action="store_true", help="cache responses in .agentbisect/llm_cache")
     lp.add_argument("--cache-dir")
     lp.add_argument("--debug-dump", metavar="DIR", help="DEBUG: write every rendered prompt + output to DIR (use /tmp)")
@@ -215,26 +216,56 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
             return 0
         st = store.load(a.id)
         redo = store.resume(st)
-        init_tracing(st.id)
-        try:
-            print(f"resumed {st.id}" + (f"; will redo interrupted step: {redo}" if redo else ""))
-            from .bisect import resume_investigation
-            meta = st.metrics.get("source")
-            return _explain(store, st, int(resume_investigation(store, st, strategy=make_strategy(
-                st, store, meta)) or 0), meta)
-        finally:
-            shutdown_tracing()
+        print(f"resumed {st.id}" + (f"; will redo interrupted step: {redo}" if redo else ""))
+        return _run_one(store, st, st.metrics.get("source"))
     except StateError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
 
+def _proxy_events() -> dict | None:
+    url = os.environ.get("AGENTBISECT_LLM_PROXY_URL")
+    if not url:
+        return None
+    import urllib.request
+    try:
+        with urllib.request.urlopen(url.rstrip("/") + "/events", timeout=5) as f:
+            return json.loads(f.read())
+    except Exception:
+        return None
+
+
+def record_throttle(store: StateStore, st: BisectState, mark: dict | None) -> None:
+    """Add what the LLM proxy logged since `mark` (a /events snapshot taken before the run) to
+    metrics["throttle"], so a report can cite backoffs and recoveries as evidence. Counts are deltas, so
+    siblings sharing a proxy and resumed runs neither double count nor lose earlier counts. No-op without a proxy."""
+    now = _proxy_events()
+    if not mark or not now or "totals" not in now or "totals" not in mark:
+        return
+    d = {k: now["totals"][k] - mark["totals"][k] for k in now["totals"]}
+    if not any(d.values()):
+        return
+    t = st.metrics.setdefault("throttle", {"backoffs": 0, "recovered": 0, "gave_up": 0, "waited_s": 0.0, "events": []})
+    t["backoffs"] += d["backoff"]
+    t["recovered"] += d["recovered"]
+    t["gave_up"] += d["gave_up"]
+    t["waited_s"] = round(t["waited_s"] + d["waited_s"], 1)
+    t["concurrency"] = now.get("concurrency")
+    t["events"] = (t["events"] + [e for e in now.get("events", []) if e.get("seq", 0) >= mark["next_seq"]])[-50:]
+    try:
+        store.save(st)
+    except OSError:
+        pass
+
+
 def _run_one(store: StateStore, st: BisectState, meta: dict | None) -> int:
     from .bisect import resume_investigation
     init_tracing(st.id)
+    mark = _proxy_events()
     try:
         return _explain(store, st, int(resume_investigation(store, st, strategy=make_strategy(st, store, meta))), meta)
     finally:
+        record_throttle(store, st, mark)
         shutdown_tracing()
 
 

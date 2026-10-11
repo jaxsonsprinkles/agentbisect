@@ -102,8 +102,12 @@ def build_report(st: BisectState, repo: str | None = None) -> dict[str, Any]:
     signature = {"label": sig.label, "key": sig.key, "cases": list(sig.cases), "others": others,
                  "siblings": list(m.get("signature_siblings", [])),
                  "group": m.get("signature_group")} if sig else None
+    th = m.get("throttle") or {}
+    throttle = (f"Model throttling: {th['backoffs']} backoff(s) totalling {th['waited_s']}s (exponential with jitter, "
+                f"concurrency {th.get('concurrency')}); {th['recovered']} call(s) recovered, {th['gave_up']} gave up."
+                ) if th.get("backoffs") else None
     return {
-        "signature": signature, "id": st.id, "repo": repo, "status": st.status, "good_sha": st.good_sha, "bad_sha": st.bad_sha,
+        "throttle": throttle, "signature": signature, "id": st.id, "repo": repo, "status": st.status, "good_sha": st.good_sha, "bad_sha": st.bad_sha,
         "culprit": c, "flags": flags, "multi": any(MULTI_REGRESSION in f for f in flags),
         "low_conf": bool(c and c.confidence == "low"),
         "revert": {"passed": c.revert_test_passed if c else None, "baseline": baseline, "culprit_rate": before,
@@ -176,6 +180,8 @@ def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
     if other:
         L += ["Flags: " + "; ".join(other), ""]
     L += _signature_md(r)
+    if r.get("throttle"):
+        L += [r["throttle"], ""]
     L += ["## Culprit commit", "", f"`{c.sha}`", ""]
     if r["culprit_checkpoint"]:
         L += [f"Entire checkpoint: `{r['culprit_checkpoint']}`", ""]
@@ -297,6 +303,8 @@ def render_html(r: dict[str, Any]) -> str:
         if other:
             P.append(f'<p class="mut">Flags: {e("; ".join(other))}</p>')
         ck = f"<p>Entire checkpoint: <code>{e(r['culprit_checkpoint'])}</code></p>" if r["culprit_checkpoint"] else ""
+        if r.get("throttle"):
+            P.append(f'<p class="mut">{e(r["throttle"])}</p>')
         if r.get("signature"):
             sec("Failure signature", "".join(f"<p>{e(x)}</p>" for x in _signature_lines(r)))
         sec("Culprit commit", f"<p><code>{e(c.sha)}</code></p>{ck}")
