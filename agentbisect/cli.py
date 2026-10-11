@@ -118,6 +118,15 @@ def _parser() -> argparse.ArgumentParser:
     cb.add_argument("--out", help="baseline file (default: <state-dir>/baseline-<good sha>.json)")
     cb.add_argument("--cases", help="comma-separated case ids (default: every case in evals/cases.jsonl)")
     cb.add_argument("--llm-proxy", default="off", metavar="auto|URL|off", help="as for `investigate`")
+    vf = sub.add_parser("verify-fix", help="verify a candidate fix commit: target signature gone, no regressions, "
+                                           "held-out cases pass, culprit intent preserved (exit 0 verified, 1 not, "
+                                           "2 inconclusive)")
+    vf.add_argument("id")
+    vf.add_argument("--commit", required=True, help="the candidate fix commit (or branch) in the target repo")
+    vf.add_argument("--branch", default="", help="fix branch name (matches a recorded fix attempt)")
+    vf.add_argument("--base", help="commit the fix was written against (default: the investigation's bad end)")
+    vf.add_argument("--repo", help="repo holding the fix (default: the investigation's repo)")
+    vf.add_argument("--llm-proxy", default="off", metavar="auto|URL|off", help="as for `investigate`")
     lp = sub.add_parser("llm-proxy", help="serve an Anthropic-compatible API backed by your logged-in `claude` CLI")
     lp.add_argument("--port", type=int, default=8787)
     lp.add_argument("--concurrency", type=int, default=None,
@@ -156,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps(r, indent=2))
         return 0 if r["match"] else 1
-    if a.cmd in ("investigate", "calibrate"):
+    if a.cmd in ("investigate", "calibrate", "verify-fix"):
         with _llm_proxy(getattr(a, "llm_proxy", "off")):
             return _main(a, store)
     return _main(a, store)
@@ -232,6 +241,8 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
         return code
     if a.cmd == "calibrate":
         return _calibrate(a, store)
+    if a.cmd == "verify-fix":
+        return _verify_fix(a, store)
     if a.cmd == "watch":
         print("agentbisect watch: not implemented yet (later chunk)", file=sys.stderr)
         return 2
@@ -256,6 +267,22 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
     except StateError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
+
+
+def _verify_fix(a: argparse.Namespace, store: StateStore) -> int:
+    from .bisect import BisectError, make_runner
+    from .verify import (ClaudeIntentJudge, VerifierInput, describe_verification, record_verification, verify_fix)
+    try:
+        st = store.load(a.id)
+        runner = make_runner(store, st)
+        vin = VerifierInput(repo=a.repo or st.repo, commit=a.commit, branch=a.branch, base=a.base)
+        res = verify_fix(st, runner, vin, ClaudeIntentJudge(runner.cfg.models["judge_model"]))
+        record_verification(store, st, vin, res)
+    except (StateError, BisectError, ValueError, RuntimeError) as e:  # incl. BaselineError, bad shas, illegal state
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print("\n".join(describe_verification(res)))
+    return {True: 0, False: 1, None: 2}[res.passed]
 
 
 def _calibrate(a: argparse.Namespace, store: StateStore) -> int:
