@@ -6,6 +6,8 @@
 
 Built for neatHack (Oct 10, 2026).
 
+Business case: [AgentBisect financial model on CFO.ai](https://cfo.ai/s/nx6S-5QNKtJFVkRp) (spreadsheet copy: [`evidence/cfo-ai/`](evidence/cfo-ai/)).
+
 > Every figure below is copied from a file in `evidence/` (final re-run: [`evidence/rerun3-summary.md`](evidence/rerun3-summary.md)).
 > Open the HTML reports with `open evidence/report-<id>.html`; `evidence/dogfooding.md` covers using AgentBisect on its own build.
 

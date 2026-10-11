@@ -1,5 +1,7 @@
 # AgentBisect build log (neatHack)
 
+Financial model: https://cfo.ai/s/nx6S-5QNKtJFVkRp (copy: `evidence/cfo-ai/AgentBisect — Financial Model.xlsx`)
+
 ## Chunk 0: setup + discovery (Oct 10, 2026)
 
 Done: uv project, two public repos with Entire enabled, secrets in gitignored `.env`, discovery below.
