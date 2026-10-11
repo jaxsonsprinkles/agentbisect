@@ -1,0 +1,34 @@
+<task-notification>
+<task-id>ae753f4a104b201d3</task-id>
+<tool-use-id>toolu_01JVwZd2mQbboyHUMoVsqgET</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ae753f4a104b201d3.output</output-file>
+<status>completed</status>
+<summary>Agent "Demo parent-trace spans" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Both commits are pushed to origin main, but I could not confirm the span count server-side. The neatlogs backend dead-lettered every multi-span trace I sent. `uv run pytest` passes (289 tests).
+
+**Commits**
+- `67f3521`: tracing. It uses the public `neatlogs.trace()` context manager and no private internals.
+  - The eval harness and `python -m agent` each open a `support_case` parent span per case run (it carries `case.id`), and `agent.run` nests under it.
+  - Each tool call is a `tool:&lt;name&gt;` child span with args, result and error attributes.
+  - Model calls come from the wrapped Anthropic client and nest as children.
+  - `trace_id` now holds the real id. It used to fall back to a `local-` id because neatlogs doesn't set the global OpenTelemetry current span.
+- `997886d`: flaky `search_help`.
+  - It times out about 30% of the time, deterministically per `DEMO_FLAKE_SEED:case:repeat:call-index`.
+  - `DEMO_FLAKE=0` turns it off. `tests/conftest.py` sets it to 0 for the existing tests.
+  - A timeout returns a retryable error, and I added a retry row to the system prompt.
+  - No historical commits were touched, and I didn't change `agentbisect`.
+
+**Live run**
+- Case `os1` ran through the llm-proxy with `claude-haiku-5-5`. Each run produced exactly one new trace id, not one per model call.
+- Trace `f502464ebbce39102545d28ddae32435` (the final run, with `DEMO_FLAKE_SEED=b`) shows the recovery path. `search_help` timed out, the agent retried, and the case passed in 4 steps.
+- Earlier runs produced `dca67a22affcc988c9af943794aae4fe` (`os1`) and `5ad517664ed4dbd323aaf32526ceacbf` (a synthetic 3-span test).
+
+**Not verified**
+- The span count and parent/child links as seen server-side. Both older traces went from `pending` to `dlq` with `spansCount` 0, and the final one returned NOT_FOUND on read-back.
+- The SDK reported no export failures, and the synthetic trace was named `support_case` on the backend, so the parent span reached it. The older single-span traces did finalize, so the backend problem looks specific to multi-span traces.
+- Next step is to ask neatlogs why the multi-span traces dead-letter, or to look at the DLQ for these trace ids.
+- Running the harness with `--json` needs `NEATLOGS_LOG_LEVEL=ERROR`. Otherwise neatlogs logs to stdout and breaks the JSON. The agentbisect runner already sets it.
+- I left the llm-proxy running on port 8791.</result>
+<usage><subagent_tokens>95665</subagent_tokens><tool_uses>3</tool_uses><duration_ms>133350</duration_ms></usage>
+</task-notification>

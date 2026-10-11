@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01K63SYhgKzkcab7B3QhgDzg",
+  "agent_id": "ae753f4a104b201d3",
+  "subagent_type": "general-purpose",
+  "task_description": "Demo parent-trace spans",
+  "token_usage": {
+    "input_tokens": 70,
+    "cache_creation_tokens": 184211,
+    "cache_read_tokens": 2404794,
+    "output_tokens": 17808,
+    "api_call_count": 36
+  },
+  "started_at": "2026-10-10T18:29:41.343622-05:00",
+  "completed_at": "2026-10-10T19:13:52.429113-05:00"
+}
