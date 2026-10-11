@@ -84,8 +84,8 @@ def test_finds_culprit_in_log2_steps(tmp_path, hist):
     st = store.load(st.id)
     assert st.status == "culprit_found" and st.culprit.sha == hist[1][9] and st.culprit.confidence == "high"
     assert st.in_flight is None and not st.metrics.get("warnings")
-    # 2 end confirmations + <= ceil(log2 12)=4 bisect steps + 1 monotonic probe
-    assert st.step <= 7
+    # signature discovery + 2 end confirmations + <= ceil(log2 12)=4 bisect steps + 1 monotonic probe
+    assert st.step <= 8
     assert st.metrics["eval_rounds"] == runner.eval_rounds > 0 and st.metrics["cost_usd"] > 0
     assert st.plan.mode == "plain"
 

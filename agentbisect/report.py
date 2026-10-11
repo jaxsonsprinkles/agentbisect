@@ -97,8 +97,13 @@ def build_report(st: BisectState, repo: str | None = None) -> dict[str, Any]:
         rounds = {"plain": cmp_["plain"], "smart": cmp_["smart"], "saved": cmp_.get("saved_rounds")}
     elif m.get("eval_rounds") is not None:
         rounds = {m.get("strategy", "?"): {"eval_rounds": m.get("eval_rounds"), "cost_usd": m.get("cost_usd")}}
+    sig = st.spec.signature if st.spec else None
+    others = [d for d in m.get("signatures", []) if not sig or d.get("key") != sig.key]
+    signature = {"label": sig.label, "key": sig.key, "cases": list(sig.cases), "others": others,
+                 "siblings": list(m.get("signature_siblings", [])),
+                 "group": m.get("signature_group")} if sig else None
     return {
-        "id": st.id, "repo": repo, "status": st.status, "good_sha": st.good_sha, "bad_sha": st.bad_sha,
+        "signature": signature, "id": st.id, "repo": repo, "status": st.status, "good_sha": st.good_sha, "bad_sha": st.bad_sha,
         "culprit": c, "flags": flags, "multi": any(MULTI_REGRESSION in f for f in flags),
         "low_conf": bool(c and c.confidence == "low"),
         "revert": {"passed": c.revert_test_passed if c else None, "baseline": baseline, "culprit_rate": before,
@@ -133,6 +138,27 @@ def _intent_label(r: dict[str, Any]) -> str:
     return "Original intent (NO CHECKPOINT: reconstructed from the commit message only)"
 
 
+def _signature_lines(r: dict[str, Any]) -> list[str]:
+    sg = r.get("signature")
+    if not sg:
+        return []
+    out = [f"Bisected on the failure signature `{sg['label']}` (key `{sg['key']}`; cases "
+           f"{', '.join(sg['cases']) or 'all'}). A commit is bad only if THIS check fails; other failures count as "
+           "a pass for this signature. AgentBisect separates overlapping regressions by failure signature."]
+    if sg["others"]:
+        out.append("Other failing checks at the bad end (separate signatures, each bisected on its own): "
+                   + "; ".join(f"{d['key']} (cases {', '.join(d.get('cases', []))})" for d in sg["others"]))
+    if sg["siblings"]:
+        out.append("Sibling investigations: " + "; ".join(
+            f"{x.get('id')} [{x.get('key')}] culprit {(x.get('culprit') or 'none')[:10]}" for x in sg["siblings"]))
+    return out
+
+
+def _signature_md(r: dict[str, Any]) -> list[str]:
+    lines = _signature_lines(r)
+    return ["## Failure signature", "", *[y for x in lines for y in (x, "")]] if lines else []
+
+
 def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
     c, fx = r["culprit"], r["fix"]
     L: list[str] = [f"# AgentBisect report: {c.sha[:10] if c else 'no culprit found'}", "",
@@ -149,6 +175,7 @@ def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
     other = [f for f in r["flags"] if MULTI_REGRESSION not in f]
     if other:
         L += ["Flags: " + "; ".join(other), ""]
+    L += _signature_md(r)
     L += ["## Culprit commit", "", f"`{c.sha}`", ""]
     if r["culprit_checkpoint"]:
         L += [f"Entire checkpoint: `{r['culprit_checkpoint']}`", ""]
@@ -270,6 +297,8 @@ def render_html(r: dict[str, Any]) -> str:
         if other:
             P.append(f'<p class="mut">Flags: {e("; ".join(other))}</p>')
         ck = f"<p>Entire checkpoint: <code>{e(r['culprit_checkpoint'])}</code></p>" if r["culprit_checkpoint"] else ""
+        if r.get("signature"):
+            sec("Failure signature", "".join(f"<p>{e(x)}</p>" for x in _signature_lines(r)))
         sec("Culprit commit", f"<p><code>{e(c.sha)}</code></p>{ck}")
         sec(_intent_label(r), f"<pre>{e(c.checkpoint_intent or '(none recorded)')}</pre>")
         syms = ", ".join(f"<code>{e(s)}</code>" for s in c.impacted_symbols) or "none found"

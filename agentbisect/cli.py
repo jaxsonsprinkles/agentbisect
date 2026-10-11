@@ -45,6 +45,12 @@ def _add_intake_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--llm-proxy", default="off", metavar="auto|URL|off",
                    help="route the target's Anthropic calls through the local `claude`-CLI proxy: auto = start one "
                         "for this run, URL = use a running one, off (default) = use the real API key")
+    p.add_argument("--signature", metavar="KEY",
+                   help="bisect this failing check only (e.g. call_args:issue_refund.amount); default: discovered "
+                        "from the bad end's eval results")
+    p.add_argument("--all-signatures", action=argparse.BooleanOptionalAction, default=None,
+                   help="bisect every distinct failing check at the bad end separately (one culprit per failure "
+                        "signature). Default: on when several are found")
     p.add_argument("--intake-only", action="store_true", help="stop after intake; do not run the bisect")
     p.add_argument("--good", help="known-good commit (overrides the one intake found)")
     p.add_argument("--bad", help="known-bad commit (default: failing trace's commit, else HEAD)")
@@ -180,13 +186,17 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
         if a.intake_only:
             print("intake only; run `agentbisect resume " + st.id + "` to bisect")
             return 0
-        from .bisect import resume_investigation
-        init_tracing(st.id)
-        try:
-            return _explain(store, st, int(resume_investigation(store, st, strategy=make_strategy(st, store, meta))),
-                            meta)
-        finally:
-            shutdown_tracing()
+        if a.signature:
+            from .signature import signature_from_key
+            st.spec.signature = signature_from_key(a.signature)
+            store.save(st)
+        code = _run_one(store, st, meta)
+        if a.all_signatures is not False:  # several failing checks at the bad end => one investigation each
+            from .signature import spawn_siblings
+            for sib in spawn_siblings(store, st):
+                print(f"\nsibling investigation {sib.id} for failure signature {sib.spec.signature.label}")
+                code = code or _run_one(store, sib, meta)
+        return code
     if a.cmd == "watch":
         print("agentbisect watch: not implemented yet (later chunk)", file=sys.stderr)
         return 2
@@ -216,6 +226,15 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
     except StateError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
+
+
+def _run_one(store: StateStore, st: BisectState, meta: dict | None) -> int:
+    from .bisect import resume_investigation
+    init_tracing(st.id)
+    try:
+        return _explain(store, st, int(resume_investigation(store, st, strategy=make_strategy(st, store, meta))), meta)
+    finally:
+        shutdown_tracing()
 
 
 def _explain(store: StateStore, st: BisectState, code: int, meta: dict | None) -> int:

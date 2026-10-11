@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Callable, Protocol
 
 from .models import RegressionSpec
+from .signature import signature_from_trace
 
 NEATLOGS_BIN = os.path.expanduser("~/.local/neatlogs-cli/bin/neatlogs")
 NEATLOGS_HOST = "https://app.neatlogs.com"
@@ -544,7 +545,15 @@ def intake_trace(source: TraceSource, bad_trace_id: str, repo: str | Path, *, wo
         raise IntakeError(f"no non-held-out cases in category {case.category} to build a suite")
     spec = RegressionSpec(source=source_kind, bad_trace_id=bad.id, good_trace_ids=good_ids,
                           cases=[c.id for c in working], held_out=[c.id for c in held],
-                          predicate=build_predicate(working), metric="pass_rate")
+                          predicate=build_predicate(working), metric="pass_rate", bad_case=case.id)
+    sig = signature_from_trace(bad.metadata, bad.tags)
+    if sig:
+        sig.cases = [case.id]
+        spec.signature = sig
+        notes.append(f"bad trace carries its failing check: bisecting on {sig.label}")
+    else:
+        notes.append("bad trace carries no failing-check detail: the failure signature is taken from the bad "
+                     "end's eval results (the check that fails in the trace's case)")
     return IntakeResult(spec, good_sha, bad_sha, notes)
 
 

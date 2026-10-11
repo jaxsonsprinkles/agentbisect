@@ -15,6 +15,7 @@ from typing import Protocol
 
 from .models import BisectState, CommitResult, CulpritReport, Plan
 from .runner import Runner, RunnerConfig, config_from_env
+from .signature import pick_primary, signatures_of
 from .state import StateError, StateStore
 from .tracing import step_span
 
@@ -123,7 +124,37 @@ class Outcome:
 def make_runner(store: StateStore, st: BisectState) -> Runner:
     if not st.spec or not st.spec.cases:
         raise BisectError("investigation has no eval cases (run intake first)")
-    return Runner(st.repo, config_from_env(list(st.spec.cases)), store.cache(st.repo))
+    return Runner(st.repo, config_from_env(list(st.spec.cases)), store.cache(st.repo),
+                  signature=st.spec.signature)
+
+
+def _account(st: BisectState, delta: int) -> None:
+    m = st.metrics
+    m["eval_rounds"] = m.get("eval_rounds", 0) + delta
+    m["cost_usd"] = round(m["eval_rounds"] * COST_PER_RUN_USD, 4)
+
+
+def _discover_signature(store: StateStore, st: BisectState, runner: Runner, bad: str) -> None:
+    """Pick the failing check to bisect on, once: evaluate the bad end over the whole suite, group every failing
+    check into signatures (all kept in metrics["signatures"]) and bisect the one that fires in the bad trace's
+    case. Skipped when intake already supplied a signature or it was discovered before (resume-safe)."""
+    if not st.spec or st.spec.signature is not None or st.metrics.get("signatures_discovered"):
+        runner.signature = st.spec.signature if st.spec else None
+        return
+    step = store.begin_step(st, "signature_discovery", sha=bad)
+    before = runner.eval_rounds
+    runner.signature = None
+    with step_span("signature_discovery", sha=bad, step=step):
+        res = runner.evaluate_commit(bad, f"{st.id}-s{step}", list(st.spec.cases))
+    _account(st, runner.eval_rounds - before)
+    sigs = signatures_of(res)
+    st.metrics["signatures_discovered"] = True
+    st.metrics["signatures"] = [s.to_dict() for s in sigs]
+    st.spec.signature = runner.signature = pick_primary(sigs, st.spec.bad_case)
+    if st.spec.signature is None:
+        st.metrics.setdefault("warnings", []).append(
+            "no failing check found at the bad end: bisecting on whole-case pass rate")
+    store.end_step(st)
 
 
 def _evaluate(store: StateStore, st: BisectState, runner: Runner, sha: str, kind: str) -> CommitResult:
@@ -132,9 +163,7 @@ def _evaluate(store: StateStore, st: BisectState, runner: Runner, sha: str, kind
     with step_span("bisect_step", sha=sha, step=step, kind=kind):
         res = runner.evaluate_commit(sha, f"{st.id}-s{step}")
     m = st.metrics
-    delta = runner.eval_rounds - before
-    m["eval_rounds"] = m.get("eval_rounds", 0) + delta
-    m["cost_usd"] = round(m["eval_rounds"] * COST_PER_RUN_USD, 4)
+    _account(st, runner.eval_rounds - before)
     m["commits_evaluated"] = m.get("commits_evaluated", 0) + (0 if res.from_cache else 1)
     m["cache_hits"] = m.get("cache_hits", 0) + (1 if res.from_cache else 0)
     store.end_step(st, sha, res)
@@ -195,6 +224,7 @@ def run_investigation(store: StateStore, st: BisectState, runner: Runner | None 
         strategy = strategy or PlainStrategy(history)
         store.save(st)
 
+        _discover_signature(store, st, runner, bad)
         err = _confirm_ends(store, st, runner, good, bad)
         if err:
             return _fail(store, st, err)
@@ -252,6 +282,9 @@ def report(st: BisectState, out: Outcome) -> str:
     lines = [f"[{st.id}] {out.message}" if out.message else f"[{st.id}] {out.kind}"]
     for w in m.get("warnings", []):
         lines.append(f"  WARNING: {w}")
+    if st.spec and st.spec.signature:
+        lines.append(f"  bisected on failure signature: {st.spec.signature.label} "
+                     f"(cases: {', '.join(st.spec.signature.cases) or 'all'})")
     lines.append(f"  strategy={m.get('strategy', 'plain')} steps={st.step} eval_rounds={m.get('eval_rounds', 0)} "
                  f"cost~${m.get('cost_usd', 0.0)} cache_hits={m.get('cache_hits', 0)}")
     return "\n".join(lines)

@@ -137,3 +137,19 @@ def test_cli_report_writes_files_and_gates_pr(tmp_path, capsys):
     assert main(["--state-dir", str(tmp_path / "s"), "report", st.id, "--out", str(out), "--open-pr"]) == 0
     assert "DRY RUN" in capsys.readouterr().out
     assert len(write_reports(st, out, "both")) == 2
+
+
+def test_report_names_failure_signature_and_siblings():
+    from agentbisect.models import FailureSignature
+    st = make_state()
+    st.spec.signature = FailureSignature("call_args:issue_refund.amount", "call_args", "issue_refund.amount",
+                                         "64.0", "6400", cases=["rw1", "rw2"])
+    st.metrics["signatures"] = [st.spec.signature.to_dict(),
+                                FailureSignature("budget:steps", "budget", cases=["po1"]).to_dict()]
+    st.metrics["signature_siblings"] = [{"id": "sib1", "key": "budget:steps", "culprit": CULPRIT}]
+    md, h = text(st), render_html(build_report(st, repo="/nonexistent-repo"))
+    for s in ("## Failure signature", "expected 64.0 got 6400", "separates overlapping regressions by failure signature",
+              "budget:steps (cases po1)", "sib1"):
+        assert s in md, s
+    assert "Failure signature" in h and "separates overlapping regressions" in h
+    assert "Failure signature" not in text(make_state())

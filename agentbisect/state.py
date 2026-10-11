@@ -62,13 +62,15 @@ class _suppress:
 
 
 def cache_key(repo: str, sha: str, case: str, models: dict[str, str]) -> str:
-    return "|".join([sha, case, models.get("agent_model", ""), models.get("judge_model", "")])
+    # v2: entries also hold per-check failures, so verdicts can be re-read for any failure signature
+    return "|".join(["v2", sha, case, models.get("agent_model", ""), models.get("judge_model", "")])
 
 
 class VerdictCache:
     """Per (repo, sha, case, pinned model ids) run tallies, reusable across investigations on the same repo.
 
-    Entry: {"passes": n, "fails": n, "trace_ids": [...]}; the build-failure skip is stored under case '__build__'
+    Entry: {"passes": n, "fails": n, "trace_ids": [...], "check_fails": {key: failing runs}, "check_info":
+    {key: first failure record}}; the build-failure skip is stored under case '__build__'
     as {"skip": reason}. Thread-safe; flushed to disk after every update."""
 
     def __init__(self, base: Path, repo: str):
@@ -84,13 +86,18 @@ class VerdictCache:
             return json.loads(json.dumps(e)) if e is not None else None
 
     def add_runs(self, sha: str, case: str, models: dict[str, str], passes: int, fails: int,
-                 trace_ids: list[str]) -> dict[str, Any]:
+                 trace_ids: list[str], check_fails: dict[str, int] | None = None,
+                 check_info: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
         with self._lock:
             e = self._data.setdefault(cache_key(self.repo, sha, case, models),
-                                      {"passes": 0, "fails": 0, "trace_ids": []})
+                                      {"passes": 0, "fails": 0, "trace_ids": [], "check_fails": {}, "check_info": {}})
             e["passes"] += passes
             e["fails"] += fails
             e["trace_ids"].extend(trace_ids)
+            for k, n in (check_fails or {}).items():
+                e["check_fails"][k] = e["check_fails"].get(k, 0) + n
+            for k, info in (check_info or {}).items():
+                e["check_info"].setdefault(k, info)
             atomic_write_json(self.path, self._data)
             return json.loads(json.dumps(e))
 

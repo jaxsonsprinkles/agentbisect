@@ -28,6 +28,7 @@ from typing import Any, Callable, Protocol
 from .bisect import PlainStrategy, linear_history, narrow
 from .intake import LLM, Span, TraceSource, judge_model
 from .models import BisectState, Candidate, CommitResult, Plan
+from .signature import symbol_hints as signature_hints, symptom_text
 from .state import StateStore
 
 Run = Callable[[list[str], str], "tuple[int, str, str]"]  # (argv, cwd) -> (rc, stdout, stderr)
@@ -390,12 +391,14 @@ class Planner:
         except Exception as e:  # trace access must never kill the investigation (login prompt etc.)
             warn = f"divergence unavailable: {type(e).__name__}: {e}"
             st.metrics.setdefault("warnings", []).append(warn)
-        hints = self.symbol_hints or (div.symbol_hints() if div else [])
+        sig = st.spec.signature if st.spec else None
+        hints = self.symbol_hints or list(dict.fromkeys(
+            (div.symbol_hints() if div else []) + (signature_hints(sig) if sig else [])))
         weights, symbols, info = (self.locate(hints, history) if hints else
                                   ({}, [], {"graph_available": True, "via": "none"}))
         range_shas = history[1:]
         pool = list(weights) if weights else range_shas  # no code signal: rank the whole range by intent alone
-        symptom = " ".join(x for x in (self.symptom, div.describe() if div else "",
+        symptom = " ".join(x for x in (self.symptom, symptom_text(sig) if sig else "", div.describe() if div else "",
                                        " ".join(hints), (st.spec.cases and " ".join(st.spec.cases)) or "") if x)
         intents: dict[str, Intent] = {}
         for sha in pool:

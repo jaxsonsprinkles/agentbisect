@@ -20,7 +20,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterator, Protocol
 
-from .models import CommitResult
+from .models import CommitResult, FailureSignature
+from .signature import failures_of_result, group_signatures
 from .state import BUILD_CASE, VerdictCache
 from .tracing import step_span
 
@@ -53,6 +54,7 @@ class RunResult:
     agent_model: str | None = None
     judge_model: str | None = None
     reason: str = ""
+    failures: list[dict] = field(default_factory=list)  # failing checks of this run (signature.failure_records)
 
 
 @dataclass
@@ -79,7 +81,8 @@ def parse_report(report: dict) -> list[RunResult]:
     return [RunResult(case_id=r["case_id"], status=r["status"], trace_id=r.get("trace_id"),
                       agent_model=r.get("agent_model") or report.get("agent_model"),
                       judge_model=r.get("judge_model") or report.get("judge_model"),
-                      reason=r.get("reason") or "")
+                      reason=r.get("reason") or "",
+                      failures=failures_of_result(r) if r.get("status") == "fail" else [])
             for r in report.get("results", [])]
 
 
@@ -182,7 +185,9 @@ def _load_env_file(path: str | None) -> dict[str, str]:
 
 class Runner:
     def __init__(self, repo: str | Path, cfg: RunnerConfig, cache: VerdictCache,
-                 executor: EvalExecutor | None = None, sleep: Callable[[float], None] = time.sleep):
+                 executor: EvalExecutor | None = None, sleep: Callable[[float], None] = time.sleep,
+                 signature: FailureSignature | None = None):
+        self.signature = signature  # when set, pass/fail means "this failing check does not occur"
         self.repo = Path(repo).resolve()
         self.cfg = cfg
         self.cache = cache
@@ -266,7 +271,8 @@ class Runner:
         the confidence band, cases that disagree with themselves get doubled repeats up to max_repeats; if it is
         still uncertain the verdict is 'flaky'. Build/worktree failure => 'skip' (cached). Finished cases are
         cached immediately, so a crash mid-step loses at most the in-flight cases."""
-        cases = list(cases or self.cfg.cases)
+        sig = self.signature
+        cases = list(cases or (sig.cases if sig and sig.cases else None) or self.cfg.cases)
         models = self.cfg.models
         cached_skip = self.cache.get(sha, BUILD_CASE, models)
         if cached_skip:
@@ -276,7 +282,7 @@ class Runner:
             return self.cache.get(sha, case, models) or {}
 
         def need(case: str, target: int) -> int:
-            e = have(case)
+            e = have(case)  # executed runs, whatever failed in them
             return 0 if "skip" in e else max(0, target - e.get("passes", 0) - e.get("fails", 0))
 
         errors: dict[str, int] = {c: 0 for c in cases}
@@ -295,8 +301,17 @@ class Runner:
                 return
             with self._lock:
                 self.eval_rounds += p + f
+            check_fails: dict[str, int] = {}
+            info: dict[str, dict] = {}
+            for r in results:
+                recs = r.failures or ([{"key": "case_fail", "check": "case_fail", "reason": r.reason}]
+                                      if r.status == "fail" else [])  # a failing run always has a cause key
+                for key, rec in {x["key"]: x for x in recs}.items():  # once per run
+                    check_fails[key] = check_fails.get(key, 0) + 1
+                    info.setdefault(key, rec)
             self.cache.add_runs(sha, case, models, p, f,
-                                [r.trace_id for r in results if r.trace_id and r.status in ("pass", "fail")])
+                                [r.trace_id for r in results if r.trace_id and r.status in ("pass", "fail")],
+                                check_fails, info)
 
         try:
             with step_span("evaluate_commit", sha=sha, run_id=run_id):
@@ -339,15 +354,37 @@ class Runner:
         return CommitResult(
             verdict, pass_rate=rate, trace_ids=traces, executed=passes + fails, repeats=target,
             flaky_cases=flaky, failing_cases=[c for c, t in stats.items() if t["fails"] and not t["passes"]],
-            case_stats=stats, from_cache=not ran,
+            case_stats=stats, from_cache=not ran, signature=sig.key if sig else None,
+            failure_signatures=self._signatures(sha, cases),
             reason=(f"pass_rate {rate:.2f} inside band ({self.cfg.bad_max}, {self.cfg.good_min}) after "
                     f"{target} repeats" if verdict == "flaky" else ""))
 
     def _tally(self, sha: str, cases: list[str], errors: dict[str, int]) -> dict[str, dict[str, int]]:
+        """Per case passes/fails/errors. With a signature a run only counts as failed when that check failed in
+        it; any other failure (another regression's budget miss, say) is a pass for this signature."""
         out = {}
         for c in cases:
             e = self.cache.get(sha, c, self.cfg.models) or {}
             if "skip" in e:
                 continue
-            out[c] = {"passes": e.get("passes", 0), "fails": e.get("fails", 0), "errors": errors.get(c, 0)}
+            runs = e.get("passes", 0) + e.get("fails", 0)
+            fails = e.get("fails", 0)
+            if self.signature:
+                fails = min(runs, (e.get("check_fails") or {}).get(self.signature.key, 0))
+            out[c] = {"passes": runs - fails, "fails": fails, "errors": errors.get(c, 0)}
         return out
+
+    def _signatures(self, sha: str, cases: list[str]) -> list[dict]:
+        """Every failing check seen at `sha` over `cases`, grouped by key (see signature.py)."""
+        infos: dict[str, dict] = {}
+        runs: dict[str, int] = {}
+        fails: dict[str, dict[str, int]] = {}
+        for c in cases:
+            e = self.cache.get(sha, c, self.cfg.models) or {}
+            if "skip" in e:
+                continue
+            runs[c] = e.get("passes", 0) + e.get("fails", 0)
+            fails[c] = dict(e.get("check_fails") or {})
+            for k, rec in (e.get("check_info") or {}).items():
+                infos.setdefault(k, rec)
+        return group_signatures(infos, runs, fails)

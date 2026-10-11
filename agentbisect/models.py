@@ -9,6 +9,36 @@ VERDICTS = ("good", "bad", "flaky", "skip")
 
 
 @dataclass
+class FailureSignature:
+    """The specific check that fails (not just the case): `key` identifies it across cases and commits, e.g.
+    `call_args:issue_refund.amount` with expected 64.0 and got 6400. Bisecting on a signature ignores other
+    failures (a budget regression elsewhere) so overlapping regressions can be separated."""
+    key: str
+    check: str = ""  # call_args | reply_regex | budget | judge | ...
+    detail: str = ""  # e.g. issue_refund.amount
+    expected: str = ""
+    got: str = ""
+    reason: str = ""
+    cases: list[str] = field(default_factory=list)  # cases in which it fails at the bad end
+    fails: int = 0  # failing runs at the bad end (when discovered)
+    runs: int = 0
+
+    @property
+    def label(self) -> str:
+        s = f"check={self.check}" + (f"({self.detail})" if self.detail else "")
+        if self.expected or self.got:
+            s += f" expected {self.expected} got {self.got}"
+        return s
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "FailureSignature":
+        return cls(**d)
+
+
+@dataclass
 class RegressionSpec:
     source: str = "trace"  # trace | detection | issue
     bad_trace_id: str | None = None
@@ -17,12 +47,17 @@ class RegressionSpec:
     held_out: list[str] = field(default_factory=list)
     predicate: dict[str, Any] = field(default_factory=dict)  # {"checks": [...], "rubric": str|None}
     metric: str = "pass_rate"
+    bad_case: str | None = None  # the case the bad trace maps to
+    signature: FailureSignature | None = None  # the failing check being bisected (None = whole-case pass rate)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "RegressionSpec":
+        d = dict(d)
+        if d.get("signature"):
+            d["signature"] = FailureSignature.from_dict(d["signature"])
         return cls(**d)
 
 
@@ -62,6 +97,8 @@ class CommitResult:
     flaky_cases: list[str] = field(default_factory=list)
     failing_cases: list[str] = field(default_factory=list)
     case_stats: dict[str, dict[str, int]] = field(default_factory=dict)  # case -> passes/fails/errors
+    signature: str | None = None  # key the pass/fail counts are relative to (None = whole case)
+    failure_signatures: list[dict[str, Any]] = field(default_factory=list)  # every failing check seen, grouped
     from_cache: bool = False
 
     def to_dict(self) -> dict[str, Any]:

@@ -141,12 +141,18 @@ def revert_test(st: BisectState, runner: Runner, sha: str | None = None) -> tupl
         build = build_reverted_commit(repo, sha, head, runner.cfg.worktree_root)
         res, before = None, runner.eval_rounds
         if build.sha:
-            res = runner.evaluate_commit(build.sha, f"{st.id}-revert", list(st.spec.cases) if st.spec else None)
+            # same predicate as the bisect: with a signature, "fixed" means THAT failing check is gone on the
+            # reverted HEAD (other regressions' failures do not count against it)
+            runner.signature = st.spec.signature if st.spec else runner.signature
+            res = runner.evaluate_commit(build.sha, f"{st.id}-revert")
     good = st.results.get(st.good_sha or "")
     bad = st.results.get(sha)
     out = decide_revert(rep, build, res, good.pass_rate if good else None, bad.pass_rate if bad else None,
                         runner.cfg.good_min)
     out.details["reverted_commit"] = build.sha
+    if runner.signature:
+        out.details["signature"] = runner.signature.key
+        out.details["signature_label"] = runner.signature.label
     return out, runner.eval_rounds - before
 
 
