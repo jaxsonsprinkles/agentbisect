@@ -1,0 +1,7 @@
+{
+  "tool_use_id": "toolu_01K63SYhgKzkcab7B3QhgDzg",
+  "agent_id": "ae753f4a104b201d3",
+  "subagent_type": "general-purpose",
+  "task_description": "Demo parent-trace spans",
+  "started_at": "2026-10-10T18:29:41.343622-05:00"
+}

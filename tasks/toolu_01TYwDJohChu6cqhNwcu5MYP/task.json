@@ -1,0 +1,14 @@
+{
+  "tool_use_id": "toolu_01TYwDJohChu6cqhNwcu5MYP",
+  "agent_id": "acb5432a81275d2b3",
+  "task_description": "Review U2 test coverage",
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 46529,
+    "cache_read_tokens": 118916,
+    "output_tokens": 5622,
+    "api_call_count": 4
+  },
+  "started_at": "2026-10-10T18:39:36.104959-05:00",
+  "completed_at": "2026-10-10T18:40:22.297003-05:00"
+}
