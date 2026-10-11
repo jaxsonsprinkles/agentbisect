@@ -34,8 +34,8 @@ from .intake import FORBIDDEN_CASE_KEYS
 from .models import BisectState, CulpritReport, FixAttempt, FixResult
 from .runner import Runner, worktree
 from .tracing import step_span
-from .verify import (IntentJudge, VerifierInput, _git, _not_clean, _unevaluable, cases_at, check_eval_edits,
-                     check_intent, format_all_changes, held_out_violations)
+from .verify import (IntentJudge, VerifierInput, _contract_leaves, _git, _not_clean, _unevaluable, cases_at,
+                     check_eval_edits, check_intent, format_all_changes, held_out_violations)
 
 MAX_ATTEMPTS = 3
 MAX_FILE_CHARS = 20000
@@ -126,8 +126,15 @@ class RunnerChecker:
         dirty = _not_clean(res, held)
         if res.verdict == "good" and not dirty:
             return True, []
-        out = [f"held-out cases failing (same check as the target): {', '.join(dirty or res.failing_cases) or 'band'}"]
-        for s in res.failure_signatures:
+        # only the target's own check key counts: budget:* flags and other behavioural checks are noise here
+        check = st.spec.signature.check
+        mine = [s for s in res.failure_signatures if s.get("check") == check
+                or str(s.get("key", "")).split(":")[0] == check]
+        if res.failure_signatures and not mine:
+            return True, []
+        cases = sorted({c for s in mine for c in s.get("cases") or []} & set(held)) or dirty or res.failing_cases
+        out = [f"held-out cases failing (same check as the target): {', '.join(cases) or 'band'}"]
+        for s in mine:
             out.append(f"held-out failing check {s.get('key')}: expected {s.get('expected')} got {s.get('got')}"
                        + (f" ({s['reason']})" if s.get("reason") else ""))
         out.append(HELD_OUT_REMINDER)
@@ -217,7 +224,7 @@ def build_prompt(repo: str, report: CulpritReport, head: str, previous: list[Fix
         parts.append("## Eval cases you may update (only via eval_edits, only if the change deliberately changed "
                      f"their contract)\n\n```\n{shown}\n```")
     if rows and held_cases:  # only the checks the target rows carry: the contract a consistency edit could follow
-        keys = {k for r in rows for k, v in (r.get("checks") or {}).items() if isinstance(v, dict)}
+        keys = {k for r in rows for k, v in (r.get("checks") or {}).items() if _contract_leaves(v) is not None}
         held = [{"id": r["id"], "checks": {k: v for k, v in (r.get("checks") or {}).items() if k in keys}}
                 for r in cases_at(repo, head) if r["id"] in held_cases]
         held = [h for h in held if h["checks"]]

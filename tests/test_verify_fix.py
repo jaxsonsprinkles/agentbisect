@@ -570,7 +570,7 @@ def test_held_out_edit_of_a_different_contract_fails_regression(tmp_path, hist):
         rows[2]["checks"]["call_args"] = {"amount": 99.0}  # same key, not the cents contract
     res, _, _ = verify_held(tmp_path, hist, mutate, EJudge(True))
     reg = res.check("regression")
-    assert reg.passed is False and "not the same check/tool/argument contract" in reg.detail and res.passed is False
+    assert reg.passed is False and "differs from the edited target cases" in reg.detail and res.passed is False
 
 
 def test_held_out_edit_without_target_edit_fails_regression(tmp_path, hist):

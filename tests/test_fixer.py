@@ -662,3 +662,73 @@ def test_runner_checker_without_state_or_held_rows_does_not_evaluate_held_out(st
     st_held.spec.held_out = []
     st_held.spec.signature.check = "judge"  # no row carries it
     assert RunnerChecker(rn, "i", st_held).check(st_held.bad_sha, 1) == (True, [])
+
+
+# ---- real row shape: call_args is a list of {"tool", "args"}; order ids differ between rows
+
+def _ca(order, amount, key="amount"):
+    return [{"tool": "issue_refund", "args": {"order_id": order, key: amount}}]
+
+
+LIST_ROWS = [{"id": "r3", "category": "refund", "checks": {"call_args": _ca("1007", 64.0), "reply_regex": ["64"]}},
+             {"id": "r4", "category": "refund", "checks": {"reply_regex": ["ok"]}},
+             {"id": "h2", "category": "refund", "held_out": True,
+              "checks": {"call_args": _ca("1060", 36.0), "reply_regex": ["36"]}}]
+
+
+@pytest.fixture
+def st_list(repo, st):
+    from agentbisect.models import FailureSignature, RegressionSpec
+    (repo.path / "evals").mkdir()
+    (repo.path / "evals" / "cases.jsonl").write_text("\n".join(json.dumps(r) for r in LIST_ROWS) + "\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "cases")
+    st.bad_sha = git(repo, "rev-parse", "HEAD")
+    st.spec = RegressionSpec(cases=["r3", "r4"], held_out=["h2"], signature=FailureSignature(
+        key="call_args:issue_refund.amount", check="call_args", detail="issue_refund.amount", cases=["r3"]))
+    return st
+
+
+def _list_edits(held_args):
+    return json.dumps({"explanation": "x", "files": [], "eval_edits": [
+        {"case": "r3", "checks": {"call_args": _ca("1007", 6400, "amount_cents")}, "reason": "integer cents"},
+        {"case": "h2", "checks": {"call_args": held_args}, "reason": "same contract"}]})
+
+
+def test_held_out_list_call_args_with_different_order_id_is_accepted(st_list, repo):
+    m = FakeModel(_list_edits(_ca("1060", 3600, "amount_cents")))
+    res = run_fixer(st_list, model=m, checker=_Pass(), judge=_EJudge(True, True), max_attempts=1)
+    assert res.passed and [c["case"] for c in res.held_out_expectation_changes] == ["h2"]
+    assert '"h2"' in m.prompts[0].split("Held-out eval cases")[1]  # list-valued call_args rows are listed
+
+
+def test_held_out_list_call_args_other_contract_refusal_states_the_shape_diff(st_list, repo):
+    res = run_fixer(st_list, model=FakeModel(_list_edits(_ca("1060", 3600, "refund_cents"))), checker=_Pass(),
+                    judge=_EJudge(True, True), max_attempts=1)
+    err = res.attempts[0].error
+    assert not res.passed and "added ['issue_refund.refund_cents']" in err
+    assert "removed ['issue_refund.amount']" in err and "only the values may differ" in err
+
+
+def test_checker_ignores_budget_and_other_key_noise_in_held_out_failures(st_list, repo):
+    class R(_HeldRunner):
+        def evaluate_commit(self, sha, run_id, cases=None):
+            if cases is None:
+                return CommitResult(verdict="good", pass_rate=1.0)
+            return CommitResult(verdict="bad", pass_rate=0.5, failing_cases=["h2", "es3"], failure_signatures=[
+                {"key": "budget:tokens@order_status", "check": "budget", "cases": ["h2"], "expected": "1", "got": "9"},
+                {"key": "reply_regex", "check": "reply_regex", "cases": ["es3"], "expected": "", "got": ""}])
+    ok, lines = RunnerChecker(R(repo), "i", st_list).check(st_list.bad_sha, 1)
+    assert ok and lines == []  # nothing of the shared check failed
+
+    class R2(R):
+        def evaluate_commit(self, sha, run_id, cases=None):
+            r = super().evaluate_commit(sha, run_id, cases)
+            if cases is not None:
+                r.failure_signatures.append({"key": "call_args:issue_refund.amount", "check": "call_args",
+                                             "cases": ["h2"], "expected": "3600", "got": "36.0"})
+            return r
+    ok, lines = RunnerChecker(R2(repo), "i", st_list).check(st_list.bad_sha, 1)
+    text = "\n".join(lines)
+    assert not ok and "h2" in text and "expected 3600 got 36.0" in text
+    assert "budget" not in text and "es3" not in text and "reply_regex" not in text and "eval_edits" in text

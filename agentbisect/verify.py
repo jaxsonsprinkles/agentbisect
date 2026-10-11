@@ -610,28 +610,52 @@ def _leaves(v: Any, path: tuple[str, ...] = ()) -> dict[tuple[str, ...], Any]:
     return {path: v}
 
 
-def contract_shape(change: dict[str, Any]) -> tuple | None:
-    """The contract an expectation change is about, independent of the concrete values: (check key, argument paths
-    removed, added, changed), where a path is the tool/argument names inside the check's object. None when the check
-    value is not an object (a plain string/number has no tool+arg contract)."""
-    old, new = change.get("old"), change.get("new")
-    if not isinstance(old, dict) or not isinstance(new, dict):
-        return None
-    a, b = _leaves(old), _leaves(new)
+def _contract_leaves(v: Any) -> dict[tuple[str, ...], Any] | None:
+    """A structured check value as {path: leaf}: an object, or a call_args-style list of {"tool", "args"} entries
+    (path = tool name, then argument names; a repeated tool gets `#n`). None for anything else."""
+    if isinstance(v, dict):
+        return _leaves(v)
+    if isinstance(v, list) and v and all(isinstance(e, dict) and isinstance(e.get("tool"), str) for e in v):
+        out: dict[tuple[str, ...], Any] = {}
+        seen: dict[str, int] = {}
+        for e in v:
+            n = seen[e["tool"]] = seen.get(e["tool"], -1) + 1
+            body = e["args"] if isinstance(e.get("args"), dict) else {k: x for k, x in e.items() if k != "tool"}
+            out.update(_leaves(body, (e["tool"] if n == 0 else f"{e['tool']}#{n}",)))
+        return out
+    return None
+
+
+def contract_shape(change: dict[str, Any]) -> tuple:
+    """The contract an expectation change is about, independent of concrete values and of arguments that did not
+    change (an order_id is not part of it): (check key, tool.argument paths removed, added, changed). A check value
+    with no tool/argument structure (a regex, a number) is just (check key,)."""
+    a, b = _contract_leaves(change.get("old")), _contract_leaves(change.get("new"))
+    if a is None or b is None:
+        return (change["key"], (), (), ())
     return (change["key"], tuple(sorted(".".join(p) for p in a.keys() - b.keys())),
             tuple(sorted(".".join(p) for p in b.keys() - a.keys())),
             tuple(sorted(".".join(p) for p in a.keys() & b.keys() if a[p] != b[p])))
 
 
+def _fmt_shape(s: tuple) -> str:
+    key, removed, added, changed = s
+    parts = [f"{n} {list(v)}" for n, v in (("removed", removed), ("added", added), ("value changed", changed)) if v]
+    return f"{key}: " + ("; ".join(parts) or "whole value")
+
+
 def held_out_violations(target: list[dict[str, Any]], held: list[dict[str, Any]]) -> list[str]:
     """Held-out expectation changes are only allowed as a consistency edit: the same check key and tool/argument
-    contract as a change to a target case, and never on their own."""
+    contract as a change to a target case (which arguments were removed/added/changed, not their values), and never
+    on their own. The message spells out both shapes so the next attempt can correct itself."""
     if not held:
         return []
     if not target:
         return ["held-out expectations changed without any target-case expectation change"]
-    shapes = {s for c in target if (s := contract_shape(c)) is not None}
-    return [f"held-out case {h['case']}: {h['key']} is not the same check/tool/argument contract as an edited target case"
+    shapes = {contract_shape(c) for c in target}
+    return [f"held-out case {h['case']}: [{_fmt_shape(contract_shape(h))}] differs from the edited target cases "
+            f"[{' | '.join(sorted(_fmt_shape(s) for s in shapes))}]; make the same change to the same tool/argument "
+            "names (only the values may differ)"
             for h in held if contract_shape(h) not in shapes]
 
 
