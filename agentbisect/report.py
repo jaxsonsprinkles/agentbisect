@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 from .models import BisectState, FixAttempt
 from .bisect import KNOWN_PREEXISTING
+from .summary import HEAD as SUMMARY_HEAD, cells, render_markdown as summary_markdown, summary_rows
 from .verify import budget_line
 
 KNOWN_PREEXISTING_LABEL = KNOWN_PREEXISTING.capitalize()
@@ -67,7 +68,7 @@ def best_attempt(st: BisectState, baseline: float | None) -> FixAttempt | None:
     return max(st.fix_attempts, key=lambda a: ((a.held_out_score or 0) + (a.eval_score or 0), a.attempt))
 
 
-def build_report(st: BisectState, repo: str | None = None) -> dict[str, Any]:
+def build_report(st: BisectState, repo: str | None = None, group: list[BisectState] | None = None) -> dict[str, Any]:
     repo = repo or st.repo
     c, m = st.culprit, st.metrics
     rt = m.get("revert_test") or {}
@@ -111,6 +112,7 @@ def build_report(st: BisectState, repo: str | None = None) -> dict[str, Any]:
                 ) if th.get("backoffs") else None
     return {
         "known_preexisting": m.get("known_preexisting"),
+        "summary": summary_rows(group) if group and len(group) > 1 else None,
         "throttle": throttle, "signature": signature, "id": st.id, "repo": repo, "status": st.status, "good_sha": st.good_sha, "bad_sha": st.bad_sha,
         "culprit": c, "flags": flags, "multi": any(MULTI_REGRESSION in f for f in flags),
         "low_conf": bool(c and c.confidence == "low"),
@@ -184,6 +186,10 @@ def _known_md(r: dict[str, Any]) -> list[str]:
     return [f"## {lines[0]}", "", *[y for x in lines[1:] for y in (x, "")]] if lines else []
 
 
+def _summary_md(r: dict[str, Any]) -> list[str]:
+    return ["## Per-signature results", "", *summary_markdown(r["summary"]).splitlines(), ""] if r.get("summary") else []
+
+
 def _signature_md(r: dict[str, Any]) -> list[str]:
     lines = _signature_lines(r)
     return ["## Failure signature", "", *[y for x in lines for y in (x, "")]] if lines else []
@@ -198,6 +204,7 @@ def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
                     f"`{(r['bad_sha'] or '?')[:10]}`", ""]
     if not c:
         L += _known_md(r) or ["No culprit was identified yet.", ""]
+        L += _summary_md(r)
         return "\n".join(L) + "\n"
     L += [f"**Confidence: {c.confidence or 'unknown'}**", ""]
     if r["multi"] or r["low_conf"]:
@@ -208,6 +215,7 @@ def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
     if other:
         L += ["Flags: " + "; ".join(other), ""]
     L += _signature_md(r)
+    L += _summary_md(r)
     if r.get("throttle"):
         L += [r["throttle"], ""]
     L += ["## Culprit commit", "", f"`{c.sha}`", ""]
@@ -313,6 +321,8 @@ def render_html(r: dict[str, Any]) -> str:
     def sec(title: str, inner: str) -> None:
         P.append(f"<section><h2>{e(title)}</h2>{inner}</section>")
 
+    summary_cells = lambda rows: [[e(x) for x in cells(row)] for row in rows]  # noqa: E731
+
     title = f"AgentBisect report: {c.sha[:10]}" if c else (
         f"AgentBisect report: {KNOWN_PREEXISTING_LABEL.lower()}" if r.get("known_preexisting")
         else "AgentBisect report: no culprit found")
@@ -323,6 +333,8 @@ def render_html(r: dict[str, Any]) -> str:
         kn = _known_lines(r)
         P.append(f'<section><h2>{e(kn[0])}</h2>' + "".join(f"<p>{e(x)}</p>" for x in kn[1:]) + "</section>" if kn
                  else "<section><p>No culprit was identified yet.</p></section>")
+        if r.get("summary"):
+            sec("Per-signature results", table(SUMMARY_HEAD, summary_cells(r["summary"])))
     else:
         conf = c.confidence or "unknown"
         P.append(f'<p>Confidence <span class="badge {e(conf if conf in ("high", "medium", "low") else "unknown")}">'
@@ -339,6 +351,8 @@ def render_html(r: dict[str, Any]) -> str:
         ck = f"<p>Entire checkpoint: <code>{e(r['culprit_checkpoint'])}</code></p>" if r["culprit_checkpoint"] else ""
         if r.get("throttle"):
             P.append(f'<p class="mut">{e(r["throttle"])}</p>')
+        if r.get("summary"):
+            sec("Per-signature results", table(SUMMARY_HEAD, summary_cells(r["summary"])))
         if r.get("signature"):
             sec("Failure signature", "".join(f"<p>{e(x)}</p>" for x in _signature_lines(r)))
         sec("Culprit commit", f"<p><code>{e(c.sha)}</code></p>{ck}")
@@ -405,10 +419,10 @@ def render_html(r: dict[str, Any]) -> str:
 # ------------------------------------------------------------------------------------------------- output
 
 def write_reports(st: BisectState, out_dir: str | Path | None = None, fmt: str = "both",
-                  repo: str | None = None) -> list[Path]:
+                  repo: str | None = None, group: list[BisectState] | None = None) -> list[Path]:
     out = Path(out_dir) if out_dir else EVIDENCE_DIR
     out.mkdir(parents=True, exist_ok=True)
-    r = build_report(st, repo)
+    r = build_report(st, repo, group)
     paths = []
     if fmt in ("md", "both"):
         paths.append(out / f"report-{st.id}.md")

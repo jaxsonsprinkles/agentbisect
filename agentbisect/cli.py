@@ -127,6 +127,12 @@ def _parser() -> argparse.ArgumentParser:
     lp.add_argument("--debug-dump", metavar="DIR", help="DEBUG: write every rendered prompt + output to DIR (use /tmp)")
     js = sub.add_parser("judge-smoke", help="one Sonnet judge call through the proxy; prints the model recorded")
     js.add_argument("--proxy-url", help="running llm-proxy (default: start a throwaway one on your claude login)")
+    sm = sub.add_parser("summary", help="per-signature table (culprit, revert test before/after, smart vs plain "
+                                        "rounds) from the saved state of a re-run")
+    sm.add_argument("dir", nargs="?", metavar="state_dir", help="state directory to read (default: --state-dir)")
+    sm.add_argument("--id", help="only this investigation and its sibling signatures")
+    sm.add_argument("--format", choices=["text", "md", "json"], default="text")
+    sm.add_argument("--out", help="also write the table to this file")
     sub.add_parser("watch", help="poll neatlogs detections and auto-investigate (not implemented yet)")
     r = sub.add_parser("resume", help="resume an interrupted investigation")
     r.add_argument("id")
@@ -230,6 +236,8 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
         print("agentbisect watch: not implemented yet (later chunk)", file=sys.stderr)
         return 2
     try:
+        if a.cmd == "summary":
+            return _summary_cmd(a, store)
         if a.cmd == "compare":
             return _compare(a, store)
         if a.cmd == "report":
@@ -274,6 +282,18 @@ def _calibrate(a: argparse.Namespace, store: StateStore) -> int:
     for c, why in data["excluded_cases"].items():
         print(f"  {c}: excluded ({why})")
     print(f"use it:  export AGENTBISECT_BASELINE={Path(out).resolve()}")
+    return 0
+
+
+def _summary_cmd(a: argparse.Namespace, store: StateStore) -> int:
+    from pathlib import Path
+    from .summary import group_states, render, summary_rows
+    store = StateStore(a.dir) if a.dir else store
+    states = group_states(store, store.load(a.id)) if a.id else store.list()
+    text = render(summary_rows(states), a.format)
+    print(text)
+    if a.out:
+        Path(a.out).write_text(text if text.endswith("\n") else text + "\n")
     return 0
 
 
@@ -365,7 +385,8 @@ def _report(a: argparse.Namespace, store: StateStore) -> int:
         print("error: --confirm-open-pr requires --open-pr", file=sys.stderr)
         return 2
     st = store.load(a.id)
-    for p in write_reports(st, a.out, a.format):
+    from .summary import group_states
+    for p in write_reports(st, a.out, a.format, group=group_states(store, st)):
         print(f"wrote {p}")
     if a.open_pr:
         try:
