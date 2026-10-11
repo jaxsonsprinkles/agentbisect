@@ -286,3 +286,17 @@ def test_bare_budget_key_matches_category_qualified_failures(tmp_path, hist):
     store, runner, st, shas = make(tmp_path, hist, ex=Q())
     st.spec.signature = runner.signature = FailureSignature(key="budget:steps")
     assert B.run_investigation(store, st, runner).sha == shas[3]
+
+
+def test_signature_cases_absent_at_good_end_are_vacuously_good(tmp_path, hist):
+    class Absent(OverlapExec):
+        def run_case(self, req):
+            idx = int((req.workdir / "marker.txt").read_text())
+            if idx < 2:  # the feature behind the cases arrives at commit 2
+                return [RunResult(req.case, "skipped", reason="requires tool 'x'") for _ in range(req.repeats)]
+            return super().run_case(req)
+    store, runner, st, shas = make(tmp_path, hist, ex=Absent())
+    st.spec.signature = runner.signature = FailureSignature(key="budget:steps", cases=["a", "b", "c"])
+    out = B.run_investigation(store, st, runner)
+    assert out.kind == "culprit" and out.sha == shas[3]
+    assert store.load(st.id).results[shas[0]].verdict == "good"

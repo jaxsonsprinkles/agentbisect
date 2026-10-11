@@ -347,6 +347,12 @@ class Runner:
                     stats = self._tally(sha, cases, errors)
                     passes = sum(t["passes"] for t in stats.values())
                     fails = sum(t["fails"] for t in stats.values())
+                    if passes + fails == 0 and self.signature and not any(errors.values()) and all(
+                            "skip" in (self.cache.get(sha, c, models) or {}) for c in cases):
+                        # the signature's cases do not exist at this commit (e.g. they need a tool added later):
+                        # the failure cannot occur here, so it is vacuously good, not an unusable commit
+                        return CommitResult("good", pass_rate=1.0, executed=0, case_stats={}, from_cache=not ran,
+                                            reason="signature cases not applicable at this commit")
                     if passes + fails == 0:
                         return CommitResult("skip", reason="no executed runs (all errored or skipped)",
                                             case_stats=stats)
