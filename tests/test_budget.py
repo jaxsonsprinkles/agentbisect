@@ -1,5 +1,6 @@
 """Budget signatures: repeats per case, median rule vs the saved baseline, configurable repeats."""
 import hashlib
+import html
 import threading
 
 import pytest
@@ -245,3 +246,73 @@ def test_cache_detail_aggregate_and_old_records(tmp_path):
     d = c.get("s", "a", PINS)["detail"]
     assert d[0] == {"status": "pass", "tokens": 10, "steps": 2, "max_steps": 6, "fails": []}
     assert d[1]["fails"] == ["budget:steps"] and d[1]["tokens"] is None
+
+
+def _budget_repo(tmp_path):
+    import subprocess
+    r = tmp_path / "t"
+    r.mkdir()
+    g = lambda *a: subprocess.run(["git", "-C", str(r), *a], check=True, capture_output=True, text=True)  # noqa: E731
+    g("init", "-q", "-b", "main"), g("config", "user.email", "t@t"), g("config", "user.name", "t")
+    shas = []
+    for i, (name, flag) in enumerate([("base", None), ("mid", None), ("fat", "fat.flag"), ("tail", None)]):
+        (r / "n.txt").write_text(str(i))
+        if flag:
+            (r / flag).write_text("x")
+        g("add", "-A"), g("commit", "-q", "-m", name)
+        shas.append(g("rev-parse", "HEAD").stdout.strip())
+    return r, shas
+
+
+def test_revert_test_uses_the_median_rule_with_three_repeats_and_reports_medians(tmp_path):
+    from agentbisect import verify as V
+    r, shas = _budget_repo(tmp_path)
+
+    class FileExec:
+        calls = []
+
+        def run_case(self, req):
+            self.calls.append((req.case, req.repeats))
+            fat = (req.workdir / "fat.flag").exists()
+            out = []
+            for i in range(req.repeats):
+                tok = [200, 190, 100][i % 3] if fat else 100  # median 190 > 150 when the culprit is in
+                out.append(RunResult(req.case, "fail" if tok > 150 else "pass", trace_id=f"t{i}", tokens=tok, steps=2,
+                                     max_steps=6, agent_model=PINS["agent_model"], judge_model=PINS["judge_model"],
+                                     failures=[{"key": "budget:tokens@x", "check": "budget"}] if tok > 150 else []))
+            return out
+    store = StateStore(tmp_path / "ab")
+    ex = FileExec()
+    sig = FailureSignature(key="budget:tokens@x", check="budget", cases=["a", "b"])
+    runner = Runner(r, RunnerConfig(cases=["a", "b"], install_cmd=None, models=dict(PINS), workers=1),
+                    store.cache(str(r)), ex, sleep=lambda s: None, signature=sig)
+    runner.baseline = BASE
+    st = store.create(str(r), spec=RegressionSpec(cases=["a", "b"], signature=sig), good_sha=shas[0], bad_sha=shas[-1])
+    assert B.run_investigation(store, st, runner).sha == shas[2]
+    st = store.load(st.id)
+    ex.calls.clear()
+    out, _ = V.revert_test(st, runner)
+    assert out.passed is True
+    assert sorted(ex.calls) == [("a", 3), ("b", 3)]  # 3 repeats per case on the reverted HEAD
+    b = out.details["budget"]
+    assert (b["before"]["median"], b["before"]["within"], b["before"]["total"]) == (190, 0, 2)
+    assert (b["after"]["median"], b["after"]["within"], b["after"]["total"]) == (100, 2, 2)
+    assert b["good"]["median"] == 100 and b["repeats"] == 3
+    line = V.budget_line(b)
+    assert "HEAD 190 -> reverted 100" in line and "within budget 0/2 -> 2/2" in line and "3 repeats" in line
+
+
+def test_revert_budget_reaches_state_report_and_status(tmp_path):
+    from agentbisect import report as RP
+    from agentbisect import verify as V
+    from agentbisect.models import CulpritReport
+    st = StateStore(tmp_path / "ab").create(str(tmp_path), good_sha="a" * 40, bad_sha="b" * 40)
+    st.culprit = CulpritReport(sha="c" * 40, confidence="medium", revert_test_passed=True, intent_source="commit_message")
+    st.metrics["revert_test"] = {"passed": True, "eval_rounds": 6, "budget": {
+        "good": {"kind": "tokens", "median": 11873}, "repeats": 3,
+        "before": {"kind": "tokens", "median": 31402, "within": 1, "total": 4},
+        "after": {"kind": "tokens", "median": 12150, "within": 4, "total": 4}}}
+    want = "median tokens: HEAD 31,402 -> reverted 12,150 (good commit 11,873); within budget 1/4 -> 4/4 (3 repeats per case)"
+    assert want in "\n".join(V.describe_revert(st))
+    rep = RP.build_report(st, repo=None)
+    assert want in RP.render_markdown(rep) and html.escape(want) in RP.render_html(rep)

@@ -35,6 +35,14 @@ _GIT_ENV = {"GIT_AUTHOR_NAME": "agentbisect", "GIT_AUTHOR_EMAIL": "agentbisect@l
             "GIT_AUTHOR_DATE": "2000-01-01T00:00:00Z", "GIT_COMMITTER_DATE": "2000-01-01T00:00:00Z"}
 
 
+def budget_view(b: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The few numbers of a CommitResult.budget that the revert test reports: median metric (median over cases of
+    the per-case medians over the repeats), baseline median, cases within budget / total, repeats."""
+    if not b or not b.get("cases"):
+        return None
+    return {k: b.get(k) for k in ("kind", "median", "baseline_median", "ratio", "within", "total", "repeats")}
+
+
 def downgrade(conf: str, steps: int = 1) -> str:
     i = _LEVELS.index(conf) if conf in _LEVELS else 0
     return _LEVELS[max(0, i - steps)]
@@ -150,6 +158,11 @@ def revert_test(st: BisectState, runner: Runner, sha: str | None = None) -> tupl
     out = decide_revert(rep, build, res, good.pass_rate if good else None, bad.pass_rate if bad else None,
                         runner.cfg.good_min)
     out.details["reverted_commit"] = build.sha
+    if res and res.budget:  # budget signature: same median rule, before = HEAD with the culprit, after = reverted
+        head_res = st.results.get(head) or bad
+        out.details["budget"] = {"good": budget_view(good.budget if good else None),
+                                 "before": budget_view(head_res.budget if head_res else None),
+                                 "after": budget_view(res.budget), "repeats": res.repeats}
     if runner.signature:
         out.details["signature"] = runner.signature.key
         out.details["signature_label"] = runner.signature.label
@@ -178,7 +191,7 @@ def confirm_culprit(store: StateStore, st: BisectState, runner: Runner | None = 
         rep.revert_details = {**rep.revert_details, **out.details}
         m = st.metrics
         m["revert_test"] = {"passed": out.passed, "eval_rounds": rounds, **{k: out.details.get(k) for k in (
-            "kind", "baseline_pass_rate", "reverted_pass_rate", "culprit_pass_rate")}}
+            "kind", "baseline_pass_rate", "reverted_pass_rate", "culprit_pass_rate", "budget")}}
         m["eval_rounds"] = m.get("eval_rounds", 0) + rounds
         m["cost_usd"] = round(m["eval_rounds"] * COST_PER_RUN_USD, 4)
         for f in out.flags:
@@ -186,6 +199,17 @@ def confirm_culprit(store: StateStore, st: BisectState, runner: Runner | None = 
                 m["warnings"].append(f)
         store.end_step(st)
     return st.culprit
+
+
+def budget_line(b: dict[str, Any]) -> str:
+    """'median tokens: HEAD 31,402 -> reverted 12,150 (good commit 11,873); within budget 1/4 -> 4/4 (3 repeats)'."""
+    bef, aft, good = b.get("before") or {}, b.get("after") or {}, b.get("good") or {}
+    unit = aft.get("kind") or bef.get("kind") or "metric"
+    num = lambda v: "n/a" if v is None else f"{v:,.0f}" if isinstance(v, (int, float)) and v >= 100 else f"{v:g}"  # noqa: E731
+    frac = lambda v: f"{v.get('within')}/{v.get('total')}" if v else "n/a"  # noqa: E731
+    return (f"median {unit}: HEAD {num(bef.get('median'))} -> reverted {num(aft.get('median'))} "
+            f"(good commit {num(good.get('median'))}); within budget {frac(bef)} -> {frac(aft)} "
+            f"({b.get('repeats')} repeats per case)")
 
 
 def describe_revert(st: BisectState) -> list[str]:
@@ -202,6 +226,8 @@ def describe_revert(st: BisectState) -> list[str]:
     if rt.get("reverted_pass_rate") is not None:
         lines.append(f"    pass rate: culprit {rt.get('culprit_pass_rate')} -> reverted {rt['reverted_pass_rate']} "
                      f"(good commit {rt.get('baseline_pass_rate')})")
+    if rt.get("budget"):
+        lines.append("    " + budget_line(rt["budget"]))
     if c.intent_source:
         lines.append(f"  intent source: {c.intent_source}")
     for f in c.flags:

@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .models import BisectState, FixAttempt
+from .verify import budget_line
 
 PR_FOOTER = "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
 # Dashboard link pattern is UNVERIFIED (the docs only give the host https://app.neatlogs.com); override with
@@ -111,7 +112,8 @@ def build_report(st: BisectState, repo: str | None = None) -> dict[str, Any]:
         "culprit": c, "flags": flags, "multi": any(MULTI_REGRESSION in f for f in flags),
         "low_conf": bool(c and c.confidence == "low"),
         "revert": {"passed": c.revert_test_passed if c else None, "baseline": baseline, "culprit_rate": before,
-                   "reverted": rt.get("reverted_pass_rate"), "ran": "revert_test" in m},
+                   "reverted": rt.get("reverted_pass_rate"), "ran": "revert_test" in m,
+                   "budget": budget_line(rt["budget"]) if rt.get("budget") else None},
         "fix": fix, "rounds": rounds, "metrics": m,
         "steps": st.context_tokens_per_step,
         "commits": [{"sha": s, "verdict": r.verdict, "pass_rate": r.pass_rate, "repeats": r.repeats,
@@ -196,6 +198,8 @@ def render_markdown(r: dict[str, Any], pr: bool = False) -> str:
     L += ["", "## Revert test", "", f"Result: **{res[rv['passed']]}**", "",
           f"Pass rate: good commit {_fmt(rv['baseline'])}, culprit {_fmt(rv['culprit_rate'])}, "
           f"HEAD with culprit reverted {_fmt(rv['reverted'])}.", ""]
+    if rv["budget"]:
+        L += [f"Budget (median over repeats vs the good-commit baseline): {rv['budget']}.", ""]
     if r["rounds"]:
         L += ["## Smart vs plain bisect", "", "| strategy | eval rounds | cost (USD, estimate) |", "|---|---|---|"]
         for k, v in r["rounds"].items():
@@ -320,7 +324,9 @@ def render_html(r: dict[str, Any]) -> str:
                False: '<span class="no">FAILED</span>: the regression remains after reverting',
                None: "inconclusive" if rv["ran"] else "not run"}[rv["passed"]]
         sec("Revert test", f"<p>{res}</p><p class=\"mut\">Pass rate: good commit {e(_fmt(rv['baseline']))}, culprit "
-            f"{e(_fmt(rv['culprit_rate']))}, HEAD with culprit reverted {e(_fmt(rv['reverted']))}.</p>")
+            f"{e(_fmt(rv['culprit_rate']))}, HEAD with culprit reverted {e(_fmt(rv['reverted']))}.</p>"
+            + (f"<p class=\"mut\">Budget (median over repeats vs the good-commit baseline): {e(rv['budget'])}.</p>"
+               if rv["budget"] else ""))
         if r["rounds"]:
             rows = [[e(k), e(v.get("eval_rounds")), e(v.get("cost_usd"))] for k, v in r["rounds"].items()
                     if isinstance(v, dict)]
