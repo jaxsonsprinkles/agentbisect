@@ -28,13 +28,14 @@ import subprocess
 from pathlib import Path
 from typing import Any, Callable, Collection, Protocol
 
+from .baseline import budget_kind
 from .culprit import PROTECTED, fixer_brief, scrub
 from .intake import FORBIDDEN_CASE_KEYS
 from .models import BisectState, CulpritReport, FixAttempt, FixResult
 from .runner import Runner, worktree
 from .tracing import step_span
-from .verify import (IntentJudge, VerifierInput, _git, cases_at, check_eval_edits, check_intent, format_all_changes,
-                     held_out_violations)
+from .verify import (IntentJudge, VerifierInput, _git, _not_clean, _unevaluable, cases_at, check_eval_edits,
+                     check_intent, format_all_changes, held_out_violations)
 
 MAX_ATTEMPTS = 3
 MAX_FILE_CHARS = 20000
@@ -93,16 +94,49 @@ class ProxyFixModel:
         return "".join(b.get("text", "") for b in resp.get("content", []))
 
 
-class RunnerChecker:
-    """FixChecker backed by the eval Runner: a commit passes when the signature (or the whole suite) is good."""
+HELD_OUT_REMINDER = ("Held-out cases share the target's check, so a stale held-out expectation means the fix is "
+                     "incomplete. If the change DELIBERATELY changed that contract, apply the same contract change to "
+                     "those held-out rows via eval_edits (allowed only for the same check and tool/argument contract "
+                     "you changed on a target case); otherwise fix the code.")
 
-    def __init__(self, runner: Runner, run_id: str):
-        self.runner, self.run_id = runner, run_id
+
+class RunnerChecker:
+    """FixChecker backed by the eval Runner: a commit passes when the signature (or the whole suite) is good and,
+    when `st` is given, the held-out cases that share the target's check key also pass (budget:* flags ignored unless
+    the target is a budget signature), so an expectation left stale by a contract change fails the attempt."""
+
+    def __init__(self, runner: Runner, run_id: str, st: BisectState | None = None):
+        self.runner, self.run_id, self.st = runner, run_id, st
+
+    def _held_out(self, commit: str, attempt: int) -> tuple[bool, list[str]]:
+        st = self.st
+        held = held_out_sharing_check(st, str(self.runner.repo), commit) if st else []
+        if not held:
+            return True, []
+        rn = self.runner
+        saved = rn.signature, rn.ignore_budget
+        rn.signature = None  # evaluate the held-out rows themselves, not the target signature
+        rn.ignore_budget = not (st.spec and st.spec.signature and budget_kind(st.spec.signature.key))
+        try:
+            res = rn.evaluate_commit(commit, f"{self.run_id}-fix{attempt}-held", held)
+        finally:
+            rn.signature, rn.ignore_budget = saved
+        if _unevaluable("held_out", "held-out cases", res) is not None:
+            return True, []  # infrastructure, not a verdict: the Verifier reports it
+        dirty = _not_clean(res, held)
+        if res.verdict == "good" and not dirty:
+            return True, []
+        out = [f"held-out cases failing (same check as the target): {', '.join(dirty or res.failing_cases) or 'band'}"]
+        for s in res.failure_signatures:
+            out.append(f"held-out failing check {s.get('key')}: expected {s.get('expected')} got {s.get('got')}"
+                       + (f" ({s['reason']})" if s.get("reason") else ""))
+        out.append(HELD_OUT_REMINDER)
+        return False, out[:MAX_FAILURE_LINES]
 
     def check(self, commit: str, attempt: int) -> tuple[bool, list[str]]:
         res = self.runner.evaluate_commit(commit, f"{self.run_id}-fix{attempt}")
         if res.verdict == "good":
-            return True, []
+            return self._held_out(commit, attempt)
         out = [f"verdict {res.verdict}" + (f" (pass rate {res.pass_rate:.2f})" if res.pass_rate is not None else "")
                + (f": {res.reason}" if res.reason else "")]
         out += [f"failing case: {c}" for c in res.failing_cases]
@@ -146,6 +180,16 @@ def held_out_eval_cases(st: BisectState, repo: str, head: str) -> list[str]:
     rows = cases_at(repo, head)
     held = {*(st.spec.held_out if st.spec else []), *(r["id"] for r in rows if r.get("held_out"))}
     return [r["id"] for r in rows if r["id"] in held]
+
+
+def held_out_sharing_check(st: BisectState, repo: str, commit: str) -> list[str]:
+    """Held-out cases at `commit` whose `checks` carry the target signature's check key (e.g. call_args)."""
+    sig = st.spec.signature if st.spec else None
+    if not sig or not sig.check:
+        return []
+    held = set(held_out_eval_cases(st, repo, commit))
+    return [r["id"] for r in cases_at(repo, commit)
+            if r["id"] in held and sig.check in (r.get("checks") or {})]
 
 
 def build_prompt(repo: str, report: CulpritReport, head: str, previous: list[FixAttempt],

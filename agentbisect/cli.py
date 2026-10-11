@@ -421,7 +421,7 @@ def _fix(a: argparse.Namespace, store: StateStore) -> int:
             judge = ClaudeIntentJudge(os.environ.get("JUDGE_MODEL") or DEFAULT_JUDGE_MODEL)
         except ValueError:
             judge = None
-        res = run_fixer(st, model=ProxyFixModel(model=a.model), checker=RunnerChecker(make_runner(store, st), st.id),
+        res = run_fixer(st, model=ProxyFixModel(model=a.model), checker=RunnerChecker(make_runner(store, st), st.id, st),
                         out_dir=a.out or os.path.join(a.state_dir, "fixes"), max_attempts=a.max_attempts,
                         open_pr=a.open_draft_pr, judge=judge)
     except Exception as e:  # never leave the investigation stuck in `fixing`

@@ -259,7 +259,7 @@ def cli_setup(tmp_path, repo, monkeypatch, replies, culprit=True, passes=True):
     model = _Boom() if replies is None else FakeModel(*replies)
     monkeypatch.setattr(fixer, "ProxyFixModel", lambda model=None, _m=model: _m)
     monkeypatch.setattr(bisect, "make_runner", lambda store, st: None)
-    monkeypatch.setattr(fixer, "RunnerChecker", lambda runner, run_id: FakeChecker(repo) if passes else _NeverChecker())
+    monkeypatch.setattr(fixer, "RunnerChecker", lambda runner, run_id, st=None: FakeChecker(repo) if passes else _NeverChecker())
     return store, s, model
 
 
@@ -614,3 +614,51 @@ def test_held_out_rows_listed_only_with_target_rows_and_matching_check(st_held, 
     assert "Held-out eval cases" not in prompt
     prompt, _ = build_prompt(st_held.repo, st_held.culprit, st_held.bad_sha, [], ["r3"], ["h1", "h2"])
     assert "consistency check only" in prompt and '"h2"' in prompt and '"h1"' not in prompt
+
+
+# ---- the Fixer's checker also evaluates held-out cases that share the target's check key
+
+class _HeldRunner:
+    """Fake Runner: the target signature always passes; a held-out row passes when it expects amount_cents."""
+
+    def __init__(self, repo):
+        self.repo, self.signature, self.ignore_budget, self.calls = repo.path, "SIG", False, []
+
+    def evaluate_commit(self, sha, run_id, cases=None):
+        self.calls.append((run_id, cases, self.signature, self.ignore_budget))
+        if cases is None:
+            return CommitResult(verdict="good", pass_rate=1.0)
+        rows = {json.loads(x)["id"]: json.loads(x) for x in git(self.repo, "show", f"{sha}:evals/cases.jsonl").splitlines()}
+        bad = [c for c in cases if "amount_cents" not in json.dumps(rows[c]["checks"])]
+        return CommitResult(
+            verdict="bad" if bad else "good", pass_rate=0.0 if bad else 1.0, failing_cases=bad,
+            case_stats={c: {"passes": 0 if c in bad else 1, "fails": 1 if c in bad else 0, "errors": 0} for c in cases},
+            failure_signatures=[{"key": "call_args:issue_refund.amount", "expected": "{'amount_cents': 3600}",
+                                 "got": "{'amount': 36.0}"}] if bad else [])
+
+
+def test_runner_checker_fails_attempt_on_stale_held_out_row_and_feeds_text_forward(st_held, repo):
+    rn = _HeldRunner(repo)
+    target_only = json.dumps({"explanation": "x", "files": [], "eval_edits": [
+        {"case": "r3", "checks": {"call_args": {"amount_cents": 6400}}, "reason": "integer cents"}]})
+    m = FakeModel(target_only, two_edits())
+    res = run_fixer(st_held, model=m, checker=RunnerChecker(rn, "i", st_held), judge=_EJudge(True, True))
+    assert [a.passed for a in res.attempts] == [False, True]
+    f = res.attempts[0].failures
+    assert any("h2" in x for x in f) and any("expected {'amount_cents': 3600} got {'amount': 36.0}" in x for x in f)
+    assert any("eval_edits" in x for x in f) and "h1" not in " ".join(f)  # h1 has no call_args: not evaluated
+    assert "eval_edits" in m.prompts[1] and "held-out cases failing" in m.prompts[1]
+    held_call = [c for c in rn.calls if c[1] is not None][0]
+    assert held_call[1] == ["h2"] and held_call[2] is None and held_call[3] is True  # signature off, budget ignored
+    assert rn.signature == "SIG" and rn.ignore_budget is False  # restored
+    # the held-out section was in the very first prompt: target rows carry call_args
+    assert "Held-out eval cases" in m.prompts[0] and '"h2"' in m.prompts[0]
+
+
+def test_runner_checker_without_state_or_held_rows_does_not_evaluate_held_out(st_held, repo):
+    rn = _HeldRunner(repo)
+    assert RunnerChecker(rn, "i").check(st_held.bad_sha, 1) == (True, [])
+    assert all(c[1] is None for c in rn.calls)
+    st_held.spec.held_out = []
+    st_held.spec.signature.check = "judge"  # no row carries it
+    assert RunnerChecker(rn, "i", st_held).check(st_held.bad_sha, 1) == (True, [])
