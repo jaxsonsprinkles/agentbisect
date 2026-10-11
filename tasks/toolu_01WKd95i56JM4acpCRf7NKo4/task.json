@@ -1,0 +1,20 @@
+{
+  "tool_use_id": "toolu_01WKd95i56JM4acpCRf7NKo4",
+  "agent_id": "a0ff9e9058104aa55",
+  "task_description": "Review U5 throttling",
+  "files": [
+    "agentbisect/cli.py",
+    "agentbisect/llm_proxy.py",
+    "agentbisect/report.py",
+    "tests/test_llm_proxy.py"
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 39488,
+    "cache_read_tokens": 169447,
+    "output_tokens": 3054,
+    "api_call_count": 5
+  },
+  "started_at": "2026-10-10T19:26:34.179265-05:00",
+  "completed_at": "2026-10-10T19:26:34.179791-05:00"
+}
