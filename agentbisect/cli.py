@@ -402,6 +402,8 @@ def _explain(store: StateStore, st: BisectState, code: int, meta: dict | None) -
 def _fix(a: argparse.Namespace, store: StateStore) -> int:
     from .bisect import make_runner
     from .fixer import ProxyFixModel, RunnerChecker, run_fixer
+    from .runner import DEFAULT_JUDGE_MODEL
+    from .verify import ClaudeIntentJudge
     if a.max_attempts < 1:
         print("error: --max-attempts must be at least 1", file=sys.stderr)
         return 2
@@ -415,9 +417,13 @@ def _fix(a: argparse.Namespace, store: StateStore) -> int:
         return 1
     try:
         store.set_status(st, "fixing")  # fixing -> fixing is allowed, so a re-run after a crash works
+        try:  # the same pinned judge as verify-fix; unusable (e.g. haiku tier) => the intent check is inconclusive
+            judge = ClaudeIntentJudge(os.environ.get("JUDGE_MODEL") or DEFAULT_JUDGE_MODEL)
+        except ValueError:
+            judge = None
         res = run_fixer(st, model=ProxyFixModel(model=a.model), checker=RunnerChecker(make_runner(store, st), st.id),
                         out_dir=a.out or os.path.join(a.state_dir, "fixes"), max_attempts=a.max_attempts,
-                        open_pr=a.open_draft_pr)
+                        open_pr=a.open_draft_pr, judge=judge)
     except Exception as e:  # never leave the investigation stuck in `fixing`
         print(f"error: {type(e).__name__}: {e}", file=sys.stderr)
         if st.status == "fixing":

@@ -26,7 +26,7 @@ from .culprit import PROTECTED, fixer_brief, scrub
 from .models import BisectState, CulpritReport, FixAttempt, FixResult
 from .runner import Runner, worktree
 from .tracing import step_span
-from .verify import _git
+from .verify import IntentJudge, VerifierInput, _git, check_intent
 
 MAX_ATTEMPTS = 3
 MAX_FILE_CHARS = 20000
@@ -38,9 +38,12 @@ NOGPG = ("-c", "commit.gpgsign=false")
 
 SYSTEM = """You are a software engineer fixing a regression in a repository you have not seen before.
 A recent change broke some checks. You get that change's diff, the intent behind it, the failing evidence and the
-current contents of the files it touched. Fix the regression with the smallest correct edit while KEEPING what the
-change set out to do (its intent); do not simply revert it unless the intent is void. Do not edit tests or eval
-cases to make checks pass. Reply with ONLY a JSON object:
+current contents of the files it touched. Fix the regression with the smallest correct edit.
+The commit's intent must be preserved: do not undo or revert the commit, or any part of the behaviour it set out to
+introduce, even if that would make the failing checks pass. Fix the CONSEQUENCE of the change instead: whatever else
+depends on the changed behaviour and was not updated with it (callers, prompts, tool descriptions, configuration,
+documentation). An attempt is also judged on whether the intent survives; one that removes it counts as failed.
+Do not edit tests or eval cases to make checks pass. Reply with ONLY a JSON object:
 {"explanation": "<one or two sentences>", "files": [{"path": "<repo-relative>", "content": "<complete new file>"},
  {"path": "<repo-relative>", "delete": true}]}"""
 
@@ -131,7 +134,9 @@ def build_prompt(repo: str, report: CulpritReport, head: str, previous: list[Fix
         why = scrub(a.error or "\n".join(f"- {x}" for x in a.failures)) or "(no output)"
         parts.append(f"## Previous attempt {a.attempt} did NOT fix it\n\nEdited: {', '.join(a.files) or '(nothing)'}\n"
                      f"Its change:\n```diff\n{scrub(a.diff[:MAX_FILE_CHARS])}\n```\nFailing-check output:\n{why}\n\n"
-                     "Fix the cause; do not repeat that attempt.")
+                     "Fix the cause; do not repeat that attempt."
+                     + (" That attempt's checks passed but it undid the intent of the change: keep the intent and "
+                        "fix its consequence elsewhere." if a.intent_test_passed is False else ""))
     return "\n\n".join(parts), oversize
 
 
@@ -190,8 +195,13 @@ def branch_name(sha: str) -> str:
 
 def run_fixer(st: BisectState, *, model: FixModel, checker: FixChecker, out_dir: str | Path | None = None,
               max_attempts: int = MAX_ATTEMPTS, open_pr: bool = False, base: str | None = None,
-              run: Callable[..., Any] = subprocess.run, worktree_root: str | None = None) -> FixResult:
-    """Run up to `max_attempts` fix attempts for st.culprit. The attempts are also recorded on st.fix_attempts."""
+              run: Callable[..., Any] = subprocess.run, worktree_root: str | None = None,
+              judge: IntentJudge | None = None) -> FixResult:
+    """Run up to `max_attempts` fix attempts for st.culprit. The attempts are also recorded on st.fix_attempts.
+
+    An attempt only passes when the checks pass AND `judge` (verify.check_intent on the attempt's diff) says the
+    culprit's intent survives, so reverting the culprit counts as failed and the judge's reason goes into the next
+    prompt. A missing/failed judge is inconclusive: it does not block, and is recorded in metrics["fix"]."""
     rep = st.culprit
     if not rep:
         raise ValueError("investigation has no culprit to fix")
@@ -201,6 +211,7 @@ def run_fixer(st: BisectState, *, model: FixModel, checker: FixChecker, out_dir:
     head = _must(repo, "rev-parse", "--verify", f"{base or st.bad_sha or 'HEAD'}^{{commit}}").strip()
     branch = branch_name(rep.sha)
     res = FixResult(base=head, branch=branch)
+    inconclusive: list[dict[str, Any]] = []  # attempts whose intent check could not be judged
     best: FixAttempt | None = None  # passing attempt, else the last one that produced a commit
     for n in range(1, max_attempts + 1):
         att = FixAttempt(branch=branch, attempt=n)
@@ -222,6 +233,13 @@ def run_fixer(st: BisectState, *, model: FixModel, checker: FixChecker, out_dir:
                 att.error, att.passed = str(e), False
                 continue
             att.passed, att.failures = checker.check(att.commit, n)
+            if att.passed:
+                iv = check_intent(st, VerifierInput(str(repo), att.commit, branch, head), head, judge)
+                att.intent_test_passed = iv.passed
+                if iv.passed is False:
+                    att.passed, att.failures = False, [f"intent not preserved: {iv.detail}"]
+                elif iv.passed is None:
+                    inconclusive.append({"attempt": n, "detail": iv.detail})
         best = att
         if att.passed:
             break
@@ -239,7 +257,8 @@ def run_fixer(st: BisectState, *, model: FixModel, checker: FixChecker, out_dir:
     if out_dir:
         _write_files(st, res, Path(out_dir))
     st.metrics["fix"] = {"branch": res.branch, "passed": res.passed, "base": res.base,
-                         "verifier_input": res.verifier_input, "pr_url": res.pr_url, "pr_error": res.pr_error}
+                         "verifier_input": res.verifier_input, "pr_url": res.pr_url, "pr_error": res.pr_error,
+                         "intent_inconclusive": inconclusive}
     return res
 
 

@@ -399,3 +399,40 @@ def test_attempt_matched_by_commit_when_recorded_without_branch_name(tmp_path, h
     st.fix_attempts = [FixAttempt(branch=vin.commit, attempt=1)]
     record_verification(store, st, vin, verify_fix(st, runner, vin, Judge()))
     assert len(st.fix_attempts) == 1 and st.fix_attempts[0].intent_test_passed is True
+
+
+# ---- budget flags of OTHER regressions must not fail behaviourally fine cases
+
+def _bloat(cases):
+    """Cases whose only failure is a budget flag (token bloat from another, still-present regression)."""
+    return lambda idx, case, k: 400 if case in cases else None
+
+
+def test_other_regressions_budget_flags_are_ignored_by_regression_and_held_out(tmp_path, hist):
+    store, runner, st, vin = mk(tmp_path, hist, Exec(default, _bloat({"b", "h1"})))
+    res = verify_fix(st, runner, vin, Judge())
+    reg, held = res.check("regression"), res.check("held_out")
+    assert reg.passed is True and held.passed is True and res.passed is True
+    assert reg.data["budget_ignored"] and "budget:* flags ignored" in reg.detail
+    assert held.data["budget_ignored"] and "budget:* flags ignored" in held.detail
+    assert runner.ignore_budget is False  # restored
+
+
+def test_behavioural_failure_still_fails_when_budget_flags_are_ignored(tmp_path, hist):
+    def beh(i, c):
+        return default(i, c) or (["reply_regex:r"] if c == "h1" and i == FIX_IDX else [])
+    store, runner, st, vin = mk(tmp_path, hist, Exec(beh, _bloat({"h1", "b"})))
+    res = verify_fix(st, runner, vin, Judge())
+    assert res.check("held_out").passed is False and res.check("regression").passed is True
+
+
+def test_budget_flags_count_when_the_target_is_a_budget_signature(tmp_path, hist):
+    bsig = FailureSignature(key="budget:tokens@x", check="budget", detail="tokens@x", cases=["a"])
+    base = Baseline({"token_factor": 1.5, "max_steps": 6,
+                     "cases": {c: {"median_tokens": 100, "median_steps": 2, "n": 3} for c in ("a", "b", "c", "h1", "h2")}})
+    store, runner, st, vin = mk(tmp_path, hist, Exec(lambda i, c: [], _bloat({"h1"})), sig=bsig)
+    runner.baseline = base
+    res = verify_fix(st, runner, vin, Judge())
+    held = res.check("held_out")
+    assert held.passed is False and "h1" in held.detail and not held.data.get("budget_ignored")
+    assert not res.check("regression").data.get("budget_ignored")

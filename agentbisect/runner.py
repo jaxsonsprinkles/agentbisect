@@ -199,6 +199,9 @@ class Runner:
                  executor: EvalExecutor | None = None, sleep: Callable[[float], None] = time.sleep,
                  signature: FailureSignature | None = None):
         self.signature = signature  # when set, pass/fail means "this failing check does not occur"
+        # without a signature: a run whose ONLY failing checks are budget:* flags counts as a pass (the verifier
+        # judges behaviour; budget regressions that are still present elsewhere must not fail unrelated cases)
+        self.ignore_budget = False
         self.repo = Path(repo).resolve()
         self.cfg = cfg
         self.cache = cache
@@ -423,6 +426,9 @@ class Runner:
                 continue
             runs = e.get("passes", 0) + e.get("fails", 0)
             fails = e.get("fails", 0)
+            if not self.signature and self.ignore_budget:
+                fails = sum(d.get("status") == "fail" and any(not k.startswith("budget:") for k in d.get("fails") or ["case_fail"])
+                            for d in e.get("detail") or [])
             if self.signature:
                 key = self.signature.key  # a bare `budget:tokens` also covers the per-category `budget:tokens@cat`
                 cf = e.get("check_fails") or {}

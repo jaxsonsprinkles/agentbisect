@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from .baseline import budget_kind
 from .bisect import COST_PER_RUN_USD
 from .culprit import analyze_culprit
 from .intake import TraceSource
@@ -435,10 +436,31 @@ def _regressed(before: tuple[int, int], after: tuple[int, int] | None) -> bool:
     return af - expected > (1 if flaky else 0)
 
 
+def _target_is_budget(st: BisectState) -> bool:
+    return bool(st.spec and st.spec.signature and budget_kind(st.spec.signature.key))
+
+
+BUDGET_IGNORED = "budget:* flags ignored (target is not a budget signature)"
+
+
 def check_regression(runner: Runner, st: BisectState, fix: str, base: str, run_id: str) -> CheckVerdict:
     """Cases that pass at `base` (the pre-fix commit) must still pass with the fix: per case, signature off so any
-    failure counts. Cases with mixed results at either commit are re-run with more repeats first."""
+    behavioural failure counts. Per-run budget:* flags are ignored unless the target is itself a budget signature
+    (another regression's token bloat must not fail a case that behaves correctly)."""
     runner.signature = None
+    ignore = not _target_is_budget(st)
+    saved_ignore, runner.ignore_budget = runner.ignore_budget, ignore
+    try:
+        v = _check_regression(runner, st, fix, base, run_id)
+    finally:
+        runner.ignore_budget = saved_ignore
+    if ignore:
+        v.data["budget_ignored"] = True
+        v.detail += f"; {BUDGET_IGNORED}"
+    return v
+
+
+def _check_regression(runner: Runner, st: BisectState, fix: str, base: str, run_id: str) -> CheckVerdict:
     cases = list(st.spec.cases)
     before, after = runner.evaluate_commit(base, f"{run_id}-base", cases), runner.evaluate_commit(fix, run_id, cases)
     for r, what in ((before, "pre-fix commit"), (after, "fix")):
@@ -470,24 +492,29 @@ def check_regression(runner: Runner, st: BisectState, fix: str, base: str, run_i
                         + (f" ({len(mixed)} flaky re-run)" if mixed else ""), data)
 
 
-def check_held_out(runner: Runner, fix: str, held: list[str], rubric_cases: list[str], run_id: str) -> CheckVerdict:
+def check_held_out(runner: Runner, fix: str, held: list[str], rubric_cases: list[str], run_id: str,
+                   ignore_budget: bool = False) -> CheckVerdict:
     if not held:
         return CheckVerdict("held_out", None, "no held-out cases defined: cannot check for overfitting")
     runner.signature = None
-    saved = runner.cfg.judge_cases
+    saved, saved_ignore = runner.cfg.judge_cases, runner.ignore_budget
+    runner.ignore_budget = ignore_budget
     runner.cfg.judge_cases = tuple(dict.fromkeys([*saved, *(c for c in rubric_cases if c in held)]))  # judge repeats
     try:
         res = runner.evaluate_commit(fix, f"{run_id}-held", held)
     finally:
-        runner.cfg.judge_cases = saved
+        runner.cfg.judge_cases, runner.ignore_budget = saved, saved_ignore
     if (bad := _unevaluable("held_out", "held-out cases", res)):
         return bad
     dirty = _not_clean(res, held)
     data = {"cases": held, "pass_rate": res.pass_rate, "failing_cases": res.failing_cases,
             "flaky_cases": res.flaky_cases, "not_clean": dirty, "verdict": res.verdict}
     ok = res.verdict == "good" and not dirty
+    if ignore_budget:
+        data["budget_ignored"] = True
     return CheckVerdict("held_out", ok, f"held-out pass rate {_pr(res.pass_rate)} over {', '.join(held)}"
-                        + ("" if ok else f" (failing or flaky: {', '.join(dirty) or 'band'})"), data)
+                        + ("" if ok else f" (failing or flaky: {', '.join(dirty) or 'band'})")
+                        + (f"; {BUDGET_IGNORED}" if ignore_budget else ""), data)
 
 
 def check_intent(st: BisectState, vin: VerifierInput, base: str, judge: IntentJudge | None) -> CheckVerdict:
@@ -556,7 +583,8 @@ def verify_fix(st: BisectState, runner: Runner, vin: VerifierInput, judge: Inten
             out.checks = [
                 guarded("regression", lambda: check_regression(runner, st, fix, base, run_id)),
                 guarded("target", lambda: check_target(runner, st, fix, run_id)),
-                guarded("held_out", lambda: check_held_out(runner, fix, held, rubric, run_id)),
+                guarded("held_out", lambda: check_held_out(runner, fix, held, rubric, run_id,
+                                                    ignore_budget=not _target_is_budget(st))),
                 check_intent(st, VerifierInput(repo, fix, vin.branch, base), base, judge)]
         out.checks.sort(key=lambda c: CHECK_ORDER.index(c.name))
     finally:

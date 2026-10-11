@@ -352,3 +352,58 @@ def test_proxy_model_uses_pinned_model_and_joins_text():
             return {"content": [{"type": "text", "text": "ab"}, {"type": "text", "text": "cd"}]}
     m = ProxyFixModel(P(), model="claude-sonnet-5-5")
     assert m.complete("sys", "hi") == "abcd" and seen["model"] == "claude-sonnet-5-5" and seen["system"] == "sys"
+
+
+# ---- intent check inside the Fixer's per-attempt check
+
+class _Judge:
+    def __init__(self, *verdicts):
+        self.verdicts, self.calls = list(verdicts), []
+
+    def judge(self, intent, culprit_diff, fix_diff):
+        from agentbisect.verify import IntentVerdict
+        self.calls.append((intent, fix_diff))
+        v = self.verdicts.pop(0)
+        if isinstance(v, Exception):
+            raise v
+        return IntentVerdict(v, "reverts the intent of the change" if not v else "intent kept", "claude-sonnet-5-5")
+
+
+def test_revert_that_passes_checks_fails_on_intent_and_reason_feeds_next_attempt(st, repo):
+    m = FakeModel(reply({"path": "marker.txt", "content": "fixed"}),
+                  reply({"path": "marker.txt", "content": "fixed"}, {"path": "other.txt", "content": "x"}))
+    j = _Judge(False, True)
+    res = run(st, repo, m, judge=j)
+    a1, a2 = res.attempts
+    assert a1.passed is False and a1.intent_test_passed is False
+    assert any("intent not preserved" in f and "reverts the intent" in f for f in a1.failures)
+    assert "reverts the intent of the change" in m.prompts[1] and "undid the intent" in m.prompts[1]
+    assert a2.passed is True and a2.intent_test_passed is True and res.passed
+    assert "BROKEN" in j.calls[0][0] and "marker.txt" in j.calls[0][1]  # intent + the attempt's own diff
+    assert res.verifier_input["commit"] == a2.commit
+
+
+def test_all_attempts_reverting_means_not_passed(st, repo):
+    m = FakeModel(*[reply({"path": "marker.txt", "content": "fixed"}) for _ in range(3)])
+    res = run(st, repo, m, judge=_Judge(False, False, False))
+    assert not res.passed and [a.passed for a in res.attempts] == [False] * 3
+
+
+def test_inconclusive_judge_does_not_block_but_is_recorded(st, repo):
+    m = FakeModel(reply({"path": "marker.txt", "content": "fixed"}))
+    res = run(st, repo, m, judge=_Judge(TimeoutError("judge down")))
+    assert res.passed and res.attempts[0].intent_test_passed is None
+    assert "judge down" in st.metrics["fix"]["intent_inconclusive"][0]["detail"]
+
+
+def test_intent_not_judged_when_checks_fail(st, repo):
+    j = _Judge()
+    res = run(st, repo, FakeModel(reply({"path": "marker.txt", "content": "nope"})), judge=j, max_attempts=1)
+    assert not res.passed and j.calls == []
+
+
+def test_system_prompt_forbids_undoing_the_commit(st, repo):
+    m = FakeModel(reply({"path": "marker.txt", "content": "fixed"}))
+    run(st, repo, m)
+    s = m.systems[0]
+    assert "intent must be preserved" in s and "do not undo or revert the commit" in s and "CONSEQUENCE" in s
