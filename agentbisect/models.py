@@ -97,7 +97,6 @@ class CommitResult:
     flaky_cases: list[str] = field(default_factory=list)
     failing_cases: list[str] = field(default_factory=list)
     case_stats: dict[str, dict[str, int]] = field(default_factory=dict)  # case -> passes/fails/errors
-    signature: str | None = None  # key the pass/fail counts are relative to (None = whole case)
     failure_signatures: list[dict[str, Any]] = field(default_factory=list)  # every failing check seen, grouped
     from_cache: bool = False
 

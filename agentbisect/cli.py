@@ -195,7 +195,8 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
             from .signature import spawn_siblings
             for sib in spawn_siblings(store, st):
                 print(f"\nsibling investigation {sib.id} for failure signature {sib.spec.signature.label}")
-                code = code or _run_one(store, sib, meta)
+                sib_code = _run_one(store, sib, meta)  # always run every sibling, even if the primary failed
+                code = code or sib_code
         return code
     if a.cmd == "watch":
         print("agentbisect watch: not implemented yet (later chunk)", file=sys.stderr)

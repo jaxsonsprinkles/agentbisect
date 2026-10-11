@@ -183,7 +183,8 @@ def _confirm_ends(store: StateStore, st: BisectState, runner: Runner, good: str,
             res = _evaluate(store, st, runner, sha, f"confirm_{want}")
         if res.verdict != want:
             if want == "bad" and res.verdict == "good":
-                return f"bad end does not reproduce: {sha[:8]} passes (pass_rate {res.pass_rate:.2f})"
+                sig = f" for signature {st.spec.signature.key}" if st.spec and st.spec.signature else ""
+                return f"bad end does not reproduce{sig}: {sha[:8]} passes (pass_rate {res.pass_rate:.2f})"
             if want == "good" and res.verdict == "bad":
                 return f"good end is not good: {sha[:8]} fails (pass_rate {res.pass_rate:.2f})"
             return f"{label} {sha[:8]} is unusable: verdict {res.verdict} ({res.reason})"

@@ -23,7 +23,6 @@ from .models import BisectState, CommitResult, FailureSignature
 from .state import StateStore
 
 _CALL_ARGS = re.compile(r"no (\w+) call matching (\{.*?\}) \(saw (\[.*?\])\)(?:;|$)", re.S)
-_AMOUNT_WORDS = ("amount", "refund", "price", "total", "cents", "dollar", "cost", "charge")
 
 
 def _num(v: Any) -> float | None:
@@ -72,7 +71,7 @@ def failures_of_result(r: dict[str, Any]) -> list[dict[str, str]]:
     b = r.get("budget") or {}
     if b.get("status") == "fail":
         reason = str(b.get("reason") or "")
-        kinds = [k for k, pat in (("steps", "steps"), ("tokens", "tokens")) if pat in reason] or ["steps"]
+        kinds = [k for k in ("steps", "tokens") if k in reason] or ["steps"]
         out += [{"key": f"budget:{k}", "check": "budget", "detail": k, "expected": "", "got": "",
                  "reason": reason[:300]} for k in kinds]
     j = r.get("judge")

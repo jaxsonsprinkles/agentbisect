@@ -354,7 +354,7 @@ class Runner:
         return CommitResult(
             verdict, pass_rate=rate, trace_ids=traces, executed=passes + fails, repeats=target,
             flaky_cases=flaky, failing_cases=[c for c, t in stats.items() if t["fails"] and not t["passes"]],
-            case_stats=stats, from_cache=not ran, signature=sig.key if sig else None,
+            case_stats=stats, from_cache=not ran,
             failure_signatures=self._signatures(sha, cases),
             reason=(f"pass_rate {rate:.2f} inside band ({self.cfg.bad_max}, {self.cfg.good_min}) after "
                     f"{target} repeats" if verdict == "flaky" else ""))

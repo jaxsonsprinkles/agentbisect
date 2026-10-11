@@ -110,7 +110,6 @@ def test_bisects_on_signature_not_case(tmp_path, hist):
     assert {d["key"] for d in st.metrics["signatures"]} == {"call_args:issue_refund.amount", "budget:steps"}
     mid = [r for sha, r in st.results.items() if shas.index(sha) in range(3, 8)]
     assert mid and all(r.verdict == "good" for r in mid)  # R2's budget failures count as a pass for this signature
-    assert all(r.signature == "call_args:issue_refund.amount" for r in st.results.values())
 
 
 def test_all_signatures_gives_one_culprit_each_and_shares_cache(tmp_path, hist):
@@ -222,3 +221,4 @@ def test_cli_flags_parse():
                                   "--no-all-signatures"])
     assert a.signature == "budget:steps" and a.all_signatures is False
     assert cli._parser().parse_args(["investigate", "--trace", "t", "--repo", "r"]).all_signatures is None
+
