@@ -188,3 +188,15 @@ def test_debug_dump_writes_prompt_to_dir(tmp_path, monkeypatch):
     (f,) = (tmp_path / "dump").glob("*.json")
     d = json.loads(f.read_text())
     assert "Where is order 1042?" in d["prompt"] and ISOLATION_NOTICE in d["system"] and d["structured_output"]
+
+
+def test_salt_makes_repeats_distinct_samples_but_replays_cache(px):
+    b = body("same")
+    post(px, b, "/salt/abc.case.r0/v1/messages")
+    post(px, b, "/salt/abc.case.r1/v1/messages")  # same prompt, other repeat: a fresh call
+    post(px, b, "/salt/abc.case.r0/v1/messages")  # replay of repeat 0: cache hit
+    st = px.stats.snapshot()
+    assert st["cli_calls"] == 2 and st["cache_hits"] == 1
+    assert not any("abc.case" in f.read_text() for f in px.calls_dir.glob("call*"))  # salt never reaches the model
+    s, _, _ = post(px, b, "/salt/bad%20salt/v1/messages")
+    assert s == 404

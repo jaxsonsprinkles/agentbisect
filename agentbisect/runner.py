@@ -7,6 +7,7 @@ target's ground truth; it only sees these results.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -117,7 +118,9 @@ class SubprocessExecutor:
 @dataclass
 class RunnerConfig:
     cases: list[str]
-    repeats: int = 3  # R, initial repeats per case
+    repeats: int = 1  # R, initial repeats per case; more only when a result is borderline or judge-graded
+    judge_cases: tuple[str, ...] = ()  # cases graded by an LLM rubric (noisy): always get judge_repeats
+    judge_repeats: int = 3
     max_repeats: int = 12  # cap for escalation
     workers: int = 4
     timeout: float = 600.0
@@ -143,7 +146,7 @@ def config_from_env(cases: list[str], **kw) -> RunnerConfig:
     """RunnerConfig with operator overrides from the environment (budget control for live runs):
     AGENTBISECT_REPEATS, _MAX_REPEATS, _WORKERS, _ENV_FILE, _BASELINE."""
     env = os.environ
-    for key, name, conv in (("repeats", "AGENTBISECT_REPEATS", int), ("max_repeats", "AGENTBISECT_MAX_REPEATS", int),
+    for key, name, conv in (("repeats", "AGENTBISECT_REPEATS", int), ("max_repeats", "AGENTBISECT_MAX_REPEATS", int), ("judge_repeats", "AGENTBISECT_JUDGE_REPEATS", int),
                             ("workers", "AGENTBISECT_WORKERS", int), ("env_file", "AGENTBISECT_ENV_FILE", str),
                             ("baseline", "AGENTBISECT_BASELINE", str)):
         if env.get(name) and key not in kw:
@@ -212,13 +215,15 @@ class Runner:
         if p.returncode != 0:
             raise BuildError(f"install failed (exit {p.returncode}): {(p.stderr or p.stdout)[-300:].strip()}")
 
-    def _env(self, sha: str | None, run_id: str | None, case: str | None) -> dict[str, str]:
+    def _env(self, sha: str | None, run_id: str | None, case: str | None, salt: str | None = None) -> dict[str, str]:
         env = {k: v for k, v in os.environ.items() if k not in ("VIRTUAL_ENV", "PYTHONPATH")}
         env.update(_load_env_file(self.cfg.env_file))
         # The neatlogs SDK logs "shutdown complete" to STDOUT at INFO, which corrupts the harness's JSON report.
         env.setdefault("NEATLOGS_LOG_LEVEL", "ERROR")
         if self.cfg.llm_proxy_url:
-            env["ANTHROPIC_BASE_URL"] = self.cfg.llm_proxy_url
+            # the salt rides in the URL path (not the prompt): the proxy keys its response cache on it, so repeat i of
+            # a case at a commit is its own sample, and replaying the same (commit, case, repeat) hits the cache
+            env["ANTHROPIC_BASE_URL"] = self.cfg.llm_proxy_url.rstrip("/") + (f"/salt/{salt}" if salt else "")
             env["ANTHROPIC_API_KEY"] = "agentbisect-proxy"
         for k, v in (("AGENTBISECT_COMMIT", sha), ("AGENTBISECT_RUN_ID", run_id), ("AGENTBISECT_CASE", case)):
             if v:
@@ -227,32 +232,38 @@ class Runner:
 
     # -- one case, with retries --
 
-    def _run_case(self, wt: Path, sha: str, case: str, n: int, run_id: str) -> list[RunResult]:
-        """Run `case` n times. Rate limits and timeouts retry (only the missing runs) with exponential backoff;
-        runs still failing after max_retries become 'error' results, i.e. no verdict rather than a bad verdict."""
+    def _run_case(self, wt: Path, sha: str, case: str, n: int, run_id: str, base: int = 0) -> list[RunResult]:
+        """Run `case` n more times (repeat indices base..). Rate limits and timeouts retry (only the missing runs)
+        with exponential backoff; runs still failing after max_retries become 'error' results, i.e. no verdict
+        rather than a bad verdict. Through the LLM proxy every repeat is its own request with its own salt."""
         results: list[RunResult] = []
-        remaining = n
         last = "unknown"
         for attempt in range(self.cfg.max_retries + 1):
-            req = CaseRequest(wt, sha, case, remaining, run_id, self._env(sha, run_id, case), self.cfg.timeout,
-                              self.cfg.baseline)
-            try:
-                got = self.executor.run_case(req)
-            except EvalInfraError as e:
-                last = str(e)
-            else:
+            remaining = n - len(results)
+            for b in ([1] * remaining if self.cfg.llm_proxy_url else [remaining]):
+                done = sum(r.status in ("pass", "fail") for r in results)
+                errs = sum(r.status == "error" for r in results)  # an errored run left cached replies: new salt
+                salt = (f"{sha[:12]}.{hashlib.sha1(case.encode()).hexdigest()[:10]}.r{base + done}"
+                        + (f".e{errs}" if errs else "")) if self.cfg.llm_proxy_url else None
+                req = CaseRequest(wt, sha, case, b, run_id, self._env(sha, run_id, case, salt), self.cfg.timeout,
+                                  self.cfg.baseline)
+                try:
+                    got = self.executor.run_case(req)
+                except EvalInfraError as e:
+                    last = str(e)
+                    break
                 self._check_pins(got)
                 retry = [r for r in got if r.status == "error" and RATE_LIMIT_RE.search(r.reason)]
                 results += [r for r in got if r not in retry]
-                remaining = remaining - len(got) + len(retry)
                 if retry:
                     last = f"rate_limit: {retry[0].reason}"
-                if remaining <= 0:
-                    return results
+                    break  # back off before the next attempt instead of firing the rest back to back
+            if len(results) >= n:
+                return results
             if attempt < self.cfg.max_retries:
                 self.sleep(self.cfg.backoff * (2 ** attempt))
         return results + [RunResult(case, "error", reason=f"{last} (gave up after {self.cfg.max_retries + 1} attempts)")
-                          for _ in range(remaining)]
+                          for _ in range(n - len(results))]
 
     def _check_pins(self, results: list[RunResult]) -> None:
         for r in results:
@@ -268,7 +279,8 @@ class Runner:
 
     def evaluate_commit(self, sha: str, run_id: str, cases: list[str] | None = None) -> CommitResult:
         """K cases x R repeats at `sha` in one worktree, `workers` cases in parallel. While the verdict is inside
-        the confidence band, cases that disagree with themselves get doubled repeats up to max_repeats; if it is
+        the confidence band, cases that disagree with themselves (or fail, at one repeat) get doubled repeats up to
+        max_repeats; judge-graded cases always run `judge_repeats`; if it is
         still uncertain the verdict is 'flaky'. Build/worktree failure => 'skip' (cached). Finished cases are
         cached immediately, so a crash mid-step loses at most the in-flight cases."""
         sig = self.signature
@@ -283,7 +295,7 @@ class Runner:
 
         def need(case: str, target: int) -> int:
             e = have(case)  # executed runs, whatever failed in them
-            return 0 if "skip" in e else max(0, target - e.get("passes", 0) - e.get("fails", 0))
+            return 0 if "skip" in e else max(0, target - e.get("runs", 0))
 
         errors: dict[str, int] = {c: 0 for c in cases}
         wt_ctx = None
@@ -292,7 +304,8 @@ class Runner:
 
         def work(cn: tuple[str, int]) -> None:
             case, n = cn
-            results = self._run_case(wt, sha, case, n, run_id)
+            base = have(case).get("runs", 0)
+            results = self._run_case(wt, sha, case, n, run_id, base)
             p = sum(r.status == "pass" for r in results)
             f = sum(r.status == "fail" for r in results)
             errors[case] += sum(r.status == "error" for r in results)
@@ -301,23 +314,21 @@ class Runner:
                 return
             with self._lock:
                 self.eval_rounds += p + f
-            check_fails: dict[str, int] = {}
-            info: dict[str, dict] = {}
+            k = base
             for r in results:
+                if r.status not in ("pass", "fail"):
+                    continue
                 recs = r.failures or ([{"key": "case_fail", "check": "case_fail", "reason": r.reason}]
                                       if r.status == "fail" else [])  # a failing run always has a cause key
-                for key, rec in {x["key"]: x for x in recs}.items():  # once per run
-                    check_fails[key] = check_fails.get(key, 0) + 1
-                    info.setdefault(key, rec)
-            self.cache.add_runs(sha, case, models, p, f,
-                                [r.trace_id for r in results if r.trace_id and r.status in ("pass", "fail")],
-                                check_fails, info)
+                self.cache.add_run(sha, case, models, k, r.status, r.trace_id, {x["key"]: x for x in recs})
+                k += 1
 
         try:
             with step_span("evaluate_commit", sha=sha, run_id=run_id):
                 active, target = cases, self.cfg.repeats
                 while True:
-                    todo = [(c, need(c, target)) for c in active]
+                    todo = [(c, need(c, max(target, self.cfg.judge_repeats) if c in self.cfg.judge_cases else target))
+                            for c in active]
                     todo = [t for t in todo if t[1] > 0]
                     if todo and wt_ctx is None:
                         wt_ctx = worktree(self.repo, sha, self.cfg.worktree_root)
@@ -341,10 +352,13 @@ class Runner:
                                             case_stats=stats)
                     rate = passes / (passes + fails)
                     band = self.classify(rate, passes + fails)
+                    # borderline: re-run the cases that disagree with themselves; with a single sample per case there
+                    # is no disagreement to see yet, so re-run every failing case
                     flaky = [c for c, t in stats.items() if t["passes"] and t["fails"]]
-                    if band != "uncertain" or not flaky or target >= self.cfg.max_repeats:
+                    again = flaky or ([c for c, t in stats.items() if t["fails"]] if target <= 1 else [])
+                    if band != "uncertain" or not again or target >= self.cfg.max_repeats:
                         break
-                    target, active = min(self.cfg.max_repeats, target * 2), flaky
+                    target, active = min(self.cfg.max_repeats, target * 2), again
         finally:
             if wt_ctx is not None:
                 wt_ctx.__exit__(None, None, None)

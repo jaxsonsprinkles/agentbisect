@@ -124,7 +124,8 @@ class Outcome:
 def make_runner(store: StateStore, st: BisectState) -> Runner:
     if not st.spec or not st.spec.cases:
         raise BisectError("investigation has no eval cases (run intake first)")
-    return Runner(st.repo, config_from_env(list(st.spec.cases)), store.cache(st.repo),
+    judged = tuple((st.spec.predicate or {}).get("rubric") or ())  # cases with a judge rubric
+    return Runner(st.repo, config_from_env(list(st.spec.cases), judge_cases=judged), store.cache(st.repo),
                   signature=st.spec.signature)
 
 

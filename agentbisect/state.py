@@ -61,17 +61,21 @@ class _suppress:
         return True
 
 
-def cache_key(repo: str, sha: str, case: str, models: dict[str, str]) -> str:
-    # v2: entries also hold per-check failures, so verdicts can be re-read for any failure signature
-    return "|".join(["v2", sha, case, models.get("agent_model", ""), models.get("judge_model", "")])
+def cache_key(repo: str, sha: str, case: str, models: dict[str, str], repeat: int | None = None) -> str:
+    """(commit, case[, repeat], pinned models). v3: one record per repeat, so repeat i of a case at a commit is a
+    distinct, resumable unit (and a different sample from repeat j)."""
+    k = "|".join(["v3", sha, case, models.get("agent_model", ""), models.get("judge_model", "")])
+    return k if repeat is None else f"{k}|r{repeat}"
 
 
 class VerdictCache:
-    """Per (repo, sha, case, pinned model ids) run tallies, reusable across investigations on the same repo.
+    """Per (repo, sha, case, repeat, pinned model ids) run records, reusable across investigations on one repo.
 
-    Entry: {"passes": n, "fails": n, "trace_ids": [...], "check_fails": {key: failing runs}, "check_info":
-    {key: first failure record}}; the build-failure skip is stored under case '__build__'
-    as {"skip": reason}. Thread-safe; flushed to disk after every update."""
+    Run record: {"status": "pass"|"fail", "trace_id": str|None, "check_fails": [keys], "check_info": {key: record}}.
+    `get` folds the contiguous repeats 0..n-1 into the aggregate the runner reads:
+    {"passes", "fails", "trace_ids", "check_fails": {key: failing runs}, "check_info", "runs": n}. A build-failure
+    skip is stored under case '__build__' (and a target-side case skip under the case) as {"skip": reason}.
+    Thread-safe; flushed to disk after every update."""
 
     def __init__(self, base: Path, repo: str):
         self.repo = str(Path(repo).resolve()) if repo else ""
@@ -82,24 +86,32 @@ class VerdictCache:
 
     def get(self, sha: str, case: str, models: dict[str, str]) -> dict[str, Any] | None:
         with self._lock:
-            e = self._data.get(cache_key(self.repo, sha, case, models))
-            return json.loads(json.dumps(e)) if e is not None else None
+            skip = self._data.get(cache_key(self.repo, sha, case, models))
+            if skip is not None:
+                return dict(skip)
+            agg: dict[str, Any] = {"passes": 0, "fails": 0, "trace_ids": [], "check_fails": {}, "check_info": {},
+                                   "runs": 0}
+            i = 0
+            while (r := self._data.get(cache_key(self.repo, sha, case, models, i))) is not None:
+                agg["passes" if r["status"] == "pass" else "fails"] += 1
+                if r.get("trace_id"):
+                    agg["trace_ids"].append(r["trace_id"])
+                for k in r.get("check_fails", []):
+                    agg["check_fails"][k] = agg["check_fails"].get(k, 0) + 1
+                for k, info in (r.get("check_info") or {}).items():
+                    agg["check_info"].setdefault(k, info)
+                i += 1
+            agg["runs"] = i
+            return json.loads(json.dumps(agg)) if i else None
 
-    def add_runs(self, sha: str, case: str, models: dict[str, str], passes: int, fails: int,
-                 trace_ids: list[str], check_fails: dict[str, int] | None = None,
-                 check_info: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+    def add_run(self, sha: str, case: str, models: dict[str, str], repeat: int, status: str,
+                trace_id: str | None = None, failures: dict[str, dict[str, Any]] | None = None) -> None:
+        """Record repeat `repeat` of `case` at `sha` (idempotent: re-recording overwrites that repeat only)."""
         with self._lock:
-            e = self._data.setdefault(cache_key(self.repo, sha, case, models),
-                                      {"passes": 0, "fails": 0, "trace_ids": [], "check_fails": {}, "check_info": {}})
-            e["passes"] += passes
-            e["fails"] += fails
-            e["trace_ids"].extend(trace_ids)
-            for k, n in (check_fails or {}).items():
-                e["check_fails"][k] = e["check_fails"].get(k, 0) + n
-            for k, info in (check_info or {}).items():
-                e["check_info"].setdefault(k, info)
+            self._data[cache_key(self.repo, sha, case, models, repeat)] = {
+                "status": status, "trace_id": trace_id, "check_fails": sorted(failures or {}),
+                "check_info": dict(failures or {})}
             atomic_write_json(self.path, self._data)
-            return json.loads(json.dumps(e))
 
     def set_case_skip(self, sha: str, case: str, models: dict[str, str], reason: str) -> None:
         with self._lock:
@@ -107,9 +119,7 @@ class VerdictCache:
             atomic_write_json(self.path, self._data)
 
     def set_skip(self, sha: str, models: dict[str, str], reason: str) -> None:
-        with self._lock:
-            self._data[cache_key(self.repo, sha, BUILD_CASE, models)] = {"skip": reason}
-            atomic_write_json(self.path, self._data)
+        self.set_case_skip(sha, BUILD_CASE, models, reason)
 
 
 class StateStore:

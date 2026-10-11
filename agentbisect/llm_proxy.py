@@ -33,6 +33,7 @@ from typing import Any
 RATE_LIMIT_RE = re.compile(r"rate.?limit|429|overloaded|529|too many requests|throttl|usage limit|try again", re.I)
 DEFAULT_CACHE_DIR = ".agentbisect/llm_cache"
 DUMMY_API_KEY = "agentbisect-proxy"
+SALT_PATH = re.compile(r"^(?:/salt/([A-Za-z0-9_.-]{1,120}))?/v1/messages$")
 
 # The claude CLI injects the logged-in user's own context (e.g. "The user's email address is ...") into every call and
 # `--system-prompt` / `--setting-sources ""` do not remove it (verified; `--bare` cannot use the login). Models then
@@ -311,11 +312,15 @@ class LLMProxy:
         return (key or model), int(inp), int(u.get("outputTokens", 0)), float(cost)
 
     # -- request handling --
-    def cache_key(self, body: dict) -> str:
+    def cache_key(self, body: dict, salt: str = "") -> str:
+        """sha256 of the request plus the salt. The salt (from a `/salt/<s>/v1/messages` URL path, set by the runner
+        to commit.case.repeat) never reaches the model; it only makes repeat i a separate cached sample."""
         k = {x: body.get(x) for x in ("model", "system", "messages", "tools", "tool_choice")}
+        if salt:
+            k["salt"] = salt
         return hashlib.sha256(json.dumps(k, sort_keys=True).encode()).hexdigest()
 
-    def messages(self, body: dict) -> dict:
+    def messages(self, body: dict, salt: str = "") -> dict:
         self.stats.add(calls=1)
         if body.get("stream"):
             raise ProxyError(400, "invalid_request_error", "stream=true is not supported by the agentbisect LLM proxy")
@@ -329,7 +334,7 @@ class LLMProxy:
         tool_choice = body.get("tool_choice")
         if (tool_choice or {}).get("type") == "none":
             tools = []
-        key = self.cache_key(body)
+        key = self.cache_key(body, salt)
         if self.cache_dir:
             f = self.cache_dir / f"{key}.json"
             if f.exists():
@@ -419,11 +424,12 @@ class LLMProxy:
                     self._send(404, {"type": "error", "error": {"type": "not_found_error", "message": self.path}})
 
             def do_POST(self):
-                if self.path.split("?")[0] != "/v1/messages":
+                m = SALT_PATH.match(self.path.split("?")[0])
+                if not m:
                     return self._send(404, {"type": "error", "error": {"type": "not_found_error", "message": self.path}})
                 try:
                     body = json.loads(self.rfile.read(int(self.headers.get("content-length") or 0)) or b"{}")
-                    self._send(200, proxy.messages(body))
+                    self._send(200, proxy.messages(body, m.group(1) or ""))
                 except json.JSONDecodeError:
                     self._send(400, {"type": "error", "error": {"type": "invalid_request_error",
                                                                 "message": "body is not valid JSON"}})
