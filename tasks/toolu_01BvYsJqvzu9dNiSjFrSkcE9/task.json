@@ -1,0 +1,14 @@
+{
+  "tool_use_id": "toolu_01BvYsJqvzu9dNiSjFrSkcE9",
+  "agent_id": "ad6ed45375807a1d4",
+  "task_description": "Tool-count signal for budgets",
+  "token_usage": {
+    "input_tokens": 94,
+    "cache_creation_tokens": 158245,
+    "cache_read_tokens": 5727336,
+    "output_tokens": 34297,
+    "api_call_count": 47
+  },
+  "started_at": "2026-10-11T07:40:59.37151-05:00",
+  "completed_at": "2026-10-11T07:55:48.705704-05:00"
+}
