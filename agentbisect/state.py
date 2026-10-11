@@ -21,10 +21,10 @@ TRANSITIONS = {
     "created": {"running", "failed"},
     "running": {"running", "paused", "failed", "culprit_found", "refused"},  # running->running: resume after a crash
     "paused": {"running", "failed"},
-    "failed": {"running"},
+    "failed": {"running", "fixing"},  # fixing: retry the Fixer after it failed (needs a culprit; the CLI checks)
     "refused": {"running"},  # a known pre-existing failure was correctly refused; resume re-checks it
     "culprit_found": {"fixing", "verifying", "reported", "running"},
-    "fixing": {"verifying", "failed", "paused", "reported"},
+    "fixing": {"fixing", "verifying", "culprit_found", "failed", "paused", "reported"},
     "verifying": {"fixing", "reported", "failed", "paused"},
     "reported": set(),
 }
