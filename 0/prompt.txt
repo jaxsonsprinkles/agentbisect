@@ -1,0 +1,1236 @@
+What can be done to parallelize some of this work? I want to finish as fast as possible. Surely not all of these tasks are being blocked by the one in front of it?
+
+---
+
+<task-notification>
+<task-id>a7b0ae252e074560c</task-id>
+<tool-use-id>toolu_01L1vnDwmagMuFVKNLTcxpKm</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a7b0ae252e074560c.output</output-file>
+<status>completed</status>
+<summary>Agent "Calibrate and full live re-run" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The full re-run finished and is pushed to the agentbisect repo as one commit, `190d229`. Four of six signatures match my private answer key and two are wrong.
+
+All three steps completed this session, so nothing needed redoing. I calibrated once at 1b40b27, ran the smart investigation against 0ecffc0 with `--all-signatures --all-categories`, then ran `compare` for each signature. DEMO_FLAKE=0 and the pinned models were used throughout.
+
+| signature | culprit | revert test (before -&gt; after) | plain vs smart rounds | vs key |
+|---|---|---|---|---|
+| `call_args:issue_refund.amount` | b0be626 (medium) | passed, 0% -&gt; 100% | 24 vs 18 | correct |
+| `must_not_call` | 0ecffc0 (high) | passed, 0% -&gt; 100% | 4 vs 3 | correct |
+| `budget:tokens@order_status` | 59c8b10 (low) | failed, median tokens 20,405 -&gt; 22,861 (good 8,866), within budget 0/4 -&gt; 0/4 | 84 vs 96 | incorrect (key says ec19917) |
+| `budget:tokens@refund_within_policy` | 59c8b10 (low) | failed, median tokens 39,306 -&gt; 35,195, within budget 0/3 -&gt; 0/3 | 54 vs 60 | correct, but the revert test failed |
+| `budget:tokens@refund_outside_policy` | 5cee99b (medium) | inconclusive | 21 vs 21 | incorrect (not a regression commit) |
+| `escalate_to_human.priority` (es2) | none, labelled known pre-existing failure, correctly refused | n/a | n/a | correct |
+
+- **Budget signatures:** these are the weak spot. Each token regression inflates every category, so a per-category budget signature gets blamed on whichever commit crosses the limit last. For the two ambiguous signatures (`refund_within_policy`, `refund_outside_policy`) I decided the key myself: 59c8b10 for both, with ec19917 also accepted. That judgement could be disputed. The `order_status` mapping to ec19917 is mine too.
+- **Smart vs plain:** smart won on the two behavioural signatures and tied on `refund_outside_policy`. It lost by 12 and 6 rounds on the two budget signatures with many rounds. Planner context was 20–24k tokens with the graph versus 43–47k reading the raw range.
+- **Dropped signature:** one `reply_contains` failure (os3, 1 of 3 runs) did not reproduce and was dropped.
+- **Model calls and throttling:** calibrate made 136 calls (112 real, 24 cache hits). Investigate made 659 (564 real, 96 cache hits, 1 error, 2 invalid-output retries). Compare is mostly cache replays. It had reached 1,079 calls (88 real) by the third signature, and I lost the final counter because the stats file was written empty. There were 0 rate-limit events and 0 retries, so I never hit a 429.
+- **Cache reuse:** the shared `.agentbisect/llm_cache` also holds responses from earlier runs, which inflates the cache-hit counts above.
+- **Neatlogs:** span divergence was still unavailable (`TRACE_FINALIZATION_FAILED`), so the planner used graph impact and checkpoint intent only.
+- **Baseline gaps:** the baseline excludes es2 and the cancel_request and multi_step cases, because those cases don't exist at 1b40b27. The run produced no signatures for the cancel_request, multi_step, policy_question or escalation categories.
+- **Not done:** I skipped `compare` for es2, since a refused signature has nothing to bisect.
+
+The private answer key is at `/Users/jaxson/.agentbisect-private/answer_key.json` and is not in either repo.
+
+Files are in `/Users/jaxson/Downloads/codingprojects/agentbisect/evidence/`:
+- `rerun3-summary.md`
+- `baseline-1b40b27.json`
+- `rerun3-smart/` (logs, state, `summary.md`)
+- `rerun3-compare/`
+
+I also updated `BUILD_LOG.md`.</result>
+<usage><subagent_tokens>79514</subagent_tokens><tool_uses>6</tool_uses><duration_ms>574939</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a7b0ae252e074560c</task-id>
+<tool-use-id>toolu_01Gfk9ggrZAaL8rBNGyN3fua</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a7b0ae252e074560c.output</output-file>
+<status>completed</status>
+<summary>Agent "Calibrate and full live re-run" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The re-run is finished and pushed as one commit, `acca44c`. Four of the six signatures match the private answer key and two are wrong.
+
+Calibration ran once at 1b40b27 and was never repeated. The smart run and the per-signature plain-vs-smart comparison followed.
+
+| signature | culprit found | revert test | smart vs plain (rounds) | vs key |
+|---|---|---|---|---|
+| `call_args:issue_refund.amount` | b0be626 (confidence medium) | passed, 0% to 100% | 18 smart vs 24 plain | correct |
+| `must_not_call` (cancel_order) | 0ecffc0 (confidence high) | passed, 0% to 100% | 3 vs 4 | correct |
+| `budget:tokens@refund_within_policy` | 59c8b10 (confidence low) | failed, median tokens 39,306 to 35,195, within budget 0/3 to 0/3 | 60 vs 54 | correct |
+| `budget:tokens@order_status` | 59c8b10 (confidence low) | failed, median tokens 20,405 to 22,861 (good commit 8,866), within budget 0/4 to 0/4 | 96 vs 84 | wrong, key says ec19917 |
+| `budget:tokens@refund_outside_policy` | 5cee99b (confidence medium) | inconclusive | 21 vs 21 | wrong, 5cee99b is not a regression commit |
+| `call_args:escalate_to_human.priority` (es2) | none, labelled known pre-existing failure, correctly refused | not run | none | correct |
+
+- **Bad scores:** The `order_status` signature gets 59c8b10 because the two token regressions both inflate every category, so the medians still mix them. The `refund_outside_policy` signature is a single case (ro2) at 22,890 tokens against a limit of 22,702, so it is borderline noise.
+- **Smart vs plain:** Smart was faster on the two behavioural signatures but slower on both budget ones. Every pair found the same culprit. Planner context was about 21–24k tokens against 44–47k for the raw range.
+- **Rate limits and errors:** No rate-limit events and no retries. The proxy logged 1 error and 2 invalid-output retries during the investigation.
+- **Model calls:** The three runs made 1,991 proxy calls, of which 770 were real CLI calls. The rest were cache replays, so the compare round counts are replayed evaluations, not fresh samples. The proxy cache was shared with earlier runs, and the calibration run itself had 24 cache hits.
+- **Other problems:** Trace divergence was unavailable on every run (neatlogs `TRACE_FINALIZATION_FAILED`). The primary also logged an unconfirmed `reply_contains` signature on os3, which was dropped.
+- **Missing budget signatures:** The po/es/ca/ms budget signatures from run 2 did not appear this time.
+- **Key mapping for ro2:** The commits file has no case-to-regression mapping for ro. I assumed `refund_outside_policy` belongs to R2 (59c8b10). The score does not depend on this, since 5cee99b is wrong under any mapping.
+
+The private key is at `/Users/jaxson/.agentbisect-private/answer_key.json`. It is not in either repo, and I did not read `evidence/ground_truth.json`.
+
+Files are in `/Users/jaxson/Downloads/codingprojects/agentbisect`:
+- `evidence/rerun3-summary.md`
+- `evidence/baseline-1b40b27.json`
+- `evidence/rerun3-smart/`
+- `evidence/rerun3-compare/`</result>
+<usage><subagent_tokens>77754</subagent_tokens><tool_uses>34</tool_uses><duration_ms>2955568</duration_ms></usage>
+</task-notification>
+
+---
+
+Yes, do the tool count - but only small a minimal amount of agents because I do have a limit and I’m at 46% usage
+
+---
+
+Watch mode: cut it. It was already first in line, and the fixer matters far more.
+	•	Review gaps (U6 and earlier): only review pieces on the demo path.
+	•	Recovery hardening: just the single demo run above.
+	•	Dogfooding evidence: it's mostly done already. Your own runs are the before/after:
+	•	Saturday's first run named the wrong culprit; last night's named the right one after the failure-signature fix.
+	•	Smart vs plain bisect went from 84 vs 36 rounds to 21 vs 24.
+	•	Package those traces instead of doing new work.
+
+---
+
+<task-notification>
+<task-id>a80fc48f5563b8472</task-id>
+<tool-use-id>toolu_01MbmS6LAh5NGWRksc3c2Wp3</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a80fc48f5563b8472.output</output-file>
+<status>completed</status>
+<summary>Agent "Build Fixer + draft PR" finished</summary>
+<note>This agent stopped with background work of its own still running. It may resume on its own when that work completes or reports, and the same task-id notifies again if it does; the result below may be interim.</note>
+<result>I'll end my turn here and wait for the notifications.
+
+Fixer is implemented but not yet committed. I'm waiting on the three reviewers (correctness, simplification, test coverage) and the full test run. I'll apply their feedback and then commit.</result>
+<usage><subagent_tokens>103643</subagent_tokens><tool_uses>35</tool_uses><duration_ms>284801</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a80fc48f5563b8472</worktreePath><worktreeBranch>worktree-agent-a80fc48f5563b8472</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a80fc48f5563b8472</task-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a80fc48f5563b8472.output</output-file>
+<status>completed</status>
+<summary>Agent "Build Fixer + draft PR" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The full suite passes (221 tests). The reviewers are still running, so I'm waiting for their notifications before fixing and committing.</result>
+<usage><subagent_tokens>103717</subagent_tokens><tool_uses>36</tool_uses><duration_ms>287816</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a80fc48f5563b8472</worktreePath><worktreeBranch>worktree-agent-a80fc48f5563b8472</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a3104417a45ea5c6f</task-id>
+<tool-use-id>toolu_01WKGKd2ZzeR5RTwbUx25HPZ</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a3104417a45ea5c6f.output</output-file>
+<status>completed</status>
+<summary>Agent "Review Fixer: simplification" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Ranked simplification and reuse findings for the uncommitted Fixer change (read-only, nothing edited, tests not run). I also checked `report.py` and `verify.py` for overlap.
+
+**Worth doing**
+
+1. **`fixer.py:240-250` duplicates `report.open_pr` (`report.py:441-469`).**
+   - It is the same push and `gh pr create` flow with the same error strings. `report.open_pr` also has a dry-run mode and chooses draft or not from the verdict.
+   - Suggestion: delete `open_draft_pr` and the `run=`/`open_pr=` plumbing in `run_fixer`. Have the `--open-draft-pr` flag in `cli._fix` call `report.open_pr(st, repo, draft=True, confirm=True)`. Alternatively, drop the flag, since `fix` already writes the branch and `open_pr` handles the PR step.
+   - This is the biggest win. It removes about 12 lines and one test, and leaves a single PR path. The Fixer's own `render_pr_body` and `pr_body_path` also compete with `report.render_markdown(pr=True)`. Pick one.
+
+2. **`fixer.py` records its result in `st.fix_attempts` in a way `report.py` doesn't understand.**
+   - `report.fix_passes` (`report.py:56`) requires `intent_test_passed`, `eval_score` and `held_out_score`. The Fixer never sets them.
+   - So `best_attempt` ignores `FixAttempt.passed` and falls through to `max(...)`. With all scores at 0, that picks the highest attempt number, not the passing one.
+   - Suggestion: either set `eval_score` and `intent_test_passed` from the checker, or make `fix_passes` and `best_attempt` honour `a.passed`. This is a correctness-adjacent reuse gap.
+
+3. **`fixer.py:225` and `fixer.py:236` store the same data twice.**
+   - `st.fix_attempts` already holds the attempts, and `st.metrics["fix"] = res.to_dict()` writes them all again, including `diff` and `patch`.
+   - Suggestion: drop `st.metrics["fix"]`, or store only `{branch, passed, base, verifier_input}`.
+   - Related: `FixResult.patch` (`models.py`) is a copy of `best.diff`, and `FixResult.attempts` is a copy of `st.fix_attempts`. A property or a single source would do.
+
+4. **`fixer.py:34-35` and `fixer.py:92-94` copy `verify._git` and `_GIT_ENV` (`verify.py:33-61`).**
+   - Only the identity strings differ.
+   - Suggestion: move one `_git(repo, *args, env=None, stdin=None)` helper somewhere shared. `runner.py` is the natural place, since the Fixer already imports `worktree` from it. `bisect.py` and `intake.py` each have a third and fourth variant.
+   - Doing this across all four files may be too big for this change. At minimum, import `verify._git` and `verify._GIT_ENV` rather than adding another copy. The fixed dates there are harmless for the Fixer.
+
+**Minor, cheap**
+
+5. `fixer.py:33` — `FORBIDDEN = PROTECTED` is a pointless alias. Use `PROTECTED` directly, and update the import in `tests/test_fixer.py:7`.
+
+6. `fixer.py:213` — `att.passed = False` on an error duplicates `att.error`, which is already non-empty. `report_pr_body` and the CLI both check `error` first. Choose one signal. Using only `passed is True` plus `error` is enough.
+
+7. `fixer.py:219` — `best = best or res.attempts[-1]` only matters for the `res.passed` line and for rendering the explanation. Since `passed` and `commit` are both falsy there, `best = best or att` can be removed along with the `bool(best.passed and best.commit)` form. Use `res.passed = bool(best and best.passed)` after handling the no-commit case.
+
+8. `fixer.py:67` — `salt=f"fixer-{len(prompt)}"` is a weak cache key. Two different prompts of equal length collide. If the salt only needs to differ per call, pass the attempt number or hash the prompt. Please verify what `LLMProxy.messages` does with it before changing.
+
+9. `culprit.py:27` — the `PROTECTED` regex has a stray `\s` alternative in `(/|\s|$)`.
+   - It is only there because the check runs on a `diff --git a/x b/y` header line.
+   - The unanchored `secret|planted` terms will also drop legitimate files such as `secrets_manager.py`.
+   - In `fixer_brief`, `s.split("\n", 1)[0]` plus the `re.split` and `join` is dense. Pull it out into a small `_strip_protected(patch)` helper, which also makes it testable.
+
+10. `cli.py:_fix` — `store.set_status(st, "fixing")` and the later `"verifying"` or `"culprit_found"` are both written. If `run_fixer` raises, the status stays `"fixing"` forever. Use try/finally, or set the status only once at the end.
+    - `main()` already special-cases which commands use the llm-proxy. Instead of that, add `"fix"` to a tuple constant.
+
+**Leave as is**
+
+- The `FixModel` and `FixChecker` Protocols give clean test seams.
+- `parse_reply` and `apply_edits` are validated before any file is touched.
+- `run_fixer`'s `base`, `run` and `worktree_root` parameters look like test hooks. Remove them only if the tests don't use them.</result>
+<usage><subagent_tokens>54617</subagent_tokens><tool_uses>3</tool_uses><duration_ms>24709</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a4aa9ebc520723da2</task-id>
+<tool-use-id>toolu_01H4Sp5X3StFLyCBFyzBNwNB</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a4aa9ebc520723da2.output</output-file>
+<status>completed</status>
+<summary>Agent "Review Fixer: test coverage" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Ranked findings. All 15 tests pass, but several assertions are weak and there are real coverage gaps.
+
+**Missing tests (highest value first)**
+
+1. **CLI `fix` has no test at all.** Nothing covers `_fix`, `--out` defaulting to `&lt;state-dir&gt;/fixes`, `--max-attempts`, or `--open-draft-pr`. Model it on the `cli.main([...])` tests in `tests/test_culprit.py`. Monkeypatch `agentbisect.fixer.ProxyFixModel` and `RunnerChecker` (or `bisect.make_runner`) with fakes, using `mk_state` for state. Cases to add:
+   - Pass: `main(["--state-dir", d, "fix", id])` returns 0. `capsys` shows "PASSED the Fixer checks" and `verifier_input=`. `store.load(id).status == "verifying"`. `&lt;d&gt;/fixes/fix-&lt;id&gt;.patch` exists.
+   - Fail: returns 1 and the status is `culprit_found`.
+   - No culprit: returns 1 with "no culprit to fix" on stderr. Also test the unknown-id `StateError` path (returns 1).
+   - `--max-attempts 1`: the model is called once.
+   - On error the status stays `"fixing"`. `run_fixer` raising (e.g. a git failure) is caught, but `set_status("fixing")` was already written and is never reset. Assert on the status, and probably fix it too.
+
+2. **Missing `FORBIDDEN` coverage in `fixer_brief`.** The new section-filtering regex in `culprit.py` has no test. `test_forbidden_paths_never_read_or_written` only checks `build_prompt`'s "Current contents" section (see the next item). Add to `test_culprit.py`: a culprit commit touching both `src/a.py` and `evidence/ground_truth.json` (or `.env`). Assert the brief contains the `a.py` hunk, `"R1"` is absent, and `"evidence/ground_truth.json"` is absent from the brief. Also cover the `diff --git` header with a quoted or spaced path. Without this, the regex could drop everything or nothing and no test would fail.
+
+3. **The `build_prompt` secret check is vacuous.** `"R1" not in prompt.split("## Current contents")[-1]` passes trivially if the section is absent, and it never looks at the brief half. In this test c4 only touches the secret file, so the section is empty anyway. Replace it with `assert "R1" not in build_prompt(...)` and `assert "ground_truth" not in build_prompt(...)`. Make c4 also touch a normal file, so the test shows the safe file is included while the protected one is dropped.
+
+4. **A failing `checker.check` or git error mid-attempt is untested.** `run_fixer` only catches `ValueError`. So `RuntimeError` from `_must` (commit failure, a bad `base`/`bad_sha`) and exceptions from the checker or `model.complete` propagate. Add:
+   - `pytest.raises(ValueError, match="no culprit")` for `st.culprit = None`.
+   - `pytest.raises(RuntimeError)` for a bogus `base=` (the `rev-parse --verify` path).
+   - A test that decides the intended behavior when the model raises, and that no worktree or branch is leaked in that case. A `git worktree list` check exists only in the success test.
+
+5. **Best-attempt selection is under-asserted.** `test_gives_up_after_three` only checks `attempts[-1]`. The interesting cases:
+   - Attempt 3 has an error (a bad reply) after attempt 2 produced a commit. `best` is then `attempts[-1]` with no commit, so the branch is not written and `verifier_input == {}`. This looks like a bug: a usable earlier commit is discarded. Add a test for the intended behavior.
+   - Fail, fail, pass should leave the branch at the passing commit. This is partially covered. Add `res.branch` equals attempt 3's commit.
+   - Assert `res.patch == res.attempts[-1].diff` and `res.passed is False` in the give-up test.
+
+6. **`test_bad_replies_are_retried_with_the_error` is vacuous in one place.** `[a.error == "" for a in res.attempts] == [False, False, True]` is awkward but valid. The real weak spot is `assert not (repo.path.parent / "etc").exists()`. It tests only one traversal location. Replace it with `not (repo.path / ".." / ".." / "etc" / "passwd").exists()` and add a `.git/hooks/pre-commit` write attempt. Also assert `res.attempts[1].files == []`.
+
+7. **`test_pr_not_opened_by_default_and_draft_when_asked` has a tautological assertion.** `calls[0][-3:] == ["push","-u","origin"][:0] + calls[0][-3:]` is always true (the slice is empty and it compares a value to itself). Replace it with:
+   ```
+   assert calls[0] == ["git", "-C", st.repo, "push", "-u", "origin", res.branch]
+   assert "--draft" in calls[1] and calls[1][calls[1].index("--head")+1] == res.branch
+   ```
+   Also assert the `input=` body contains "DRAFT" and that the title starts with "[DRAFT]". The fake `run` takes `**kw`, so capture `kw` too.
+
+8. **PR failure coverage is incomplete.** `test_pr_failures_raise` covers push failure only. Add a gh failure (push ok, gh returncode 1) and assert `match="gh pr create failed"`. Add an `open_pr=True` case with a failed fix (`verifier_input == {}`), which should call nothing and leave `pr_url is None`.
+
+9. **`render_pr_body` is checked only for "DRAFT" and the intent.** Add:
+   - A failing run contains "did NOT pass" and the "failed: ..." attempt lines. The current assertion in `test_gives_up` has a redundant `or` that makes it weaker than it looks.
+   - No attempts / no commit: `res.verifier_input.get('commit','')[:10]` is empty and nothing crashes.
+   - The passed variant contains "The Fixer's own checks passed".
+
+10. **Smaller gaps:**
+    - `parse_reply`: prose-wrapped bare JSON with no fence; a non-dict top level (`"[]"`, `"null"`); `delete: "yes"` and `content: 5` as bad types.
+    - `apply_edits`: assert that nothing is written when a later edit in the same batch is invalid (the validate-before-touch guarantee). Nested-path creation (`a/b/c.txt`) and deleting a missing file are also untested.
+    - `build_prompt`: a file deleted since the culprit is skipped (the `returncode != 0` branch); a file over `MAX_FILE_CHARS` is truncated.
+    - `RunnerChecker`: the 40-line cap (`MAX_FAILURE_LINES`); the `reason` suffix; `pass_rate=None`; an inconclusive verdict is treated as not passed.
+    - `ProxyFixModel`: the default model falls back to `$FIXER_MODEL` (monkeypatch env) and then to `DEFAULT_FIXER_MODEL`. Also check `temperature == 0` and `max_tokens`.
+    - `run_fixer(out_dir=...)` with no patch (all attempts errored) should write no `.patch` file but should write the PR body. `test_all_attempts_unusable` passes no `out_dir`.
+    - `max_attempts=1`.
+    - Custom `base=` is used for `res.base`.
+    - `st.metrics["fix"]` is only checked for `passed` in the first test.
+    - `FixAttempt.from_dict` with an old state lacking the new fields (the "older saved states still load" comment is never tested).
+
+**Quality notes on existing tests**
+- `test_noop_edit_is_rejected` writes content "3" and assumes `marker.txt` already holds "3". That is implicit coupling to the `repo` fixture. Assert the file's HEAD content explicitly, and assert `res.verifier_input == {}`.
+- `test_failures_fed_to_next_attempt_and_stop_on_success` does not assert the checker call count, i.e. that the loop stopped at 3 and `st.fix_attempts` has 3 entries.
+- `test_delete_edit` asserts `"-x" in res.patch`, which is brittle and depends on the BROKEN file's content. Prefer asserting `"deleted file mode" in res.patch`.
+- `test_first_attempt_passes` has `git(repo,"branch","--list","main") and ...`, a truthiness check on a string that can pass for the wrong reason. Drop the first clause. It also assumes the main branch name is "main".
+
+Files: `/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a80fc48f5563b8472/tests/test_fixer.py`, `.../tests/test_culprit.py`, `.../agentbisect/fixer.py`, `.../agentbisect/cli.py`</result>
+<usage><subagent_tokens>51589</subagent_tokens><tool_uses>4</tool_uses><duration_ms>40624</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a3bba02ca7607d516</task-id>
+<tool-use-id>toolu_01JDyYffCjoufwkuvDTprFHt</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a3bba02ca7607d516.output</output-file>
+<status>completed</status>
+<summary>Agent "Review Fixer: correctness" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Review of the uncommitted Fixer, correctness only. I read `fixer.py`, the diffs and `state.py`/`runner.py`. I did not run the tests: `python` wasn't on PATH. `tests/test_fixer.py` has no CLI or status-transition tests.
+
+## Blocking
+
+1. **Illegal status transition crashes `fix`, and a failed run can't be retried.**
+   - `cli.py:390`: `set_status(st, "culprit_found")` runs after `"fixing"`. `TRANSITIONS["fixing"]` (`state.py:27`) is only `{verifying, failed, paused, reported}`. When no attempt produced a commit, this raises an uncaught `StateError` traceback, because it sits outside the `try`.
+   - `cli.py:383` and `cli.py:386`: if `run_fixer` raises (git failure, proxy error, push failure), the status stays `"fixing"`. The next `fix` then fails with `fixing -&gt; fixing` illegal. The investigation is stuck.
+   - Fix: wrap the whole call. On exception, move to `"failed"` or `"paused"` with `error=`, whichever the state machine allows. After a fix with no commit, go to `"failed"`, or add `fixing -&gt; culprit_found` to `TRANSITIONS`. Also allow `fixing -&gt; fixing`, or skip the transition when the status is already `"fixing"`.
+
+2. **A failing fix is pushed and opened as a draft PR.** `fixer.py:234` gates on `open_pr and res.verifier_input`, and `verifier_input` is set for any attempt that has a commit. Gate on `res.passed` as well. Otherwise `--open-draft-pr` pushes a known-failing branch to origin.
+
+3. **Whole-file edits are built on a truncated view, so they can destroy code.**
+   - `fixer.py:120` shows only the first `MAX_FILE_CHARS` (20000) of each file, but the model must reply with the complete new file. For any larger file, the committed result silently drops the tail.
+   - Fix: show whole files and refuse or skip files above the cap. Alternatively reject an edit to a file that was shown truncated. A search/replace edit format would also avoid this.
+
+4. **The Fixer can edit tests and eval cases, so the checker can be gamed.**
+   - `_safe_path` (`fixer.py:104`) blocks only `PROTECTED`. The checker then runs the repo's own `evals/cases.jsonl` and tests from the fix commit.
+   - The prompt says "do not edit tests", but nothing enforces it.
+   - Fix: reject edits under the eval and tests paths. Better, evaluate with the base commit's cases.
+
+## Non-blocking
+
+5. **`--max-attempts 0` or less causes an `IndexError`.** `fixer.py:219` does `res.attempts[-1]` on an empty list. Validate `max_attempts &gt;= 1` in the CLI and in `run_fixer`.
+
+6. **A filesystem error in `apply_edits` aborts the whole run.**
+   - `fixer.py:153-159`: `unlink` on a directory, or a parent path that is a file, raises `OSError`, not `ValueError`. That propagates and loses earlier attempts, and `st.fix_attempts` and the branch are never written.
+   - Catch `OSError` and re-raise as `ValueError`. Also pass `encoding="utf-8"` to `write_text`.
+   - Edits are written through symlinks: a tracked symlink inside the repo can send a write outside the worktree. Reject a target whose `resolve()` falls outside `wt`, or that is a symlink.
+
+7. **The PR body can describe the wrong attempt.** `render_pr_body` (`fixer.py:170`) uses `res.attempts[-1]` for the explanation. The branch holds `best`, which can be an earlier attempt when the last one errored. Pass `best` to the renderer, or store `best` on the result.
+
+8. **"Best attempt" is just the last attempt that produced a commit.** There is no scoring, such as a pass-rate comparison. Say so in the docs, or compare `pass_rate` across attempts.
+
+9. **`verifier_input["repo"]` is `str(Path(st.repo))`, not resolved** (`fixer.py:223`). A relative `st.repo` makes the hand-off unstable. Use `.resolve()`.
+
+10. **`branch -f` (`fixer.py:221`) overwrites the branch on every rerun.** The earlier fix commit is orphaned and eventually garbage-collected, though an earlier `verifier_input` may still point at it. Either use a per-run suffix or note that the commit is only anchored by the branch. The command also fails if that branch is checked out in the target repo.
+
+11. **A failed push or `gh` call loses all state.** `fixer.py:235` raises before `st.metrics["fix"]` is set, so nothing about the already-created branch or attempts is recorded. Catch the error, record `pr_url=None` with an error field, and still return the result.
+
+12. **Git commit and file-listing details.**
+    - `fixer.py:114`: `.split()` on `diff-tree` output breaks paths containing spaces or quoted unicode. Use `-z`.
+    - `fixer.py:209`: add `-c commit.gpgsign=false` so a user's signing config can't make the commit fail.
+
+13. **The `PROTECTED` pattern is too broad and filters silently.**
+    - `culprit.py:28`: `secret` and `planted` match any path containing them, for example `src/secrets.py`. The culprit's real file is then dropped from the brief with no note.
+    - The filter covers only the diff header lines. It doesn't touch `failing_evidence` or `checkpoint_intent`, or `RunnerChecker`'s `res.reason` and signature text that feed attempt 2+ prompts (`fixer.py:81-86`). If any of those can carry evidence-dir paths or ground-truth strings, run them through the same filter.
+    - Consider adding a "(N protected files omitted)" line.
+
+14. **`parse_reply` regex edge case (`fixer.py:133`).** A raw-JSON reply with no outer fence, whose file `content` contains a fenced `{...}` block, matches the inner block and fails. Try `json.loads` on the whole stripped text first, and use the fence regex as a fallback.
+
+15. **Status after a failed fix is misleading.** `cli.py:390` sets `"verifying"` whenever any commit exists, even when `res.passed` is False. Use `"verifying"` only when the fix passed, otherwise `"culprit_found"` (once the transition is allowed).
+
+## What looked right
+- Each attempt starts from the base commit in a fresh detached worktree, so attempts don't build on each other, and that worktree is always cleaned up.
+- The loop stops at the first passing attempt, and a bad reply is fed to the next attempt as `att.error`.
+- No ground truth, evidence directory or `.env` is read by the Fixer.
+- The PR is a draft only and is gated behind `--open-draft-pr`, which is off by default.
+- `FixAttempt` and `FixResult` serialization stays backward-compatible.</result>
+<usage><subagent_tokens>54455</subagent_tokens><tool_uses>4</tool_uses><duration_ms>72024</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a9c414ab8cf086423</task-id>
+<tool-use-id>toolu_01FGZ7FwfVfiBE6M6ZZeeahd</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a9c414ab8cf086423.output</output-file>
+<status>completed</status>
+<summary>Agent "Build Verifier with held-out" finished</summary>
+<note>This agent stopped with background work of its own still running. It may resume on its own when that work completes or reports, and the same task-id notifies again if it does; the result below may be interim.</note>
+<result>Reviewers are still running; I'll stop here until their notifications arrive.</result>
+<usage><subagent_tokens>123901</subagent_tokens><tool_uses>27</tool_uses><duration_ms>357845</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a9c414ab8cf086423</worktreePath><worktreeBranch>worktree-agent-a9c414ab8cf086423</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a21b9e30c71ddc6a3</task-id>
+<tool-use-id>toolu_01AH1QfeXfARCPUP639q1KLy</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a21b9e30c71ddc6a3.output</output-file>
+<status>completed</status>
+<summary>Agent "Review simplification" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Review of `git diff HEAD` (`verify.py`, `cli.py`) for simplification and reuse. I read the diff and grepped `llm_proxy.py`, `runner.py` and the rest of `verify.py`. I did not run the code or the tests.
+
+1. **Blocking: `check_regression` evaluates the same commits twice.** (`verify.py`, `check_regression`, about lines 395-412)
+   - `check_target` runs `evaluate_commit(fix, run_id)` with the signature set.
+   - `check_regression` then runs `evaluate_commit(fix, run_id, cases)` over the whole suite, with the signature cleared.
+   - If those two calls resolve to the same case set and repeat budget, the cache makes the second call nearly free. With a budget signature, the first uses `budget_repeats` and the second does not, so cache coverage differs and some cases re-run.
+   - `base` is evaluated with the signature cleared, but the investigation's bad end (the default `base`) was already evaluated during the bisect under the signature. Confirm these hit the cache. If they don't, the cost is real money: `COST_PER_RUN_USD` is charged per eval round.
+   - Suggested fix: evaluate `fix` and `base` once each over `st.spec.cases`. Derive both the target verdict and the regression verdict from those two results. The held-out run stays a separate call, since it uses different cases.
+   - At minimum, make sure `check_target` and `check_regression` pass the same `run_id` so the cache keys line up. Today `base` gets `-base` and `fix` gets a bare id, which is fine, but the signature-dependent `bkind` changes the repeats.
+
+2. **Non-blocking: judge HTTP call duplicates `judge_smoke`.** (`verify.py`, `ClaudeIntentJudge.judge`, versus `llm_proxy.py:529-557`)
+   - Both build a `/v1/messages` request, `urlopen` it, read `resp["model"]`, and join the text blocks.
+   - Suggested fix: add a small `llm_proxy.messages_call(url, model, system, user, max_tokens, key=DUMMY_API_KEY, timeout) -&gt; dict` helper and use it from both. `judge_smoke` then shrinks to a few lines.
+   - This also removes the hard-coded `"agentbisect-proxy"` key in favour of the existing `DUMMY_API_KEY`.
+   - `ANTHROPIC_API` is a hard-coded constant next to the proxy URL resolution. Check how `AGENTBISECT_LLM_PROXY_URL` is already read elsewhere, so there is a single resolver.
+
+3. **Non-blocking: judge model-tier check.** (`JUDGE_TIER_RE`, `verify.py:~250`)
+   - I found no other `haiku` or tier check in `agentbisect/*.py`, only `DEFAULT_AGENT_MODEL` in `runner.py`.
+   - The "refuses haiku, like the eval judge" comment in the docstring therefore points at nothing in this codebase. Fix the comment, or move the check to `models` or `config` if the eval judge is meant to share it.
+   - The pin is already enforced by the `recorded != self.model` check, so the regex is a second guard. Keep one: the regex alone costs nothing and works without a network call, but note that the model string is already pinned by config.
+
+4. **Non-blocking: `IntentJudge` base class is unnecessary.** (`verify.py`, `IntentJudge`)
+   - It is a one-method ABC with `# pragma: no cover` and `raise NotImplementedError`. The docstring already says "duck-type".
+   - Replace it with a `typing.Protocol`, or drop it and annotate `judge` with `ClaudeIntentJudge | None`.
+   - `IntentVerdict` is also a throwaway. `judge` could return `(bool, str, str)` or `CheckVerdict`-ready data directly.
+
+5. **Non-blocking: small mergers in `verify.py`.**
+   - Fold `_cap` into `ClaudeIntentJudge`; it has a single caller.
+   - Fold `held_out_cases` (a `st.spec.held_out` fallback to `load_cases`) into `verify_fix`, or into the intake step that populates `spec.held_out`. The fallback hints that `spec.held_out` is sometimes not populated. Fix that at the source so this fallback is unneeded.
+   - `_git_out` duplicates `_git(Path(repo), ...)` plus an error check. `_git` already exists at line 62, so move the `returncode` check into a shared helper or reuse it.
+
+6. **Non-blocking: unused `VerifyResult.check` and `CheckVerdict.data` scatter.**
+   - `record_verification` calls `.check()` three times and then digs into `.data` keys (`score`, `pass_rate`). If the checks stored typed fields, or `record_verification` took `{c.name: c for c in res.checks}` once, it would read more clearly.
+   - `check_regression` returns `score` in `data` solely so `record_verification` can read it back. That coupling is fragile.
+
+7. **Non-blocking: `cli.py` `_verify_fix`.**
+   - The state-machine branch in `record_verification` (`culprit_found` or `fixing` → `verifying`, else save) is fine.
+   - The `{True: 0, False: 1, None: 2}[res.passed]` mapping is okay but undocumented in code. The help text covers it.
+   - The `except (StateError, BisectError, ValueError, RuntimeError)` catch is broad. It also hides `ValueError` from a judge model mismatch, but `check_intent` already catches that as inconclusive, so this is only reachable from `verify_fix`'s up-front checks. This is acceptable.
+
+8. **Non-blocking: `describe_verification` and `describe_revert`** share the same shape. This is not worth merging.
+
+Only item 1 is potentially blocking, and only if cache misses are confirmed. Everything else is cleanup.</result>
+<usage><subagent_tokens>48158</subagent_tokens><tool_uses>4</tool_uses><duration_ms>23963</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a9c414ab8cf086423</task-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a9c414ab8cf086423.output</output-file>
+<status>completed</status>
+<summary>Agent "Build Verifier with held-out" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The full suite passes (226 tests), including the 20 new ones. The three reviewers (correctness, simplification, test coverage) are still running. I'll synthesise their findings, fix anything blocking, and commit once they report.</result>
+<usage><subagent_tokens>124135</subagent_tokens><tool_uses>28</tool_uses><duration_ms>390895</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a9c414ab8cf086423</worktreePath><worktreeBranch>worktree-agent-a9c414ab8cf086423</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a2343c41504e5c942</task-id>
+<tool-use-id>toolu_01FijV6TttNQrFZA1kB5gDnd</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a2343c41504e5c942.output</output-file>
+<status>completed</status>
+<summary>Agent "Review test coverage" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Review of `tests/test_verify_fix.py`. I read the tests and the diff but did not run pytest. Items marked **[B]** hide real bugs. The rest are hardening.
+
+**Blocking gaps**
+
+1. **[B] Cache sharing between the signature run and the no-signature runs.** `check_target` evaluates the fix with the signature set. `check_regression` and `check_held_out` then evaluate the same commit with `signature=None`. If the Runner cache stores signature-filtered verdicts, regression would reuse "case a passed" and miss a different failure in case a. The current regression test breaks case `b`, which target never ran, so it can't catch this.
+   - Add a test where the fix fails case `a` with a different key (`reply_regex:r`) and the signature is gone.
+   - Assert `target.passed is True`.
+   - Assert `regression` is True only because case `a` was not passing before (it fails at base). Also add a variant where `a` passes at base and breaks differently at the fix, and assert `regression.data["regressed"] == ["a"]`.
+   - Also assert that the exact `eval_rounds` equals the expected number of runs.
+
+2. **[B] Skip verdicts are never exercised.** Every `verdict == "skip"` branch is untested.
+   - Add an Exec that raises or returns an error on every repeat at the fix commit. Assert `target.passed is None`, `"could not be evaluated" in detail`, and `res.passed is None`, not False and not True.
+   - Add the same for the base commit: `regression.passed is None` with "pre-fix commit" in the detail.
+   - Add the same for held-out: `held_out.passed is None`.
+
+3. **[B] `pass_rate` can be `None` in f-strings.** Both `check_target` (`{res.pass_rate:.2f}`) and `check_held_out` format it unconditionally outside the skip branch. Add a test where all repeats error, so `pass_rate` is None but the verdict is not "skip". If that is reachable it raises a `TypeError`, and `verify_fix` would crash instead of reporting inconclusive.
+
+4. **[B] A budget signature with no baseline.** The budget test sets `runner.baseline` after `mk`, and there is no test where it is None.
+   - Add `sig=bsig` with no baseline.
+   - Assert `target.passed is None` (or False), never True.
+   - Assert `res.passed is not True`.
+   - If the Runner treats budget flags as ordinary failures here, this also guards "budget:tokens" flags not being silently ignored.
+
+5. **[B] The `--base` / `vin.base` override and the default fallbacks.** All tests use the default base, which equals `shas[9]`, so ignoring `vin.base` or using `fix^` would still pass.
+   - Add a test with `VerifierInput(..., base=shas[0])`. Case `a` passes there, so `regression.data["cases_passing_before"]` must include `"a"`.
+   - Add a test with `st.bad_sha=None` that falls back to HEAD.
+   - Assert that `fix_diff` given to the judge is `git diff &lt;base&gt; &lt;fix&gt;`, not just that it contains `marker.txt`.
+
+6. **[B] A previously passing case that has no results after the fix.** The code deliberately counts it as regressed (`c not in a`). Add an Exec where case `c` errors on every repeat at the fix only. Assert `"c" in regression.data["regressed"]` and `regression.passed is False`.
+
+7. **[B] The signature must be restored when a check raises.** Only the happy path asserts `runner.signature is SIG`.
+   - Make Exec raise `RuntimeError` mid-check, or monkeypatch `check_intent` to raise.
+   - Assert the exception propagates and `runner.signature is SIG` afterwards.
+   - Also pass a runner whose initial signature is `None` or a different object, and assert that exact object comes back.
+   - Note that `eval_rounds` is not set on this path. State that this is acceptable, or test it.
+
+**Non-blocking gaps and weak assertions**
+
+8. **Flaky cases.**
+   - Flaky at base: case `c` passes 1 of 3 repeats at base (it needs repeats &gt; 1 in the Exec, so `k`-based behaviour). It must not be in `cases_passing_before`.
+   - Flaky at the fix but stable at base: this is a regression (`a[c] &lt; b[c] - TOLERANCE`).
+   - Flaky held-out: pass rate between thresholds gives `held_out.passed False`, with the case named in the detail via `flaky_cases`. Nothing covers `flaky_cases` today.
+   - Flaky target: a "flaky" or "mixed" verdict gives `target False`, and the detail contains the verdict.
+
+9. **The regression test asserts too little.** In `test_other_regression_is_caught`, add:
+   - `cases_passing_before == ["b", "c"]` (`a` fails at base, so it is excluded).
+   - `score == 0.5`.
+   - `pass_rate_before` and `pass_rate_after`.
+   - A mutation to `regressed = passing` or `[]` would be caught by `["b"]`, but a wrong `passing` list would not be.
+
+10. **Regression with an empty `passing` list.** Make every case fail at base. Assert `regression.passed is True`, `score is None`, and the detail says "all 0 previously passing…". A zero-division or vacuous pass would show up here. Consider whether this should be inconclusive instead.
+
+11. **`record_verification` details.**
+    - Failure values: `held_out_score` equals the real pass rate (for example 0.5), not just 1.0. `intent_test_passed` is False or None. `eval_score` is None when `regression` is inconclusive.
+    - Re-verifying the same branch does not duplicate the attempt, and `metrics["eval_rounds"]` accumulates across two calls. `cost_usd` equals rounds × `COST_PER_RUN_USD`.
+    - Status `fixing` goes to `verifying`. Status `verifying` stays and is only saved. Test an unknown status as well.
+    - An empty branch does not match a recorded attempt with `branch=""`. It creates a new attempt named by the commit.
+    - Reload from the store and assert `fix_attempts` persisted. The current test only reloads metrics.
+
+12. **`held_out_cases` and the spec edge cases.**
+    - Missing `evals/cases.jsonl` entirely (no evals dir) returns `[]` or inconclusive, not a crash.
+    - `verify_fix` on a state with no `spec` or no `cases` raises `ValueError`. This is untested.
+    - `spec.signature=None` gives the label "the suite's failing cases", and `data["signature"] is None`.
+
+13. **Intent check gaps.**
+    - The missing-intent case should assert that the judge was not called (`j.calls == []`).
+    - `intent_source != "checkpoint"` puts "commit message, no checkpoint" in the detail.
+    - A git failure in `show` or `diff` (a bad culprit sha) gives None, not a raise.
+    - `_cap` truncates over `MAX_JUDGE_DIFF_CHARS` and appends "... (truncated)".
+    - `assert "BROKEN" not in culprit_diff` is a weak negative check. Replace it with a positive assertion on the culprit's patch content, and assert that `fix_diff` excludes the culprit's own change.
+
+14. **`ClaudeIntentJudge`.**
+    - The default URL path uses the `ANTHROPIC_API_KEY` env var, not "agentbisect-proxy". Cover it with monkeypatch and an unset key.
+    - HTTP 500 or timeout propagates, and `check_intent` turns it into None. Add an end-to-end test using the fake server returning 500.
+    - `opus` and `fable` model ids are accepted.
+    - A reply with a missing or empty `content` list raises `ValueError`.
+    - `parse_intent_reply` truncates the reason to 500 characters and handles a reason containing braces.
+    - The `AGENTBISECT_LLM_PROXY_URL` env var is honored.
+
+15. **CLI.**
+    - Unknown investigation id gives exit 1 and "error:" (`StateError`).
+    - `BaselineError`/`BisectError` from `make_runner` gives exit 1.
+    - `ClaudeIntentJudge` raising `ValueError` (a haiku judge model in `runner.cfg.models`) gives exit 1, not a traceback.
+    - `--base` and `--repo` are forwarded. Capture `VerifierInput` via a monkeypatched `verify_fix` and assert its fields, with `--base` defaulting to None.
+    - Persistence on a non-zero exit: after exit 1 or 2, `store.load(id).metrics["verify_fix"]` still exists. After the bad-commit error, the state is untouched (no `verify_fix` metrics, `fix_attempts` unchanged).
+    - `--llm-proxy` wiring: assert `_llm_proxy` is entered for `verify-fix`. Monkeypatch it and check it is called.
+    - `--commit` missing causes an argparse `SystemExit(2)`.
+    - Exit codes 0, 1 and 2 are mapped, but there is no test that a True/False/None mix gives the right code. The three existing tests cover this adequately.
+
+16. **Fake realism.**
+    - `Exec` never produces error, timeout or skip results, never flaky outcomes, and never varies by repeat except through `tokens`. This is why items 2, 3 and 8 are invisible.
+    - `default()` hardcodes failure only at index 9, so "fixed" is trivially true for any later commit. Add a negative control: a commit before the bad end, or a fix that doesn't change `marker.txt`.
+    - The shared `hist` fixture is reused across several `mk` calls with different `tmp_path` subdirs. The repo's `evals/cases.jsonl` is written into the shared repo in the held-out tests, which could leak between tests if `hist` is not function-scoped. Confirm that it is.
+    - `res.eval_rounds &gt; 0` should be an exact count, and a second `verify_fix` call on the same runner should report 0 or fewer rounds on cache hits.</result>
+<usage><subagent_tokens>55193</subagent_tokens><tool_uses>2</tool_uses><duration_ms>49845</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a9728d4e1b90e9528</task-id>
+<tool-use-id>toolu_01DCNaU2uMVXzEGZiR9x6oDW</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a9728d4e1b90e9528.output</output-file>
+<status>completed</status>
+<summary>Agent "Review correctness" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>**Blocking issues**
+
+1. `verify.py:465` and `:458`, `--repo` and runner mismatch. SHAs are resolved in `vin.repo`, but `runner.evaluate_commit` always creates worktrees in `st.repo`, which `make_runner` set. With `--repo` pointing at a fix clone, `fix` and `base` resolve there, then the eval fails inside `st.repo` with a git worktree error or a bogus "skip". The intent diffs also run in `vin.repo`. Fix: drop `--repo` and resolve everything in `runner.repo`, or fetch the commit into `runner.repo` first. At minimum, raise if `Path(vin.repo).resolve() != Path(runner.repo).resolve()`.
+
+2. `verify.py:~380` (`check_target`), the verdict can pass while the signature still fires. `evaluate_commit` returns the aggregate pass rate over `sig.cases`, and `good` means rate &gt;= 0.85. With 7 or more signature cases, one case can still fail 100% and the verdict is still "good". For fix verification, require per-case: no case in `res.failing_cases` or `res.flaky_cases`. Otherwise `case_stats` shows `fails &gt; 0` for that case. The test only uses a single-case signature, so it doesn't catch this.
+
+3. `verify.py:~430` (`check_held_out`), same aggregate-rate problem. `pass_rate &gt;= good_min` means one failing held-out case out of 7 or more still passes, which defeats the overfit check. Fix: require every held-out case to have `fails == 0`, or at least no entry in `failing_cases`. Also, `flaky_cases` are ignored when `ok` is true.
+
+4. `verify.py:~430` (`check_held_out`), held-out judge-graded cases get the wrong repeats. `make_runner` builds `judge_cases` only from the working suite's rubric (`cfg.judge_cases`). `Runner._want` therefore never raises held-out judged cases to `judge_repeats`, so they run at the plain `repeats` count. Fix: add the held-out rubric case IDs to `runner.cfg.judge_cases` before evaluating them. The rubric IDs would have to come from `load_cases`.
+
+5. `verify.py:~410` (`check_regression`), signature handling for budget signatures. With `runner.signature = None`, `_tally` uses raw per-run `fails`, which includes the harness's per-run `budget:*` flags. The median rule is skipped. For a budget-signature investigation, one token outlier in a previously clean case (for example 1 of 3 runs, rate 0.67 against a base of 1.0) is reported as "regressed". There is also no escalation, because `evaluate_commit` only re-runs disagreeing cases when the overall band is "uncertain", and here it is "good". The inverse also holds. Cases that failed only on per-run budget flags at base are dropped from `passing`, so budget regressions in other cases are never caught. Fix: judge regressions per case with the median rule when the flag is a budget one. Or pass `budget_cases=cases` for budget signatures and use a signature that selects `budget:*`. At minimum, re-run any case that disagrees with itself (rate strictly between 0 and 1) before declaring it regressed.
+
+6. `verify.py:~405`, flaky case on the regression side. `evaluate_commit` escalates repeats only when the overall verdict is uncertain, so a single 2/3 case in an otherwise green suite is never re-run. It is flagged `regressed` because `a[c] &lt; b[c] - 0.1`. Because of the same escalation gate, an already-flaky case at base (for example 0.67) is excluded from `passing`, so a fix that makes it fully fail is never reported. Fix: for any case with `0 &lt; rate &lt; 1` at either commit, re-run with higher repeats. Compare using a count/binomial rule, not a raw 0.1 gap. Also avoid float edge cases such as `0.8 &lt; 0.9 - 0.1`.
+
+7. `verify.py:~480`, `held_out_cases` fallback reads `load_cases(st.repo)` from the working tree, not `vin.repo` or the fix commit. Held-out cases added in the fix commit, or a missing `evals/cases.jsonl` at HEAD, give wrong or inconclusive results. An `IntakeError` also raises out of `verify_fix` after the expensive target and regression runs, and discards them. The CLI catches it (it is a `RuntimeError`), but no result is recorded. Fix: catch `IntakeError` in `held_out_cases` and return `[]`, which makes the check inconclusive.
+
+8. `verify.py:~500` (`record_verification`), duplicate `FixAttempt` entries. A branch-less verification never matches an existing attempt, because the lookup requires `vin.branch`, but the new attempt's branch is the commit SHA. Re-verifying the same commit therefore appends a new attempt each time. Fix: match `a.branch in (vin.branch, res.commit)`.
+
+**Non-blocking notes**
+
+- Exit code 1 is shared by "NOT VERIFIED" and operational errors (bad SHA, baseline missing, `ModelPinError`). Scripts can't tell them apart. Consider exit code 3 or higher for errors.
+- `verify.py:465`: `--commit` and `--base` values starting with `-` are passed straight to `git rev-parse`. Use `--end-of-options`, or reject a leading `-`.
+- `verify.py:~455`: the default base is `st.bad_sha`, but the revert test uses the same value and the fix may be written on a newer HEAD. Document this, or default to the fix's merge-base with the bad end.
+- `parse_intent_reply`: the greedy `\{.*\}` breaks if the model emits two JSON objects or trailing braces. `raw_decode` from the first `{` is more robust.
+- `culprit_diff` uses `git show --format= --patch`. This is empty for a merge-commit culprit, so the judge sees nothing. Use `-m --first-parent`, or `&lt;sha&gt;^!`.
+- Both diffs are truncated at 20k characters with no signal in the verdict, which can make a pass or fail look stronger than it is.
+- `temperature: 0` may be rejected by some newer model IDs or proxies. A 400 is reported as inconclusive, so it is only a usability problem.
+- Held-out cases that were already failing at base fail the fix. That is probably intended, but the detail text doesn't say whether it is a pre-existing failure.
+- `held_out` passes silently if some held-out cases are skipped at the fix commit. Only an all-skipped result is inconclusive. Surface the skipped cases in `data`.
+- State transitions look right. `culprit_found` and `fixing` move to `verifying`, and any other state is saved unchanged. A `verifying` state is left as is, so a failed verification does not move the investigation back to `fixing`, which is acceptable.
+- `runner.signature` is restored in a `finally` block. Cache keys do not depend on the signature, so the sharing is safe.</result>
+<usage><subagent_tokens>67579</subagent_tokens><tool_uses>6</tool_uses><duration_ms>73278</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a4e2cc61bb44b7fa4</task-id>
+<tool-use-id>toolu_014VBpsDaQwB1pan6ofJvv7z</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a4e2cc61bb44b7fa4.output</output-file>
+<status>completed</status>
+<summary>Agent "Docs, demo script, span fixture" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The three Unit A reviewers are still running, so I'm waiting on their reports before I do anything else.</result>
+<usage><subagent_tokens>121815</subagent_tokens><tool_uses>47</tool_uses><duration_ms>504250</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a4e2cc61bb44b7fa4</worktreePath><worktreeBranch>worktree-agent-a4e2cc61bb44b7fa4</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a8dfdd7fc251ed6be</task-id>
+<tool-use-id>toolu_01WCCTckRDQqC5yVAkZLxoJ2</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a8dfdd7fc251ed6be.output</output-file>
+<status>completed</status>
+<summary>Agent "Review docs clarity and brevity" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>**Blocking: the script overruns 3:00.** I counted the quoted narration per beat, with placeholders included. At 150 wpm a beat's time box holds (seconds × 2.5) words.
+
+| Beat | Time box | Capacity | Words | Result |
+|---|---|---|---|---|
+| Problem | 20s | 50 | 52 | about 21s, fine |
+| What it does | 35s | 87 | 90 | fine |
+| Smart bisect | 40s | 100 | 104, plus the RERUN3 line if filled | about 3-8s over |
+| Divergence | 35s | 87 | 118 | about 12s over |
+| Proof | 30s | 75 | 85, plus the RERUN3 line | about 4-10s over |
+| Limits | 20s | 50 | 81 | about 12s over |
+
+The total is roughly 530 words, or about 3:30 with no pauses and no time for terminal output. The overruns are in beats 4, 5 and 6. Beat 6 can't be fixed by trimming the storyboard, because frame 6 is only 15s.
+
+Cuts to get under 3:00, aiming for about 450 words:
+
+- **Divergence, to about 85 words.**
+  - Cut "Once we have a culprit, the question is where behavior actually changed."
+  - Cut "which is exactly where the planner looked."
+  - Compress the closing caveat to: "The bad run is the range tip, so this shows where behavior changed, not which commit did it."
+- **Limits, to about 50 words.** Name the two limits and the Fixer in one sentence each: "Token-budget regressions blur together. neatlogs multi-span traces dead-letter, so that view is a fixture. Next: the Fixer. Find the commit, know why it was written, prove it." The rest is already in the README.
+- **Proof, to about 65 words.**
+  - Drop "The report then quotes the checkpoint..." and fold it into the on-screen note.
+  - Merge the revert-test placeholder into the sentence above it. As written the script has two RERUN3 placeholders in this beat, and the first is a claim ("zero to one hundred percent") that is not sourced.
+- **Smart bisect, about 85 words.**
+  - Cut "A plain binary search works, but every probe is an eval run." Or drop the sentence "The entire code graph tells us which commits touched the code behind the failing tool." The README already covers it.
+  - Reserve about 15 words for the RERUN3 rounds line, or the beat will run long once it is filled.
+
+Non-blocking suggestions:
+
+- **Mark where the unfilled placeholders land.** Each beat's word count should include its filled placeholder. Say so, or add a per-beat word count to the heading, for example `(~85 words)`.
+- **"Entire" is ambiguous in beat 3.** "Entire gives us each commit's checkpoint" and "The entire code graph" read as the same word. Use "the Entire graph".
+- **Beat 2 lists the three mechanisms as ordinal sentences.** Shortening the signatures and median sentences saves about 15 words. This is optional.
+- **Redundancy: the placeholder rule is stated three times** (script rules, storyboard intro, storyboard checklist item 4, plus the script checklist). Keep it in the script's rules and have the storyboard link to it.
+- **Redundancy: the README repeats demo content in several places.** The fixture command, the limitations, and the 12,869 vs 26,420 figure all appear in the README, script and storyboard. That is fine as a source of truth, but the script could drop its numbers and the storyboard could carry them (it already has them). The script says "26 thousand to 13 thousand" while the storyboard says 12,869 vs 26,420, so make the spoken form match on screen.
+- **Storyboard says seven frames, the script has six beats.** The split of beat 6 into frames 6 and 7 is sensible, but say so in one clause. The Fixer mention at frame 7 (2:55-3:00) is only 5s, so the script's "Next is the Fixer..." sentence won't fit unless it's cut as above.
+- **Storyboard frame 2 says "Call out that `es2` is refused".** The script never says this. Either add 8 words to the script or drop it from the storyboard.
+- **README is padded in places.**
+  - The status banner on `[[RERUN3]]` duplicates the same note in the script and storyboard.
+  - The Limitations bullets "Token counts are bytes/4 estimates" and "Noisy judge" can be one line each.
+  - The repository map row for `docs/` is fine.
+- **Fallback rule in the script's rules** ("Keep a pre-computed investigation...") also appears in the pre-flight checklist. Keep one copy.</result>
+<usage><subagent_tokens>44283</subagent_tokens><tool_uses>2</tool_uses><duration_ms>18887</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a9eea27b1f63eb76e</task-id>
+<tool-use-id>toolu_01AKcEtnpcKVdx1FiXFshp6A</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a9eea27b1f63eb76e.output</output-file>
+<status>completed</status>
+<summary>Agent "Review docs correctness" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Nothing here is blocking except one demo-script claim. I checked the CLI flags and subcommands against `agentbisect/cli.py`, the fixture output by running the command, and the numbers against `evidence/*.md` and `BUILD_LOG.md`. I did not read `evidence/ground_truth.json`.
+
+**Blocking**
+- `docs/demo-script.md:35` says the divergence "points at the code behind search help, which is exactly where the planner looked." That overstates it. `evidence/rerun3-summary.md` ("Neatlogs span divergence still unavailable…") says the planner ranked on graph impact and checkpoint intent, not divergence. Suggested rewording: "the kind of signal the planner would use once neatlogs spans are available."
+- `docs/demo-script.md:35` also opens with "Once we have a culprit". README step 4 lists divergence as a planner input that comes before the bisect. Reword to avoid implying the order is divergence after culprit, or state that it is a separate illustration.
+
+**Non-blocking**
+- `README.md` "Measured so far" table has three `[[RERUN3: …]]` placeholders. The data is already in `evidence/rerun3-summary.md`:
+  - 4 of 6 signatures correct.
+  - Revert tests: 2 passed, 2 failed, 1 inconclusive. The sixth signature, es2, was refused so no revert test ran.
+  - Rounds: 24 vs 18, 4 vs 3, 84 vs 96, 54 vs 60, 21 vs 21.
+
+  Fill these before submission. The same applies to `docs/demo-script.md:29,41,43`, `docs/storyboard.md:9,11` and the README Limitations bullet that ends with `[[RERUN3: final correct/incorrect count]]`.
+- `docs/demo-script.md:15` says "twenty commits" and the README says "24 eval cases". Neither appears in `hackathon.md`, `BUILD_LOG.md`, `ROLES.md` or `evidence/` as the commit count for `1b40b27..0ecffc0`. The only count I found is 13 commits, for a different range in `entire-context-savings.md`. `hackathon.md:41` does say 24 evals, so that one is supported. Verify the commit count against the demo repo or say "many commits".
+- `docs/storyboard.md` frame 7 runs 2:55-3:00 and the script's closing beat runs 2:40-3:00. This is only a timing mismatch. Frame 6 plus 7 cover the same span.
+
+**Checked and correct**
+- Fixture output text matches the real command output, including the `FIXTURE:` first line and "first divergence: step 1: bad run made an extra step search_help".
+- The bad run in `fixtures/divergence/os1-search-help/bad.json` is `lookup_order`, then `search_help` timeout twice, then a third `search_help`.
+- CLI subcommands and flags match `cli.py`: `--llm-proxy`, `--all-signatures`, `--all-categories`, `--fixtures`, `--good`, `--bad`, `--open-pr`, `--confirm-open-pr`, `calibrate --good`, `summary --format md`, and `--bundle`.
+- The 1.5x median budget, Python `&gt;=3.11,&lt;3.14`, `rev-list --first-parent`, and the partial-revert and inconclusive handling all match the code.
+- The 12,869 vs 26,420 tokens and 51.3% cut match `evidence/entire-context-savings.md`.
+- The Fixer is clearly labelled upcoming and not built. The neatlogs span divergence is stated as blocked (`dlq`), and the fixture is labelled not live.</result>
+<usage><subagent_tokens>56698</subagent_tokens><tool_uses>5</tool_uses><duration_ms>31072</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ab27e3689740188bc</task-id>
+<tool-use-id>toolu_01WoKJxfVuaxJ9nQ8CDwsgMc</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ab27e3689740188bc.output</output-file>
+<status>completed</status>
+<summary>Agent "Review docs completeness and placeholders" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The three docs cover the brief and have no invented numbers. There are two unsourced numbers to flag and a few small completeness gaps. I checked every numeric claim against `evidence/*.md`, the baseline JSON and the fixture. I did not open `ground_truth.json`.
+
+**Number problems**
+1. **README, "What it is": "24 eval cases".** Nothing in `evidence/` supports it. `baseline-1b40b27.json` has 18 cases, and `rerun-summary.md` says 18/19 executed cases pass at the good commit. Either source it from the support-agent-demo repo and cite it, or drop or placeholder it.
+2. **`docs/demo-script.md`, 0:00 beat: "The history has twenty commits".** Nothing in `evidence/` supports it. `entire-context-savings.md` gives 13 commits in range for investigation 6857f0b738, so it also conflicts with that. Remove the number or flag it.
+3. **README header: "neatHack (Oct 10-12, 2026)".** Only "Oct 10, 2026" appears in `hackathon.md`. This is not a measurement, but the end date is unsourced.
+
+**Numbers I checked and found exact**
+- 12,869 vs 26,420 tokens, the 51.3% cut and the 1.5x budget line match `entire-context-savings.md` and `rerun3-summary.md`. The 51.3% is the saved fraction (13,551 of 26,420); the doc's own ratio line gives 0.487 for the with-graph side.
+- The refund-amount revert result of 0% to 100% matches `rerun3-summary.md`.
+- The fixture description matches `bad.json`: an extra `search_help` step, two timeouts, then success, 2 vs 5 steps. The case id `os1` and the commits 1b40b27 and 0ecffc0 also match.
+- es2 refused as a pre-existing failure matches the evidence.
+
+**Placeholder discipline**
+- The README placeholders are clearly marked `[[RERUN3: ...]]`, and the status note under the intro says they are unfilled.
+- All of them are pending: the README table rows, the Limitations count, and the demo-script and storyboard sentences.
+- `evidence/rerun3-summary.md` already has final values: 4 of 6 correct, revert tests passed 2 of the 4 that were run, and per-signature rounds (24 vs 18, 4 vs 3, 84 vs 96, 54 vs 60, 21 vs 21).
+- These are placeholders only because the docs still say "re-run pending". If the re-run is final, they can be filled with exact copies.
+- Mixed state: the README Limitations section says smart "used more [rounds] on some budget signatures" with no number, which is fine. `demo-script.md` already hard-codes "0% to 100%" with a confirm-flag, which is acceptable.
+
+**Missing or weak items**
+- The README does not say how to open the existing report files in `evidence/`, such as `report-*.html`. It also does not say that the graph-savings figure comes from the earlier investigation 6857f0b738, a different range from the re-run.
+- The "Measured so far" table has no row for the Verifier or Fixer status. Verifier is built and Fixer is upcoming, and both are covered in the How it works section, so this is minor.
+- The demo-script 0:55 beat says "On the one investigation we measured". That is honest, but the script never states that the graph-savings range differs from the 1b40b27..0ecffc0 range used elsewhere.
+- Neither the script nor the storyboard mentions the "smart used more rounds on budget signatures" caveat, which is the honest side of the rounds placeholder. If the placeholder is cut, the demo overclaims.
+- The storyboard says "Seven frames" and has seven rows, so that is correct. The final two rows (2:40-2:55 and 2:55-3:00) split the script's single 2:40-3:00 beat, which is harmless.
+- The logo is kept at the top as `assets/logo.png`, and the file exists.</result>
+<usage><subagent_tokens>52115</subagent_tokens><tool_uses>5</tool_uses><duration_ms>28359</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a4e2cc61bb44b7fa4</task-id>
+<tool-use-id>toolu_0114JzG9F2thyBKijQSJeST6</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a4e2cc61bb44b7fa4.output</output-file>
+<status>completed</status>
+<summary>Agent "Docs, demo script, span fixture" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Both units are committed on branch `worktree-agent-a4e2cc61bb44b7fa4`. Nothing was pushed, and `cli.py`, `state.py` and `models.py` are untouched. I ran the new tests plus the planner, culprit and intake tests (61 passed), but not the full suite after the last edits.
+
+**Unit B** is `132fba1`.
+- `agentbisect/fixtures.py` has a `FixtureDirSource`. It extends `FixtureSource`, so `culprit.trace_divergence` and the planner take it unchanged.
+  - Also in the module: a `record_pair` function that builds a fixture from two eval reports, and `python -m agentbisect.fixtures DIR [--bundle OUT.json]`.
+  - The bundle option writes the single-file form that `--fixtures` accepts.
+- The fixture is `fixtures/divergence/os1-search-help/`, recorded from real runner output.
+  - I ran `python -m evals run --json` for case `os1` ("Where is order 1042?") at `1b40b27` and `0ecffc0`, using Haiku through the llm-proxy.
+  - The good run makes 1 tool call. The bad run makes 4, an extra `search_help` of which two time out, so the first divergence is at step 1.
+  - The bad commit is the tip of the range, so the fixture shows where behavior changed, not which commit caused it.
+- The manifest is marked `fixture: true`, loading refuses a manifest without that, every trace is tagged `fixture:recorded`, and `describe()` prints the "Not live neatlogs data" label first.
+- The fixture holds tool-call spans only, because the runner's report has no model-call spans.
+- I also fixed a crash in `Divergence.describe` in `agentbisect/planner.py`: it failed when the good or bad side was missing (extra-step and missing-step cases).
+- 18 tests are in `tests/test_fixtures.py`.
+
+**Unit A** is `ba588ad`.
+- `README.md` keeps the logo and covers what it is, how it works, setup, usage and limitations. The limitations include the neatlogs `dlq` block and the budget-signature weakness. The Fixer is stated as not built.
+- `docs/demo-script.md` is a 3-minute script of about 363 spoken words. `docs/storyboard.md` has six frames.
+- Your five changes are in:
+  - Every `[[RERUN3]]` placeholder is filled from `evidence/rerun3-summary.md`: 4 of 6 correct, revert tests 2 passed / 2 failed / 1 inconclusive, and es2 refused. The rounds are 24 vs 18, 4 vs 3, 84 vs 96, 54 vs 60 and 21 vs 21, with the budget caveat in the script and storyboard too.
+  - The script says the planner did not use span divergence in the final run, and the fixture is described as illustrating the signal.
+  - "Twenty commits" is now "many commits", "24 eval cases" is "24 eval cases at HEAD (18 exist at the good commit)", and the date is Oct 10, 2026.
+  - The 12,869 vs 26,420 token figure is attributed to investigation `6857f0b738`, a different range from the final re-run.
+  - The README has one note on opening the HTML reports, and the repeated placeholder rules are gone.
+
+- **Dogfooding doc:** `evidence/dogfooding.md` does not exist in this checkout. The README mentions it as "(if present in your checkout)" with no link, so either add the file or drop that sentence.
+- **Docs reviewers:** I never saw the three docs reviewers' reports; I worked from your message, so any finding not in it is unaddressed.
+
+I stopped the llm-proxy I started for the recording and left no temp files in the repo.</result>
+<usage><subagent_tokens>129116</subagent_tokens><tool_uses>5</tool_uses><duration_ms>39424</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a4e2cc61bb44b7fa4</worktreePath><worktreeBranch>worktree-agent-a4e2cc61bb44b7fa4</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a80fc48f5563b8472</task-id>
+<tool-use-id>toolu_015nNRDmh554eza6NmebAgtw</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a80fc48f5563b8472.output</output-file>
+<status>completed</status>
+<summary>Agent "Build Fixer + draft PR" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The Fixer is committed on branch `worktree-agent-a80fc48f5563b8472` (commit `8aa974e`). Nothing was pushed, and main is untouched. The full suite passes (232 tests, 26 of them new in `tests/test_fixer.py`). I haven't run it against a real model or a real eval run: the tests use a fake model, a fake checker and a faked `gh`/push, and I did no local-server or screenshot check (it's CLI/backend only).
+
+The three reviewers I spawned (correctness, simplification, test coverage) never reported back before the coordinator's synthesised feedback arrived. I implemented that synthesis instead, so their individual findings were not applied. I did not spawn any other sub-agents.
+
+**How it behaves**
+- **`agentbisect fix &lt;id&gt;`** gives a fresh agent a brief built from the culprit diff, the original Entire intent and the failing evidence. It also sees the whole current contents of the files the culprit touched.
+- **Attempts:** it gets up to 3 (`--max-attempts`, minimum 1). Each failed attempt's diff and failing-check output go into the next prompt. It stops at the first pass, and the checks run the real eval Runner on the fix commit.
+- **Fix model:** it uses the existing model backend, with model `FIXER_MODEL` (default `claude-sonnet-5-5`).
+- **Outputs:** the best attempt becomes branch `agentbisect/fix-&lt;culprit8&gt;`, plus a patch file and a PR body file. The best attempt is the passing one, else the last one that produced a commit.
+- **PR:** a draft PR is opened only with `--open-draft-pr` and only when the Fixer's own checks passed, via `report.open_pr`. A push or `gh` failure is recorded in `FixResult.pr_error` rather than raised.
+- **Isolation:** the system prompt mentions no bisect or planted bugs. Answer-key and secret paths and lines are stripped from the diff, file context, intent, evidence and failure text. The fixer is also refused edits to those paths, to tests and eval cases, to symlinks, to anything outside the worktree, and to files too large to show in full.
+- **Exit code and status:** it exits 0 only when the checks passed. The status goes to `verifying` on a pass, `culprit_found` on a failed fix, and `failed` with the error on a crash. I added `fixing→fixing`, `fixing→culprit_found` and `failed→fixing` transitions so a re-run works.
+
+**For the Verifier**
+- **Hand-off:** `FixResult.verifier_input` is `{"repo": &lt;resolved absolute path&gt;, "commit": &lt;sha&gt;}`, or `{}` if no attempt produced a commit. It is a real field, so it stays stable.
+- **Related changes:** `FixAttempt` gained optional fields (commit, passed, failures, files, explanation, error). `report.fix_passes` and `best_attempt` now honour `FixAttempt.passed` for attempts the Verifier hasn't scored yet.
+
+I did not do the coordinator's item to evaluate with the base commit's eval cases. The checker runs the fix commit's own cases, and the fixer is only blocked from editing tests and eval cases.
+
+`BUILD_LOG.md` is updated. The new code is in `agentbisect/fixer.py`, with changes to `models.py`, `cli.py`, `culprit.py`, `report.py` and `state.py`.</result>
+<usage><subagent_tokens>144181</subagent_tokens><tool_uses>34</tool_uses><duration_ms>435405</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a80fc48f5563b8472</worktreePath><worktreeBranch>worktree-agent-a80fc48f5563b8472</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bjasrz3rl</task-id>
+<tool-use-id>toolu_016Fte4x3WsZbjb5oLKywhq5</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/bjasrz3rl.output</output-file>
+<status>completed</status>
+<summary>Background command "uv run pytest -q 2&gt;&amp;1 | tail -3; sed -i.bak 's/ (if present in your checkout)//' README.md; grep -n "dogfooding" README.md; rm -f README.md.bak" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a9c414ab8cf086423</task-id>
+<tool-use-id>toolu_016F6a7Bek8zGQP8HH8m2hp7</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a9c414ab8cf086423.output</output-file>
+<status>completed</status>
+<summary>Agent "Build Verifier with held-out" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The fix Verifier is committed on branch `worktree-agent-a9c414ab8cf086423` as `c9066fa`, with the `Co-Authored-By` trailer. It is not pushed. The full suite passes (239 tests, 33 of them new in `tests/test_verify_fix.py`). It has not been run against the real demo or a real Sonnet call: the tests use fake executors and judges on throwaway git repos, plus a stub HTTP server for the judge request.
+
+**What it does.** `verify_fix` in `agentbisect/verify.py` returns a structured `VerifyResult` with four per-check verdicts. Each check is pass, fail, or inconclusive. The fix passes only if all four pass, and any fail beats an inconclusive.
+- **Target:** the culprit's failure signature no longer reproduces at the fix. Budget signatures use the median rule against the calibrated baseline. Every signature case must be clean, so 6 of 7 passing does not pass.
+- **Regression:** cases that passed at the pre-fix commit (default: the investigation's bad end, overridable with `--base`) must still pass. A case with a failure or missing result at either commit is re-run at 5 repeats and compared by failure count. A previously passing case with no result at the fix counts as regressed.
+- **Held-out:** the held-out set is the investigation's recorded held-out ids plus any flagged `held_out` in the fix commit's own `evals/cases.jsonl`. Every case must be clean. Held-out cases with a rubric get `judge_repeats`.
+- **Intent:** `ClaudeIntentJudge`, pinned to `JUDGE_MODEL` (default `claude-sonnet-5-5`), sees the culprit's checkpoint intent, the culprit diff and the fix diff. It refuses a haiku-tier model and any response that doesn't echo the pinned model. A judge outage or missing intent is inconclusive, not a pass.
+
+**CLI.** `agentbisect verify-fix ID --commit SHA [--branch B] [--base SHA] [--repo R] [--llm-proxy auto|URL|off]` exits 0 when verified, 1 when not verified or on error, and 2 when inconclusive. The result is saved to the state file and the matching `FixAttempt` even on exit 1.
+
+**Fixer contract.** `verifier_input` wasn't in `models.py`, so `VerifierInput` is a stub dataclass in `verify.py` (repo, commit, optional branch and base). Swap the import if the Fixer lands its own.
+
+**Review round** (coordinator's must-fix list, applied in one pass, no new sub-agents):
+- A `--repo` that differs from the runner's repo is an error.
+- Skip and error paths make a check inconclusive. Baseline and model-pin errors still abort.
+- Fix attempts match by branch or commit.
+- Git calls use resolved shas and `--end-of-options`; merge culprits use `show -m --first-parent`.
+- `IntentJudge` is now a `Protocol`, and the judge reuses the proxy's `DUMMY_API_KEY`.
+
+I did not reuse `llm_proxy` for the judge HTTP call, since that wasn't trivial.
+
+**Known behaviour.** The regression re-runs add samples to flagged cases. A budget signature's target check can therefore see more than the usual 3 repeats; the median still decides. The test now asserts at least 3 repeats instead of exactly 3.
+
+I never read `evidence/ground_truth.json`. `BUILD_LOG.md` is updated.</result>
+<usage><subagent_tokens>156212</subagent_tokens><tool_uses>24</tool_uses><duration_ms>458260</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a9c414ab8cf086423</worktreePath><worktreeBranch>worktree-agent-a9c414ab8cf086423</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bbz2zp564</task-id>
+<tool-use-id>toolu_01XexMJwKCyZDqCKitkexBP7</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/bbz2zp564.output</output-file>
+<status>completed</status>
+<summary>Background command "(uv run pytest -q -x 2&gt;&amp;1 | tail -3) " completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ad6ed45375807a1d4</task-id>
+<tool-use-id>toolu_01BvYsJqvzu9dNiSjFrSkcE9</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ad6ed45375807a1d4.output</output-file>
+<status>completed</status>
+<summary>Agent "Tool-count signal for budgets" finished</summary>
+<note>This agent stopped with background work of its own still running. It may resume on its own when that work completes or reports, and the same task-id notifies again if it does; the result below may be interim.</note>
+<result>The tool-count signal works for refund_within_policy, but order_status and refund_outside_policy still do not map to the commits you expected. It is committed on branch `tool-count` as 5b5d98c; main is not touched. The full suite passes (215 tests, 9 of them new).
+
+**What changed**
+- `calibrate` now records per-case median calls per tool and writes `baseline_version: 2`. The new baseline is `evidence/baseline-1b40b27-v2.json`, calibrated at 1b40b27 with `DEMO_FLAKE=0`.
+- Old baselines keep all their rejection rules (missing good commit, wrong good commit, wrong model, no cases). A version-1 baseline cannot attribute to a tool: discovery warns and keeps the plain `budget:tokens@cat`. A `+tool:` signature given explicitly is refused with a calibrate hint.
+- At discovery, each firing `budget:tokens@cat` is replaced by one signature per tool, e.g. `budget:tokens@cat+tool:&lt;name&gt;`. A tool qualifies when its per-case median call count is at least 1 above baseline in at least half of that signature's cases.
+- The bisect predicate is the median call count over the existing 3 repeats, per case, with no extra runs. It also drives the revert test, which reports "&lt;tool&gt; calls" medians.
+- I added `investigate --only-budget` to skip the behavioural signatures.
+
+**Signature keys, culprits and revert tests** (smart strategy, bad end 0ecffc0):
+
+| signature | culprit | revert test |
+|---|---|---|
+| `budget:tokens@refund_within_policy+tool:search_help` | 59c8b10 | FAILED, search_help calls 2 -&gt; 2 |
+| `budget:tokens@order_status+tool:search_help` | 59c8b10 | FAILED, search_help calls 1 -&gt; 1 |
+| `budget:tokens@refund_outside_policy` (unrefined) | 5cee99b | inconclusive |
+
+**Against your expectations**
+- **refund_within_policy:** it maps to 59c8b10, as you expected.
+- **order_status:** it does not map to ec19917; it maps to 59c8b10. Only os3 calls cancel_order, and that call comes from 0ecffc0. The other order_status cases (os1, os2, os4) show only extra search_help calls, so ec19917's cost there is tool-schema tokens that no call count sees. No cancel_order signature fired for order_status.
+- **refund_outside_policy:** it does not map to 59c8b10; it stays on 5cee99b. Only ro2 is over its token budget and no tool's call count rose, so it stays a plain token signature.
+- **Revert tests:** both search_help reverts failed because search_help calls stay at the same level after reverting 59c8b10. Other commits (997886d adds retry guidance) probably still drive extra searches.
+
+Catching a schema-only regression like ec19917 would need a different signal, such as the offered tool-schema size.
+
+**Model-call count**
+- Calibrate made 136 proxy calls and the investigation made 596. All were replays from the existing LLM cache, so there were no real `claude` CLI calls and the baseline tokens are identical to the old one.
+- The investigation ran 164 eval runs.
+- Because the model responses were cached, this run did not draw fresh samples.
+
+Self-review was a single pass with no sub-agents. State is in the worktree's gitignored `.agentbisect/`; the committed summary is `evidence/toolcount-summary.md`. I did not read the ground-truth file.</result>
+<usage><subagent_tokens>167670</subagent_tokens><tool_uses>52</tool_uses><duration_ms>889577</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-ad6ed45375807a1d4</worktreePath><worktreeBranch>worktree-agent-ad6ed45375807a1d4</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b3d4jx2ip</task-id>
+<tool-use-id>toolu_018PuCKUSZRdsz2hHhEJf12w</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/b3d4jx2ip.output</output-file>
+<status>completed</status>
+<summary>Background command "python3 - &lt;&lt;'E'
+import re
+for p in ['BUILD_LOG.md','agentbisect/cli.py']:
+    s=open(p).read()
+    def r(m):
+        a,b=m.group(1),m.group(2)
+        if 'in ("investigate", "calibrate", "fix")' in a:
+            return '    if a.cmd in ("investigate", "calibrate", "fix", "verify-fix"):\n'
+        return a+b
+    s=re.sub(r'&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD\n(.*?)=======\n(.*?)&gt;&gt;&gt;&gt;&gt;&gt;&gt; [^\n]*\n',r,s,flags=re.S)
+    open(p,'w').write(s)
+E
+grep -c "&lt;&lt;&lt;&lt;" BUILD_LOG.md agentbisect/cli.py; grep -n 'a.cmd in' agentbisect/cli.py | head -3; git add -A BUILD_LOG.md agentbisect/cli.py &amp;&amp; git commit -q --no-edit &amp;&amp; (uv run pytest -q 2&gt;&amp;1 | tail -3)" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ad6ed45375807a1d4</task-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ad6ed45375807a1d4.output</output-file>
+<status>failed</status>
+<summary>Agent "Tool-count signal for budgets" failed: Agent terminated early due to an API error: You've hit your session limit · resets 11:40am (America/Chicago) (error type rate_limit, HTTP 429, request id req_011CfvVmhd4tx2fxAyZhEj2L, model sent to the API: claude-sonnet-5-5)</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-ad6ed45375807a1d4</worktreePath><worktreeBranch>worktree-agent-ad6ed45375807a1d4</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+Continue
+
+---
+
+I switched to a new account so my session limit is fine. Run it now.
+
+---
+
+<task-notification>
+<task-id>b35a0hak3</task-id>
+<tool-use-id>toolu_01WpsZq1TgshLKfs2M2Anxfj</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/b35a0hak3.output</output-file>
+<status>completed</status>
+<summary>Background command "claude -p "say ok" --model claude-haiku-5-5 2&gt;&amp;1 | head -3; (scripts/demo_fix_verify.sh &gt; /tmp/demo_fix_verify.log 2&gt;&amp;1; echo "exit $?" &gt;&gt; /tmp/demo_fix_verify.log) " completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>aef8984040c7f7433</task-id>
+<tool-use-id>toolu_01DLznPVGL2QoNyacyafQUd3</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/aef8984040c7f7433.output</output-file>
+<status>completed</status>
+<summary>Agent "Fix intent-gaming and budget noise" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Both defects are fixed and committed as 9ba4a47 on branch `worktree-agent-aef8984040c7f7433` (not pushed). The full suite is 291 passed, up from 239 plus the 5 new Fixer and 3 new verifier tests; nothing was run live, only fakes on throwaway git repos.
+
+**(A) Fixer intent check** (`agentbisect/fixer.py`, `agentbisect/cli.py`)
+- `run_fixer` takes a `judge` argument. Once an attempt's failing checks pass, `verify.check_intent` judges that attempt's diff.
+- If the judge says the intent was not preserved, the attempt counts as failed with the failure line "intent not preserved: &lt;judge reason&gt;".
+- That reason, plus a note to keep the intent and fix its consequence, goes into the next attempt's prompt.
+- An inconclusive judge (outage, no intent recorded) does not block the attempt and is recorded in `metrics.fix.intent_inconclusive`.
+- `cli._fix` builds a `ClaudeIntentJudge` pinned to `JUDGE_MODEL`, the same judge as `verify-fix`. It falls back to no judge if the model is unusable.
+- The system prompt now says the commit's intent must be preserved, not to undo or revert it, and to fix the consequence of the change instead (callers, prompts, tool descriptions, configuration, documentation). It names no specific bug.
+
+**(B) Verifier budget flags** (`agentbisect/runner.py`, `agentbisect/verify.py`)
+- The runner has a new `ignore_budget` mode: a run whose only failing keys are `budget:*` counts as a pass.
+- The regression and held-out checks turn it on unless the target signature is itself a budget signature, and restore it afterwards.
+- Both check details end with "budget:* flags ignored (target is not a budget signature)", and `data["budget_ignored"]` is set.
+- Behavioural failures still fail, and the target check is unchanged.
+
+**Tests**
+- `tests/test_fixer.py`: a revert that passes the checks fails on intent and the reason reaches the next prompt; an inconclusive judge does not block; the intent judge is skipped when checks fail; the system prompt forbids undoing the commit.
+- `tests/test_verify_fix.py`: budget-only failures are ignored by regression and held-out; behavioural failures still fail; budget flags still count when the target is a budget signature.
+
+I added a `BUILD_LOG.md` entry. The self-review found nothing further.
+
+The Fixer judge needs `AGENTBISECT_LLM_PROXY_URL` (as `--llm-proxy auto` sets) or `ANTHROPIC_API_KEY`; otherwise the intent check is inconclusive and does not block.</result>
+<usage><subagent_tokens>101182</subagent_tokens><tool_uses>31</tool_uses><duration_ms>313639</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-aef8984040c7f7433</worktreePath><worktreeBranch>worktree-agent-aef8984040c7f7433</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>boczaxdb6</task-id>
+<tool-use-id>toolu_011rqN4TpBbCkwFiMKY5iAKx</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/boczaxdb6.output</output-file>
+<status>completed</status>
+<summary>Background command "git merge --no-edit worktree-agent-aef8984040c7f7433 2&gt;&amp;1 | tail -2 &amp;&amp; git push -q origin main 2&gt;&amp;1 | tail -1; (scripts/demo_fix_verify.sh &gt; /tmp/demo_fix_verify2.log 2&gt;&amp;1; echo "exit $?" &gt;&gt; /tmp/demo_fix_verify2.log)" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+Option 1
+
+---
+
+<task-notification>
+<task-id>aabe3b9876a8e33a9</task-id>
+<tool-use-id>toolu_01QmqdfVcUnfwHC1CX1GPkmt</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/aabe3b9876a8e33a9.output</output-file>
+<status>completed</status>
+<summary>Agent "Guarded eval-expectation edits in Fixer" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The Fixer can now make guarded eval-expectation edits. It is committed on branch `worktree-agent-aabe3b9876a8e33a9` (not pushed), and the full suite passes: 308 tests, up from 291. The CLI print of the changes was added after the full run; only `tests/test_fixer.py` (42 passed) was re-run.
+
+**Fixer (`agentbisect/fixer.py`)**
+- **Reply field:** the reply may carry `eval_edits: [{case, checks: {name: new value}, reason}]`, separate from `files`. `files` may be empty when `eval_edits` is present. A plain edit of `evals/cases.jsonl` is still refused.
+- **Scope:** only `checks` entries of the target signature's cases (`spec.signature.cases`) that exist at the base and are not held-out. No signature means no eval edits.
+- **Rejections:** any other case, a missing row, a no-op, or an empty reason or `checks` rejects the attempt, and the error is fed to the next attempt.
+- **Prompt:** the prompt lists the editable rows and says an edit is allowed only when the culprit deliberately changed that contract. The model must say what changes and why.
+- **Guard:** once checks pass, an attempt with eval edits is accepted only if `check_intent` is True and a new judge call, `judge_eval_edit`, is True. That call asks whether the edit merely follows the culprit's deliberate contract change.
+- **Inconclusive judge:** a denied or inconclusive judge, a missing judge, or no intent means the attempt is not accepted, and the reason goes into the next prompt.
+- **Judge model:** `ClaudeIntentJudge` implements `judge_eval_edit` with the same pinned model.
+
+**Verifier (`agentbisect/verify.py`)**
+- **Diff:** `verify_fix` diffs the cases file from base to fix and reports `eval_expectation_changes` on `VerifyResult`, in the printed summary, and on the recorded attempt.
+- **Out-of-scope edits:** changes to non-target cases, held-out cases, non-`checks` fields, or added/removed cases fail the regression check.
+- **Target-case edits:** these need the judge to confirm. If the judge denies, the intent check is False; if it is inconclusive, the intent check is None. Neither is a pass.
+
+**Reporting**
+- **PR body and CLI:** accepted changes appear in the PR body (markdown and HTML) under "Human review required: eval expectation changed", with case, check, old to new, and reason. The `fix` CLI also prints them, and `FixResult`, `FixAttempt` and `metrics.fix` carry them.
+- **BUILD_LOG:** `BUILD_LOG.md` is updated.
+
+**Tests:** 17 new tests in `tests/test_fixer.py` and `tests/test_verify_fix.py`.
+- **Fixer cases:** an edit is accepted when the judge confirms it. It is rejected when the judge denies, is inconclusive, or is absent, and when the intent verdict is False. It is also rejected for a non-target or held-out case, for an empty reason or `checks`, and for a no-op. A plain file edit of the cases file is refused. Code-only fixes are unaffected.
+- **`verify_fix` cases:** it reports the changes. A denied or inconclusive judge is not a pass. A judge without `judge_eval_edit` is inconclusive. A non-target or held-out edit fails regression. A code-only fix reports none.
+
+**Limits**
+- **No live run:** nothing was run against a real model or the R3 case, only fakes on throwaway git repos.
+- **Edited expectations in checks:** `RunnerChecker` evaluates the fix commit with its own edited cases file, so the Fixer's checks see the new expectation. The Verifier flags the edit for human review rather than re-running those cases against the old expectation. Unchanged cases are still judged against the original rows, because the fix commit differs from base only in the edited rows.</result>
+<usage><subagent_tokens>108430</subagent_tokens><tool_uses>26</tool_uses><duration_ms>457113</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-aabe3b9876a8e33a9</worktreePath><worktreeBranch>worktree-agent-aabe3b9876a8e33a9</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bzm9npz3y</task-id>
+<tool-use-id>toolu_01KYapysqnwv282fsKExzLkm</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/bzm9npz3y.output</output-file>
+<status>completed</status>
+<summary>Background command "git merge --no-edit worktree-agent-aabe3b9876a8e33a9 2&gt;&amp;1 | tail -2 &amp;&amp; git push -q origin main 2&gt;&amp;1 | tail -1; (scripts/demo_fix_verify.sh &gt; /tmp/demo_fix_verify3.log 2&gt;&amp;1; echo "exit $?" &gt;&gt; /tmp/demo_fix_verify3.log)" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+1
+
+---
+
+<task-notification>
+<task-id>a24c6e29e14d8208c</task-id>
+<tool-use-id>toolu_01Gir47T9YiTfnfYccxDgXGW</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a24c6e29e14d8208c.output</output-file>
+<status>completed</status>
+<summary>Agent "Held-out eval edits, flagged separately" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Held-out eval-expectation edits are implemented and committed (`75dc402`) on branch `worktree-agent-a24c6e29e14d8208c`, not pushed. The full suite passes: 321 tests, 186s.
+
+**Fixer (`agentbisect/fixer.py`)**
+- The prompt gets a new section, "Held-out eval cases (consistency check only…)". It lists the held-out row ids with only the check keys the target rows carry, and says they are not a place to change other behaviour. The section is omitted when there are no target rows or no matching check.
+- `apply_eval_edits` now returns `(target_changes, held_out_changes)`. A held-out edit is accepted only if it has the same check key and the same tool/argument contract as an accepted target edit in the same attempt.
+- Rejected, with the error fed to the next attempt: a held-out edit with no target edit, a different check key or argument contract, a non-object check value, or any non-`checks` field.
+- `judge_eval_edit` sees target and held-out changes together, with held-out ones marked `[held-out consistency edit]`. A denied or inconclusive judge means the attempt is not accepted.
+- Results are stored in `held_out_expectation_changes` on `FixAttempt`, `FixResult` and `metrics.fix`.
+
+**Verifier (`agentbisect/verify.py`)**
+- `eval_expectation_changes` now returns `(changes, held_out_changes, violations)`. `contract_shape` and `held_out_violations` are the shared "same contract" rule: they compare which argument paths were removed, added or changed, not the values.
+- `VerifyResult.held_out_expectation_changes` is a separate list, and `describe_verification` prints a "HELD-OUT EXPECTATION CHANGED (human review required)" block.
+- The held-out check appends "; passes with N held-out expectation change(s)" to its detail (or "fails with" / "is inconclusive with").
+- A held-out edit that is a different contract, or has no accepted target edit, makes the regression check fail.
+- The judge must confirm held-out edits as well; a denial or outage means the intent check is not a pass.
+
+**Reporting**
+- `report.py` adds a distinct "Human review required: HELD-OUT expectation changed" section in both the markdown and HTML PR bodies.
+- `cli.py` prints the held-out changes separately.
+
+**Tests**
+- The 9 new tests, plus the parametrized rejection cases, cover:
+  - accept, with prompt contents, branch rows, PR body and metrics;
+  - reject: no target edit, other key, extra key, different argument, value-only, non-held case;
+  - judge denied and no judge;
+  - the verifier reporting, regression failure for another contract or no target edit, and judge denial.
+
+I did not re-run live, so `BUILD_LOG.md` and `evidence/fix-demo/README.md` are unchanged. I did not read `evidence/ground_truth.json` or `~/.agentbisect-private`.
+
+Held-out edits are limited to object-valued checks such as `call_args`. A scalar check like `reply_regex` has no tool/argument contract, so held-out edits to it are always rejected, even if the target case's `reply_regex` was edited.</result>
+<usage><subagent_tokens>99111</subagent_tokens><tool_uses>29</tool_uses><duration_ms>466550</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a24c6e29e14d8208c</worktreePath><worktreeBranch>worktree-agent-a24c6e29e14d8208c</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bomcr63vo</task-id>
+<tool-use-id>toolu_01K7HU11tapg58hxd18o8CBK</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/bomcr63vo.output</output-file>
+<status>completed</status>
+<summary>Background command "git merge --no-edit worktree-agent-a24c6e29e14d8208c 2&gt;&amp;1 | tail -1 &amp;&amp; git push -q origin main 2&gt;&amp;1 | tail -1; (scripts/demo_fix_verify.sh &gt; /tmp/demo_fix_verify4.log 2&gt;&amp;1; echo "exit $?" &gt;&gt; /tmp/demo_fix_verify4.log)" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a24c6e29e14d8208c</task-id>
+<tool-use-id>toolu_01JG2Kg492bbdo2yaxUDj73u</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a24c6e29e14d8208c.output</output-file>
+<status>completed</status>
+<summary>Agent "Held-out eval edits, flagged separately" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The Fixer's per-attempt checker now also evaluates held-out cases that share the target's check key, so a stale held-out expectation fails the attempt. Committed as `2250e19` on `worktree-agent-a24c6e29e14d8208c`, not pushed. The full suite passes: 323 tests, up from 321.
+
+**What changed**
+- **Checker (`agentbisect/fixer.py`):**
+  - `RunnerChecker(runner, run_id, st=None)` takes the investigation state. When the target signature passes, it evaluates the held-out rows at that commit whose `checks` carry the target's check key (e.g. `call_args`).
+  - The held-out run has the signature off and `budget:*` flags ignored, unless the target is itself a budget signature. The runner's signature and `ignore_budget` are restored afterwards.
+  - The new helper `held_out_sharing_check` picks the rows.
+- **Failure text:**
+  - On failure, `att.failures` holds `held-out cases failing (same check as the target): &lt;ids&gt;`.
+  - It also holds `held-out failing check &lt;key&gt;: expected X got Y` and a reminder.
+  - The reminder says that if the contract change was deliberate, the same contract change may be applied to those held-out rows via `eval_edits`; otherwise fix the code.
+  - Attempt 2's prompt includes this text under "Failing-check output".
+- **Infrastructure errors:** if the held-out run can't be evaluated (skip or infra error), it does not block the attempt; the Verifier reports it.
+- **`agentbisect/cli.py`:** `fix` now passes `st` to `RunnerChecker`. Without `st`, behaviour is unchanged.
+- **Tests (fakes only):**
+  - An end-to-end run where attempt 1 edits only the target row. The fake runner fails the stale held-out row `h2`, the failure text reaches the attempt-2 prompt, and attempt 2 edits `h2` and passes.
+  - That test checks the held-out run uses the signature-off, budget-ignored settings and that runner state is restored.
+  - A second test covers no `st`, no held-out rows, or no row carrying the check key; none of these evaluates held-out cases.
+  - The cli fake `RunnerChecker` lambdas in existing tests now accept the extra `st` argument.
+
+**Prompt check:** the same end-to-end test asserts the first prompt contains "Held-out eval cases" and `"h2"` when the target row has `call_args`, and that `h1` (no `call_args`) is not listed. The prompt already carried the section before this change; the checker was the missing piece.
+
+I did not re-run live, so `BUILD_LOG.md` and `evidence/fix-demo/README.md` are unchanged.</result>
+<usage><subagent_tokens>114579</subagent_tokens><tool_uses>11</tool_uses><duration_ms>301213</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a24c6e29e14d8208c</worktreePath><worktreeBranch>worktree-agent-a24c6e29e14d8208c</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bjiowqixq</task-id>
+<tool-use-id>toolu_017mASrkm3MAXgwYgeFv9K1a</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/bjiowqixq.output</output-file>
+<status>completed</status>
+<summary>Background command "git merge --no-edit worktree-agent-a24c6e29e14d8208c 2&gt;&amp;1 | tail -1 &amp;&amp; git push -q origin main 2&gt;&amp;1 | tail -1; (scripts/demo_fix_verify.sh &gt; /tmp/demo_fix_verify5.log 2&gt;&amp;1; echo "exit $?" &gt;&gt; /tmp/demo_fix_verify5.log)" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a24c6e29e14d8208c</task-id>
+<tool-use-id>toolu_01267McECgxKnqV2mBjRNN8e</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/a24c6e29e14d8208c.output</output-file>
+<status>completed</status>
+<summary>Agent "Held-out eval edits, flagged separately" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Both problems are fixed and committed as `cb8e49b` on `worktree-agent-a24c6e29e14d8208c`. Nothing was pushed or re-run live. The full suite passes with 326 tests.
+
+**Why rw4 was refused**
+- In `evals/cases.jsonl`, `call_args` is a list of `{"tool", "args": {...}}` entries, not an object. My shape code only understood objects, so any list value became an opaque leaf.
+- The rw4 value `[{"tool":"issue_refund","args":{"order_id":"1060","amount":36.0}}]` therefore compared as a different value from the rw1–rw3 edits.
+- My earlier tests used the object form, so they never exercised this.
+
+**Contract rule (`agentbisect/verify.py`)**
+- `call_args`-style lists are now flattened to `tool.argument` paths (the `args` wrapper is dropped).
+- The shape is the check key plus which argument names were removed, added, or had their value changed. Unchanged arguments such as `order_id` are not part of it, and values may differ.
+- rw1–rw3 and rw4 now all have the same shape: `amount` removed, `amount_cents` added.
+- A check value with no tool/argument structure, such as a regex, now counts only by check key. This loosens one earlier decision: a held-out `reply_regex` edit is accepted if a target case's `reply_regex` was also edited in the same attempt. The judge still has to confirm it, and it is flagged separately.
+- Held-out edits of a check key that no target case edited are still refused.
+- The refusal now shows both shapes. For example: `held-out case rw4: [call_args: removed ['issue_refund.amount']; added ['issue_refund.refund_cents']] differs from the edited target cases [call_args: removed ['issue_refund.amount']; added ['issue_refund.amount_cents']]; make the same change to the same tool/argument names (only the values may differ)`.
+
+**Held-out prompt section:** it only listed rows whose check value was an object, so real list-valued `call_args` rows were never shown. It now uses the same structure test, and a new test asserts the real row shape appears in the prompt.
+
+**Checker noise (`RunnerChecker._held_out`)**
+- Only failure signatures whose check is the target's check (`call_args`) count.
+- If the held-out run has failure signatures but none are `call_args`, the attempt is not blocked.
+- The failure text lists only the `call_args` signatures and the cases that fired them, plus the `eval_edits` reminder. The `budget:tokens@order_status` and `es3` lines no longer appear.
+- If a failing held-out run has no signatures at all, it still fails with the failing case ids.
+
+**Tests (fakes only):**
+- An rw4-like row with a different `order_id` and `amount` is accepted, and its held-out row appears in the prompt.
+- A different argument name is refused, and the message states the shape diff.
+- Budget and other-key noise is excluded from the failure text, and still fails the attempt when `call_args` failed.
+- One existing assertion was updated for the new refusal wording.</result>
+<usage><subagent_tokens>130252</subagent_tokens><tool_uses>11</tool_uses><duration_ms>286350</duration_ms></usage>
+<worktree><worktreePath>/Users/jaxson/Downloads/codingprojects/agentbisect/.claude/worktrees/agent-a24c6e29e14d8208c</worktreePath><worktreeBranch>worktree-agent-a24c6e29e14d8208c</worktreeBranch></worktree>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b21io7wnn</task-id>
+<tool-use-id>toolu_01DsRtt7xfLzNefSTkK7Uned</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/b21io7wnn.output</output-file>
+<status>completed</status>
+<summary>Background command "git merge --no-edit worktree-agent-a24c6e29e14d8208c 2&gt;&amp;1 | tail -1 &amp;&amp; git push -q origin main 2&gt;&amp;1 | tail -1; (scripts/demo_fix_verify.sh &gt; /tmp/demo_fix_verify6.log 2&gt;&amp;1; echo "exit $?" &gt;&gt; /tmp/demo_fix_verify6.log)" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bs54lqmc3</task-id>
+<tool-use-id>toolu_01GeqTUJa4MxBCzXzR83bE5g</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/bs54lqmc3.output</output-file>
+<status>completed</status>
+<summary>Background command "cp /tmp/demo_fix_verify4.log evidence/fix-demo/run4-no-heldout-edit.log &amp;&amp; cp /tmp/demo_fix_verify5.log evidence/fix-demo/run5-contract-rule-bug.log &amp;&amp; cp /tmp/demo_fix_verify6.log evidence/fix-demo/run6-verified.log &amp;&amp; cp /tmp/agentbisect-demo/fix/fix-fd47af3916.patch evidence/fix-demo/run6.patch &amp;&amp; cp /tmp/agentbisect-demo/fix/fix-fd47af3916-pr.md evidence/fix-demo/run6-pr-body.md &amp;&amp; python3 - &lt;&lt;'E'
+p='evidence/fix-demo/README.md'
+s=open(p).read()
+s=s.split("Honest status:")[0]
+s+="""| 4 `run4-no-heldout-edit.log` | Same as run 3: Fixer passed its own (target-only) checks on attempt 1 and stopped; stale held-out rw4 failed in the Verifier. Led to: Fixer checker also runs held-out cases sharing the target's check key. |
+| 5 `run5-contract-rule-bug.log` | Stale rw4 now fails the attempt, but the model's correct rw4 edit was refused: the 'same contract' rule only understood object-valued checks, not call_args lists (a bug in our guard, found live). Noisy budget/es3 lines also misled attempt 3. Led to: contract rule compares tool + changed argument names; failure text limited to the shared check key. |
+| 6 `run6-verified.log` | Attempt 1 changed rw1-rw3 and held-out rw4 call_args expectations to integer cents. Verifier: VERIFIED: target PASS, regression PASS (13/13), held-out PASS 1.00 (with 1 held-out expectation change), intent PASS. |
+
+Honest status: run 6 is VERIFIED, but note what the fix is: it changes no code. The culprit's contract change (integer cents) was deliberate and its eval expectations were stale, so the fix updates 4 eval expectations, all listed for human review (rw1-rw3 target, rw4 held-out). A reviewer should confirm that is the intended resolution. Six live runs, ~$0.9 of model calls total at list price, no rate-limit events. One run per configuration, so single-sample evidence.
+"""
+open(p,'w').write(s)
+E
+git add evidence/fix-demo &amp;&amp; git commit -q -m "Evidence: runs 4-6, run 6 VERIFIED (eval expectations updated, flagged for review)
+
+Co-Authored-By: Claude Sonnet 5.5 &lt;noreply@anthropic.com&gt;" &amp;&amp; git push -q origin main 2&gt;&amp;1 | tail -1; (uv run pytest -q 2&gt;&amp;1 | tail -2)" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ae75f2d570197c4e5</task-id>
+<tool-use-id>toolu_01LuGhpKUyRC5ktarDQjCwMn</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ae75f2d570197c4e5.output</output-file>
+<status>completed</status>
+<summary>Agent "Update docs with verified fix" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The docs are updated and pushed to main as commit 4bbff75, with the requested trailer.
+
+- **README.md:**
+  - Fixer is no longer "upcoming", and there is a new Fix Verifier step.
+  - A new "Fixer and Verifier: live results" section reports run 6 as VERIFIED and states plainly that the fix changes no code. It updates 4 eval expectations (rw1-rw3 target, rw4 held-out) to integer cents, all flagged for human review.
+  - It also lists the earlier catches: the revert caught by the intent judge, frozen evals, and two bugs in our own guards. 326 tests pass.
+  - Usage now shows `scripts/demo_fix_verify.sh [id]` and the `fix` / `verify-fix` commands.
+  - Limitations replace "Fixer is not built" with five new entries: single-sample evidence, eval-expectation edits needing human review, budget regressions unresolved, tool-count branch unmerged, and the neatlogs dlq (the existing neatlogs limitation was left in place).
+- **docs/demo-script.md:** a 2:15-2:45 fix beat of about 75 spoken words, with the other sections trimmed. Total is about 390 spoken words, within the 450 target.
+- **docs/storyboard.md:** now seven frames, with frame 6 as the fix beat, shown from the saved `run6-verified.log` rather than live.
+- **BUILD_LOG.md:** short entry appended.
+
+Things to check:
+- **Tool-count branch:** the README's claim that it is unmerged comes from your brief. The only repo mention I found is `dogfooding.md` saying a tool-count signal "is being added".
+- **Not re-checked:** I did not re-run anything or re-check figures against the logs. The 13/13, 1.00, six-run and ~$0.9 numbers come from `evidence/fix-demo/README.md`, and ~$0.9 appears only in the README limitations.</result>
+<usage><subagent_tokens>42877</subagent_tokens><tool_uses>3</tool_uses><duration_ms>35212</duration_ms></usage>
+</task-notification>
+
+---
+
+Commit + push everything to the respective repositories to close up
