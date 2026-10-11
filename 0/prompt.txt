@@ -1,0 +1,60 @@
+<task-notification>
+<task-id>ac1dfe9bc9e55bf08</task-id>
+<tool-use-id>toolu_01LZTPRDhVVaVnEsn6WUcui5</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/ac1dfe9bc9e55bf08.output</output-file>
+<status>completed</status>
+<summary>Agent "Median budget checks, baseline, labels" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>All five units (U1–U5) are committed and pushed to origin main. `uv run pytest` passes, 206 tests. Nothing was run live: calibrate, the 3-repeat medians and the refusal path were only exercised with fake executors on throwaway git repos.
+
+**Commits**
+- `f945a16` U1: budget signatures run 3 repeats per case (`AGENTBISECT_BUDGET_REPEATS`, default 3) and are judged by the median.
+- `f059baf` U2: `calibrate` command, baseline validation, and refusal to run budget signatures without a baseline.
+- `7afbfbd` U3: the revert test uses the same median rule and reports median tokens and within-budget fraction.
+- `cb8c4d3` U4: known pre-existing failures end as status `refused` ("known pre-existing failure — correctly refused"), exit 0.
+- `ac7c9e1` U5: `agentbisect summary [state_dir] [--id] [--format text|md|json] [--out]`, plus a "Per-signature results" section in the reports.
+- `c59926f` BUILD_LOG update. Your logo commit `a62f8f8` is untouched.
+
+**Median rule (documented in `agentbisect/baseline.py`)**
+- Per case, take the median over the repeats and compare it to 1.5× the baseline median (for steps, the max-steps cap).
+- A commit's pass rate is the fraction of cases within budget, fed through the existing good/bad band.
+- Behavioural signatures stay at 1 repeat.
+- Budget cases never escalate their repeats.
+- Signature discovery now confirms budget signatures with 3 repeats instead of trusting a single over-budget run.
+
+**Behaviour changes you might not expect**
+- Old baselines without a `good_sha` field, like `evidence/rerun2-baseline.json`, are now rejected. Re-run `agentbisect calibrate` and point `AGENTBISECT_BASELINE` at its file.
+- A `budget:steps` signature also needs a baseline, because I read "budget signatures" as covering both kinds.
+- A baseline that is set but doesn't match the good commit or pinned agent model fails every investigation, not just budget ones.
+- A generic whole-case failure at the good commit is still an error. Only a specific failing check counts as a known pre-existing failure.
+- With no baseline set, the output notes that token-budget regressions can't be detected.
+
+**Reviews**
+- Correctness, simplification and test-coverage reviewers ran for U1, U2, U4 and U5. Their findings were fixed, except one leftover: `summary.revert_cell` duplicates some formatting of `verify.budget_line`.
+- U3 was small and got no reviewer pass.
+
+**Summary check**
+- I ran `agentbisect summary` against your existing saved state and it printed all 8 earlier signatures. It lists the budget culprits those runs found alongside the call_args one.
+
+I did not read or touch `evidence/ground_truth.json` or `support-agent-demo`.</result>
+<usage><subagent_tokens>230288</subagent_tokens><tool_uses>6</tool_uses><duration_ms>237498</duration_ms></usage>
+</task-notification>
+
+---
+
+Continue - usage limits got hit. Just reset. Also add this logo on the github somewhere: [Image: agent-2.png; ref=image_decf1da3-e6d6-437e-b92f-38dfc4c40b36]
+
+<t3_context version="1">
+<context kind="image" id="image_decf1da3-e6d6-437e-b92f-38dfc4c40b36">
+name: agent-2.png
+mimeType: image/png
+sizeBytes: 178450
+attachmentId: b4485d4e-7680-4b4c-9d6c-49b269b634a6-7cb17382-d102-48ce-a7ea-2642ff13661c
+</context>
+</t3_context>
+
+[Attached image "agent-2.png" is saved at: /Users/jaxson/.t3/userdata/attachments/b4485d4e-7680-4b4c-9d6c-49b269b634a6-7cb17382-d102-48ce-a7ea-2642ff13661c.png]
+
+---
+
+Where are we in the grand scheme of things? Give me a roadmap of what’s been done and what still needs to be done

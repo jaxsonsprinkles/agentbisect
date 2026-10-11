@@ -1,0 +1,68 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4NFHNYNAJ8JNR6FDRZQBCD5",
+  "session_id": "fd272bdb-c68c-493f-8978-85b5608bf8b3",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T12:38:34.760021Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "0f88523af315",
+  "checkpoint_transcript_start": 812,
+  "transcript_lines_at_start": 812,
+  "compact_transcript_start": 145,
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 46658,
+    "cache_read_tokens": 256162,
+    "output_tokens": 3967,
+    "api_call_count": 6,
+    "subagent_tokens": {
+      "input_tokens": 80,
+      "cache_creation_tokens": 336260,
+      "cache_read_tokens": 2263172,
+      "output_tokens": 15453,
+      "api_call_count": 40
+    }
+  },
+  "session_metrics": {
+    "turn_count": 33
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 29845,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "evidence/baseline-1b40b27.json": 113,
+        "evidence/rerun3-compare/compare.log": 30,
+        "evidence/rerun3-compare/proxy.log": 1,
+        "evidence/rerun3-smart/cache/36450e84a8ca.json": 4205,
+        "evidence/rerun3-smart/calibrate.log": 28,
+        "evidence/rerun3-smart/compare-plain/cache/36450e84a8ca.json": 3204,
+        "evidence/rerun3-smart/compare-plain/investigations/021d71f5ec.json": 1318,
+        "evidence/rerun3-smart/compare-plain/investigations/81fc3f573d.json": 862,
+        "evidence/rerun3-smart/compare-plain/investigations/9848361984.json": 1038,
+        "evidence/rerun3-smart/compare-plain/investigations/bf6d92097e.json": 1262,
+        "evidence/rerun3-smart/compare-plain/investigations/d385228a70.json": 927,
+        "evidence/rerun3-smart/compare-smart/cache/36450e84a8ca.json": 3111,
+        "evidence/rerun3-smart/compare-smart/investigations/20290840e3.json": 978,
+        "evidence/rerun3-smart/compare-smart/investigations/2b70d1ddbe.json": 1077,
+        "evidence/rerun3-smart/compare-smart/investigations/3c4e51618d.json": 1577,
+        "evidence/rerun3-smart/compare-smart/investigations/beb5b73de1.json": 1483,
+        "evidence/rerun3-smart/compare-smart/investigations/cfc166e445.json": 1074,
+        "evidence/rerun3-smart/investigate.log": 68,
+        "evidence/rerun3-smart/investigations/3c44624bfe.json": 1049,
+        "evidence/rerun3-smart/investigations/3d7f0da05c.json": 1149,
+        "evidence/rerun3-smart/investigations/6237e76f2b.json": 656,
+        "evidence/rerun3-smart/investigations/64df3527b6.json": 1625,
+        "evidence/rerun3-smart/investigations/96092ca97e.json": 1719,
+        "evidence/rerun3-smart/investigations/fd47af3916.json": 1291
+      }
+    }
+  ]
+}

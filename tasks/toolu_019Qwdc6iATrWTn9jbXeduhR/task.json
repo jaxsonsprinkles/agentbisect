@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_019Qwdc6iATrWTn9jbXeduhR",
+  "agent_id": "ac1dfe9bc9e55bf08",
+  "subagent_type": "general-purpose",
+  "task_description": "Median budget checks, baseline, labels",
+  "token_usage": {
+    "input_tokens": 160,
+    "cache_creation_tokens": 443158,
+    "cache_read_tokens": 12518253,
+    "output_tokens": 87100,
+    "api_call_count": 81
+  },
+  "started_at": "2026-10-10T21:00:54.091121-05:00",
+  "completed_at": "2026-10-11T06:49:21.355928-05:00"
+}
