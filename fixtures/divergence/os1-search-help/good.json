@@ -1,0 +1,29 @@
+{
+  "trace_id": "local-3b4116ddee6348cd",
+  "workflow": "support-agent",
+  "commit": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+  "status": "pass",
+  "started_at": "2026-10-11T12:40:22+00:00",
+  "input": "Where is order 1042?",
+  "tags": [
+    "commit:1b40b27761bfad9a0b81ba694e36579ea09628c8",
+    "case:os1",
+    "run:fx-1b40b27"
+  ],
+  "steps": 2,
+  "tokens": 11688,
+  "reply": "Order 1042 has shipped but not yet been delivered.\n\n- Item: Mechanical Keyboard (quantity 1)\n- Total: $129.00\n- Ship date: September 27, 2026\n- Tracking number: TRK-884201\n\nYou can use the tracking number with the carrier to see the latest location. If the package doesn't arrive or the tracking looks stalled, let me know and I can help with next steps.",
+  "spans": [
+    {
+      "name": "tool:lookup_order",
+      "kind": "tool",
+      "tools": [
+        "lookup_order"
+      ],
+      "args": {
+        "order_id": "1042"
+      },
+      "output": "{\"orders\": [{\"customer_email\": \"ben.ortiz@example.com\", \"delivered_date\": null, \"items\": [{\"name\": \"Mechanical Keyboard\", \"quantity\": 1, \"unit_price_usd\": 129.0}], \"order_id\": \"1042\", \"refund_id\": null, \"ship_date\": \"2026-09-27\", \"status\": \"shipped\", \"total_usd\": 129.0, \"tracking_number\": \"TRK-88420..."
+    }
+  ]
+}

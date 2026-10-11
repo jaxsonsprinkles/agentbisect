@@ -1,0 +1,24 @@
+{
+  "fixture": true,
+  "label": "FIXTURE: recorded from real eval-runner output (tool calls of one case at a good and a bad commit). Not live neatlogs data.",
+  "case": "os1",
+  "recorded_from": "support-agent-demo `python -m evals run --json --isolate --cases os1 --repeats 1` at 1b40b27 and 0ecffc0, haiku via agentbisect llm-proxy, no neatlogs key",
+  "agent_model": "claude-haiku-5-5",
+  "judge_model": "claude-sonnet-5-5",
+  "good": {
+    "file": "good.json",
+    "trace_id": "local-3b4116ddee6348cd",
+    "commit": "1b40b27761bfad9a0b81ba694e36579ea09628c8",
+    "status": "pass",
+    "steps": 2,
+    "tokens": 11688
+  },
+  "bad": {
+    "file": "bad.json",
+    "trace_id": "local-5455f963bc664e61",
+    "commit": "0ecffc0942a5554f963b38601206813855f6bc90",
+    "status": "pass",
+    "steps": 5,
+    "tokens": 32454
+  }
+}
