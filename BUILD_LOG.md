@@ -75,3 +75,8 @@ See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 9 complete 
 - U5 throttling: `AGENTBISECT_MODEL_CONCURRENCY` (default 4), `AGENTBISECT_MAX_RETRIES`, `AGENTBISECT_BACKOFF`, `AGENTBISECT_BACKOFF_MAX`; exponential backoff with equal jitter; 429/529/overloaded text retried then HTTP 429 + retry-after. Events (backoff/recovered/gave_up) at proxy `GET /events`, copied as per-run deltas into `metrics["throttle"]` and the report. Tested with the fake failing `claude`; no real rate limit was provoked.
 - U6 `agentbisect judge-smoke [--proxy-url]`: one live call, claude-sonnet-5-5 pinned and recorded (750 in / 9 out tokens).
 - Not verified live: the new signature/weighted/repeat paths against support-agent-demo (only fake executors on throwaway git repos); a real investigation has not been re-run. Tests: 141.
+
+## Real re-run of the signature/weighted/throttle paths (evidence/rerun-summary.md)
+- Good 1b40b27, bad f7d82b7, baseline calibrated (merged 1b40b27 + ec19917). R3 isolated correctly (`b0be626`, revert test passed). R1/R2 not separated: per-category budget signatures still mix both token regressions; po/es culprits wrong due to single-sample budget noise.
+- Fixes: category-qualified budget keys + `--all-categories` + unreproduced single-run signatures dropped (reviewed); signature cases absent at a commit are vacuously good (ca/ms good end).
+- smart vs plain: 21 vs 24 and 24 vs 27 rounds, same culprit; planner context 21.7k vs 43.3k tokens. Proxy: 0 rate-limit/backoff events in 1417 calls. Tests: 146.

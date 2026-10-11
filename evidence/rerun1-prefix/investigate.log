@@ -1,0 +1,58 @@
+investigation 37f4ac6447 created (status=created); spec: 3 cases, 6 held out, 5 good traces, range good=d9b1680e5c22ce061f752ad7b1ac54fe94d386f5 bad=f7d82b789e2cb42d7911e4e2831331c5be7dcecc
+  - trace maps to case rw1 (refund_within_policy)
+  - good traces are 'status ok' only (no explicit pass signal); bisect re-confirms the good end
+  - bad trace carries no failing-check detail: the failure signature is taken from the bad end's eval results (the check that fails in the trace's case)
+[37f4ac6447] culprit b0be6266 (confidence high)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_56c6a085166497bdb47bacd4861eae22"}
+  bisected on failure signature: check=call_args(issue_refund.amount) expected 64.0 got 6400 (cases: rw1, rw2)
+  strategy=smart steps=8 eval_rounds=15 cost~$0.03 cache_hits=1
+  culprit: b0be626692328e15644a54f3100ab7ad6fc09a5b (confidence medium)
+  revert test: PASSED (regression disappears)  eval rounds=2
+    pass rate: culprit 0.0 -> reverted 1.0 (good commit 1.0)
+  intent source: checkpoint
+  flag: revert conflicts
+
+sibling investigation 09e8b33ba6 for failure signature check=budget(tokens)
+[09e8b33ba6] culprit 59c8b10c (confidence medium)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_819cfac4b83c005bb3d9fe8bb5e788ec"}
+  bisected on failure signature: check=budget(tokens) (cases: rw1, rw2, rw3)
+  strategy=smart steps=7 eval_rounds=15 cost~$0.03 cache_hits=1
+  culprit: 59c8b10ccbd078f574b98a4770c84ef2b1d2bad2 (confidence low)
+  revert test: FAILED (regression remains)  eval rounds=4
+    pass rate: culprit 0.5 -> reverted 0.5 (good commit 1.0)
+  intent source: checkpoint
+  flag: revert conflicts
+  flag: multiple regressions likely: reverting the culprit did not remove the regression
+
+sibling investigation 1986e40177 for failure signature check=call_args(issue_refund) expected a call got no call
+[1986e40177] culprit f7d82b78 (confidence high)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_fa1e5f3e312a1596cc66e77934da06e8"}
+  bisected on failure signature: check=call_args(issue_refund) expected a call got no call (cases: rw3)
+  strategy=smart steps=7 eval_rounds=4 cost~$0.008 cache_hits=3
+  culprit: f7d82b789e2cb42d7911e4e2831331c5be7dcecc (confidence low)
+  revert test: FAILED (regression remains)  eval rounds=1
+    pass rate: culprit 0.0 -> reverted 0.0 (good commit 1.0)
+  intent source: checkpoint
+  flag: multiple regressions likely: reverting the culprit did not remove the regression
+
+sibling investigation b35c7b3426 for failure signature check=call_counts
+[b35c7b3426] culprit 1cda36a3 (confidence low)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_af019ad48d9d23ced9aee6c87778beb6"}
+  WARNING: multiple regressions likely: verdicts are non-monotonic (a good commit after a bad one)
+  bisected on failure signature: check=call_counts (cases: rw3)
+  strategy=smart steps=7 eval_rounds=4 cost~$0.008 cache_hits=3
+  culprit: 1cda36a34d48d484524d692ac96688f9b98953c9 (confidence low)
+  revert test: PASSED (regression disappears)  eval rounds=1
+    pass rate: culprit 0.0 -> reverted 1.0 (good commit 1.0)
+  intent source: checkpoint
+
+sibling investigation 38d468aa35 for failure signature check=must_call
+[38d468aa35] culprit 1cda36a3 (confidence low)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_45c3842d7432ada4b1a64f0038b6171c"}
+  WARNING: multiple regressions likely: verdicts are non-monotonic (a good commit after a bad one)
+  bisected on failure signature: check=must_call (cases: rw3)
+  strategy=smart steps=7 eval_rounds=1 cost~$0.002 cache_hits=6
+  culprit: 1cda36a34d48d484524d692ac96688f9b98953c9 (confidence low)
+  revert test: PASSED (regression disappears)  eval rounds=0
+    pass rate: culprit 0.0 -> reverted 1.0 (good commit 1.0)
+  intent source: checkpoint

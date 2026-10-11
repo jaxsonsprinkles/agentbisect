@@ -1,0 +1,75 @@
+investigation 6d7b32e553 created (status=created); spec: 18 cases, 6 held out, 5 good traces, range good=d9b1680e5c22ce061f752ad7b1ac54fe94d386f5 bad=f7d82b789e2cb42d7911e4e2831331c5be7dcecc
+  - trace maps to case rw1 (refund_within_policy)
+  - good traces are 'status ok' only (no explicit pass signal); bisect re-confirms the good end
+  - suite spans every category (18 cases): failing checks of other features are separate signatures
+  - bad trace carries no failing-check detail: the failure signature is taken from the bad end's eval results (the check that fails in the trace's case)
+[6d7b32e553] culprit b0be6266 (confidence high)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_f2a87e47ac305032225e91dd3ca2530f"}
+  bisected on failure signature: check=call_args(issue_refund.amount) expected 64.0 got 6400 (cases: rw1, rw2, rw3)
+  strategy=smart steps=8 eval_rounds=40 cost~$0.08 cache_hits=1
+  culprit: b0be626692328e15644a54f3100ab7ad6fc09a5b (confidence medium)
+  revert test: PASSED (regression disappears)  eval rounds=3
+    pass rate: culprit 0.0 -> reverted 1.0 (good commit 1.0)
+  intent source: checkpoint
+  flag: revert conflicts
+
+sibling investigation 79366151b7 for failure signature check=budget(tokens@refund_within_policy)
+[79366151b7] culprit 59c8b10c (confidence medium)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_63afe1fe3f9e1b59da3ea7b92ef0209c"}
+  bisected on failure signature: check=budget(tokens@refund_within_policy) (cases: rw1, rw2, rw3)
+  strategy=smart steps=8 eval_rounds=16 cost~$0.032 cache_hits=3
+  culprit: 59c8b10ccbd078f574b98a4770c84ef2b1d2bad2 (confidence low)
+  revert test: FAILED (regression remains)  eval rounds=4
+    pass rate: culprit 0.5 -> reverted 0.5 (good commit 1.0)
+  intent source: checkpoint
+  flag: revert conflicts
+  flag: multiple regressions likely: reverting the culprit did not remove the regression
+
+sibling investigation 87d2b4228c for failure signature check=budget(tokens@order_status)
+[87d2b4228c] culprit 59c8b10c (confidence medium)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_9105e6a8eddf12a96b71de29bf894755"}
+  bisected on failure signature: check=budget(tokens@order_status) (cases: os2, os3, os4)
+  strategy=smart steps=7 eval_rounds=21 cost~$0.042 cache_hits=1
+  culprit: 59c8b10ccbd078f574b98a4770c84ef2b1d2bad2 (confidence low)
+  revert test: FAILED (regression remains)  eval rounds=3
+    pass rate: culprit 0.5 -> reverted 0.0 (good commit 1.0)
+  intent source: checkpoint
+  flag: revert conflicts
+  flag: multiple regressions likely: reverting the culprit did not remove the regression
+
+sibling investigation 8455fc2096 for failure signature check=budget(tokens@cancel_request)
+[8455fc2096] good end 1b40b277 is unusable: verdict skip (no executed runs (all errored or skipped))
+  bisected on failure signature: check=budget(tokens@cancel_request) (cases: ca1, ca2)
+  strategy=smart steps=2 eval_rounds=0 cost~$0.0 cache_hits=1
+
+sibling investigation 2b332d0fa7 for failure signature check=budget(tokens@escalation)
+[2b332d0fa7] culprit ca150c73 (confidence high)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_d6b26d0070ab2b564e2529603ebb0e29"}
+  bisected on failure signature: check=budget(tokens@escalation) (cases: es1)
+  strategy=smart steps=8 eval_rounds=7 cost~$0.014 cache_hits=1
+  culprit: ca150c73c62dc5946ca7b64a7de53fdd7f49792c (confidence low)
+  revert test: FAILED (regression remains)  eval rounds=1
+    pass rate: culprit 0.0 -> reverted 0.0 (good commit 1.0)
+  intent source: checkpoint
+  flag: multiple regressions likely: reverting the culprit did not remove the regression
+
+sibling investigation fac80867d1 for failure signature check=budget(tokens@multi_step)
+[fac80867d1] good end 1b40b277 is unusable: verdict skip (no executed runs (all errored or skipped))
+  bisected on failure signature: check=budget(tokens@multi_step) (cases: ms1)
+  strategy=smart steps=2 eval_rounds=0 cost~$0.0 cache_hits=1
+
+sibling investigation 716b254d88 for failure signature check=budget(tokens@policy_question)
+[716b254d88] culprit f7d82b78 (confidence high)
+  WARNING: divergence unavailable: IntakeError: neatlogs CLI failed (TRACE_FINALIZATION_FAILED): {"code":"TRACE_FINALIZATION_FAILED","detail":"The trace could not be finalized for span projection.","instance":"/api/v1/public/traces/e2dad5356ed1bc49c59bc0446442df54/spans","requestId":"req_37468bc78b6932c5dd20ea921fdc2bb4"}
+  bisected on failure signature: check=budget(tokens@policy_question) (cases: po1, po3)
+  strategy=smart steps=5 eval_rounds=8 cost~$0.016 cache_hits=1
+  culprit: f7d82b789e2cb42d7911e4e2831331c5be7dcecc (confidence low)
+  revert test: FAILED (regression remains)  eval rounds=2
+    pass rate: culprit 0.0 -> reverted 0.5 (good commit 1.0)
+  intent source: checkpoint
+  flag: multiple regressions likely: reverting the culprit did not remove the regression
+
+sibling investigation e9cdcbeeba for failure signature check=call_args(escalate_to_human.priority) expected {'in': ['high', 'urgent']} got normal
+[e9cdcbeeba] good end is not good: 1b40b277 fails (pass_rate 0.00)
+  bisected on failure signature: check=call_args(escalate_to_human.priority) expected {'in': ['high', 'urgent']} got normal (cases: es2)
+  strategy=smart steps=2 eval_rounds=1 cost~$0.002 cache_hits=1

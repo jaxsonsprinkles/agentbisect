@@ -1,0 +1,127 @@
+{
+ "schema_version": 1,
+ "commit": "1b40b27761bfad9a0b81ba694e36579ea09628c8+merged:ec19917417dd698353933ed7c40637895b49a8fd",
+ "created_at": "2026-10-11T01:02:06+00:00",
+ "provider": "anthropic",
+ "agent_model": "claude-haiku-5-5",
+ "judge_model": "claude-sonnet-5-5",
+ "token_factor": 1.5,
+ "max_steps": 6,
+ "cases": {
+  "es1": {
+   "median_tokens": 9265,
+   "median_steps": 2,
+   "n": 3
+  },
+  "es3": {
+   "median_tokens": 20452,
+   "median_steps": 3,
+   "n": 3
+  },
+  "os1": {
+   "median_tokens": 11873,
+   "median_steps": 2,
+   "n": 3
+  },
+  "os2": {
+   "median_tokens": 11765,
+   "median_steps": 2,
+   "n": 3
+  },
+  "os3": {
+   "median_tokens": 8697,
+   "median_steps": 2,
+   "n": 3
+  },
+  "os4": {
+   "median_tokens": 11946,
+   "median_steps": 2,
+   "n": 3
+  },
+  "os5": {
+   "median_tokens": 11867,
+   "median_steps": 2,
+   "n": 3
+  },
+  "po1": {
+   "median_tokens": 8836,
+   "median_steps": 2,
+   "n": 3
+  },
+  "po2": {
+   "median_tokens": 8824,
+   "median_steps": 2,
+   "n": 3
+  },
+  "po3": {
+   "median_tokens": 8934,
+   "median_steps": 2,
+   "n": 3
+  },
+  "po4": {
+   "median_tokens": 8704,
+   "median_steps": 2,
+   "n": 3
+  },
+  "ro1": {
+   "median_tokens": 14831,
+   "median_steps": 3,
+   "n": 3
+  },
+  "ro2": {
+   "median_tokens": 14884,
+   "median_steps": 3,
+   "n": 3
+  },
+  "ro3": {
+   "median_tokens": 8781,
+   "median_steps": 2,
+   "n": 3
+  },
+  "rw1": {
+   "median_tokens": 21315,
+   "median_steps": 3,
+   "n": 3
+  },
+  "rw2": {
+   "median_tokens": 14611,
+   "median_steps": 3,
+   "n": 3
+  },
+  "rw3": {
+   "median_tokens": 14506,
+   "median_steps": 3,
+   "n": 3
+  },
+  "rw4": {
+   "median_tokens": 17799,
+   "median_steps": 3,
+   "n": 3
+  },
+  "ca1": {
+   "median_tokens": 15279,
+   "median_steps": 3,
+   "n": 3
+  },
+  "ca2": {
+   "median_tokens": 9695,
+   "median_steps": 2,
+   "n": 3
+  },
+  "ca3": {
+   "median_tokens": 14893,
+   "median_steps": 3,
+   "n": 3
+  },
+  "ms1": {
+   "median_tokens": 9764,
+   "median_steps": 2,
+   "n": 3
+  },
+  "ms2": {
+   "median_tokens": 18917,
+   "median_steps": 3,
+   "n": 3
+  }
+ }
+}

@@ -1,0 +1,12 @@
+== 6d7b32e553
+strategy  rounds  cost_usd  steps  culprit
+plain         24     0.048      8  b0be6266
+smart         21     0.042      7  b0be6266
+smart saved 3 eval rounds; same culprit: True
+planner context tokens: 21720 with graph vs 43288 reading the raw range
+== 87d2b4228c
+strategy  rounds  cost_usd  steps  culprit
+plain         27     0.054      8  59c8b10c
+smart         24     0.048      7  59c8b10c
+smart saved 3 eval rounds; same culprit: True
+planner context tokens: 22305 with graph vs 39405 reading the raw range
