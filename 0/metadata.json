@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MBTX73N3H619RPDD5JQXCT",
+  "session_id": "fd272bdb-c68c-493f-8978-85b5608bf8b3",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T02:14:28.307157Z",
+  "branch": "main",
+  "checkpoints_count": 6,
+  "save_step_count": 2,
+  "files_touched": [
+    "agentbisect/baseline.py",
+    "agentbisect/bisect.py",
+    "agentbisect/models.py",
+    "agentbisect/runner.py",
+    "agentbisect/state.py",
+    "tests/test_budget.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "85c8cb579520",
+  "checkpoint_transcript_start": 468,
+  "transcript_lines_at_start": 468,
+  "compact_transcript_start": 72,
+  "token_usage": {
+    "input_tokens": 30,
+    "cache_creation_tokens": 16964,
+    "cache_read_tokens": 924177,
+    "output_tokens": 8442,
+    "api_call_count": 13,
+    "subagent_tokens": {
+      "input_tokens": 184,
+      "cache_creation_tokens": 678748,
+      "cache_read_tokens": 8089127,
+      "output_tokens": 62765,
+      "api_call_count": 91
+    }
+  },
+  "session_metrics": {
+    "turn_count": 23
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T02:14:28.244459Z",
+    "agent_lines": 228,
+    "agent_removed": 7,
+    "human_added": 160,
+    "human_modified": 22,
+    "human_removed": 0,
+    "total_committed": 405,
+    "total_lines_changed": 417,
+    "agent_percentage": 56.35491606714629,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 73,
+      "user_lines_removed": 11,
+      "agent_lines_added": 94,
+      "agent_lines_removed": 7,
+      "user_added_per_file": {
+        "agentbisect/bisect.py": 9,
+        "agentbisect/runner.py": 64
+      },
+      "user_removed_per_file": {
+        "agentbisect/bisect.py": 4,
+        "agentbisect/runner.py": 7
+      }
+    }
+  ]
+}

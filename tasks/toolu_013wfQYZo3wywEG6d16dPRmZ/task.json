@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_013wfQYZo3wywEG6d16dPRmZ",
+  "agent_id": "a230af8711bbecdf5",
+  "subagent_type": "general-purpose",
+  "task_description": "Review U1 test coverage",
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 34218,
+    "cache_read_tokens": 69988,
+    "output_tokens": 1608,
+    "api_call_count": 3
+  },
+  "started_at": "2026-10-10T21:10:38.162357-05:00",
+  "completed_at": "2026-10-10T21:10:52.026384-05:00"
+}

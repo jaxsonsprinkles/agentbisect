@@ -1,0 +1,91 @@
+<task-notification>
+<task-id>afb6b24481c53f7c7</task-id>
+<tool-use-id>toolu_01Y4pvasCao4HHDXx16wpj5b</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/afb6b24481c53f7c7.output</output-file>
+<status>completed</status>
+<summary>Agent "Re-run investigation, three regressions" finished</summary>
+<note>This agent stopped with background work of its own still running. It may resume on its own when that work completes or reports, and the same task-id notifies again if it does; the result below may be interim.</note>
+<result>Only R3 came out cleanly; R1 and R2 did not get their own culprit with a passing revert test. I pushed everything to origin main (HEAD `4f05452`).
+
+**Setup:** good `1b40b27`, bad `f7d82b7`, DEMO_FLAKE=0, haiku agent and sonnet judge through the llm-proxy. At `1b40b27` the quick eval passed 18 of 19 executed cases. `es2` fails there too, and the cancel_order cases are skipped because the tool doesn't exist yet. I had to calibrate a token baseline first: without one the harness skips token budgets, and R1/R2 only show up as budget failures.
+
+**Scoring caveat:** `ground_truth.json` maps cases to regressions, not to culprit commits. R1/R2 scoring below rests on case mapping and commit messages only.
+
+| Signature | Culprit | Scored against ground truth |
+|---|---|---|
+| R3: `call_args:issue_refund.amount` | `b0be626` (cents) | Correct; revert test passed (0% to 100%) |
+| `budget:tokens@refund_within_policy` | `59c8b10` | Plausibly R2's commit, but revert failed (50% to 50%) |
+| `budget:tokens@order_status` (R1 cases) | `59c8b10` | Not a separate R1 culprit; revert failed |
+| `budget:tokens@policy_question` (R2 cases) | `f7d82b7` | Wrong, borderline noise at the last commit |
+| `budget:tokens@escalation` (R2 cases) | `ca150c7` | Wrong or unconfirmed; revert failed |
+| `budget:tokens@cancel_request` | `96de44a` | Unverified (revert inconclusive) |
+| `budget:tokens@multi_step` | `22f7fbd` | Unverified, one case, one sample |
+| `call_args:escalate_to_human.priority` | none | Correctly refused: `es2` fails at the good end too |
+
+**Why R1 and R2 didn't separate:** the token regressions inflate every category, so per-category signatures still mix them. With one repeat per case, verdicts near the 1.5x limit flip.
+
+**Rounds:**
+- **R3 investigation:** 43 eval rounds including signature discovery.
+- **Smart vs plain (`compare`):** R3 took 21 vs 24 rounds and the order_status budget 24 vs 27. Both found the same culprit. Planner context was 21.7k vs 43.3k tokens with the graph.
+- **Across all 8 investigations:** about 125 eval rounds.
+
+**Throttling:** across 1417 proxy calls there were 0 rate-limit, backoff, recovered or gave-up events. The live backoff path is still only tested with fakes.
+
+**Bugs found and fixed:** one commit each; 146 tests pass, and the first fix passed a reviewer.
+1. Budget regressions in different features collapsed into one signature.
+   - The suite covered only the trace's category.
+   - One flaky `rw3` run spawned three noise siblings.
+   - **Fix:** budget keys are now `budget:tokens@&lt;category&gt;`, there is an `--all-categories` flag, and a signature seen in only one run is re-run and dropped if it doesn't reproduce.
+   - **Reviewer:** it caught three problems, which I fixed.
+2. Signatures whose cases don't exist at the good end (the cancel_order cases) made that end unusable. They now count as vacously good. I resumed the two affected siblings; the other six ran before this fix.
+
+**Unverified:**
+- Span divergence (neatlogs dead-letter).
+- Multi-repeat budget stability (I never tried raising the repeat count).
+- Haiku non-determinism.
+
+Everything is in `/Users/jaxson/Downloads/codingprojects/agentbisect/evidence/`:
+- `rerun-summary.md` has the numbers and caveats.
+- `report-*.md` and `report-*.html` cover the 8 investigations.
+- `rerun1-prefix/` has the pre-fix run.
+- `rerun2-investigate.log` and `rerun2-compare.log` are the raw output.
+- `rerun2-baseline.json` is the baseline.
+
+`BUILD_LOG.md` is updated.</result>
+<usage><subagent_tokens>145112</subagent_tokens><tool_uses>76</tool_uses><duration_ms>3499372</duration_ms></usage>
+</task-notification>
+
+---
+
+Wait, quickly explain R1, R2, and RW1, and all of the context on what the demo repo actually is and what just happened in that context
+
+---
+
+Decision: both, with option 2 done by appending, not rewriting.
+
+1. I'll add a new commit via the history builder (separate session): proactive cancel of unshipped orders. That's the new R1 behavioral regression. Don't touch the demo repo history.
+2. Budget checks: 3 repeats for budget checks only, compare MEDIAN tokens against a saved baseline median from the good commit (calibrate once, store it, don't recalibrate per investigation). Behavioral checks stay at 1 repeat.
+3. Revert test for budget signatures uses the same median rule.
+4. es2 fails at the good commit: keep it as a known pre-existing failure, label it in the report as "correctly refused."
+5. I'll update the answer key to map each signature to its culprit commit. Don't read or create it in either repo.
+6. Then re-run all signatures and give me: culprit, revert test before/after, smart vs plain rounds, per signature.
+
+---
+
+<task-notification>
+<task-id>afb6b24481c53f7c7</task-id>
+<output-file>/private/tmp/claude-502/-Users-jaxson-Downloads-codingprojects-agentbisect/fd272bdb-c68c-493f-8978-85b5608bf8b3/tasks/afb6b24481c53f7c7.output</output-file>
+<status>completed</status>
+<summary>Agent "Re-run investigation, three regressions" finished</summary>
+<note>This agent stopped with background work of its own still running. It may resume on its own when that work completes or reports, and the same task-id notifies again if it does; the result below may be interim.</note>
+<result>That notification is just the leftover wait timer from the investigation run ending. The work it was waiting on finished earlier, and the report above stands, with nothing new to add.</result>
+<usage><subagent_tokens>143772</subagent_tokens><tool_uses>76</tool_uses><duration_ms>3881960</duration_ms></usage>
+</task-notification>
+
+---
+
+Actually, get the history builder agent to make teh new commit
+
+---
+
+Do everything that you haven't done yet, including the answer key

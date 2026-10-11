@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01Y4pvasCao4HHDXx16wpj5b",
+  "agent_id": "afb6b24481c53f7c7",
+  "subagent_type": "general-purpose",
+  "task_description": "Re-run investigation, three regressions",
+  "token_usage": {
+    "input_tokens": 148,
+    "cache_creation_tokens": 468389,
+    "cache_read_tokens": 6653031,
+    "output_tokens": 35507,
+    "api_call_count": 74
+  },
+  "started_at": "2026-10-10T19:57:58.797552-05:00",
+  "completed_at": "2026-10-10T20:56:18.013563-05:00"
+}
