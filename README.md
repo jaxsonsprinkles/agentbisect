@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" alt="AgentBisect" width="240"></p>
+
 # AgentBisect
 
 `git bisect` for agent behavior. Give it one bad neatlogs trace; it finds the commit that caused the regression, explains why that commit was written (Entire checkpoints), and ships a verified fix.
