@@ -93,3 +93,6 @@ See `hackathon.md` (chunk entries and "Resume notes"). Latest: chunk 9 complete 
 ## Re-run 3: calibrated baseline, budget medians, bad end 0ecffc0 (evidence/rerun3-summary.md)
 - One calibrate at 1b40b27 (`evidence/baseline-1b40b27.json`), then smart investigation --all-signatures --all-categories (budget 3 repeats) and per-signature compare. 6 signatures: 4 correct against the private key, 2 wrong (order_status budget -> 59c8b10 instead of the R1 commit; ro2 budget -> noise commit 5cee99b). R3 and R1b isolated with passing revert tests; es2 correctly refused.
 - Smart beat plain on behavioural signatures (24/18, 4/3) but lost on budget ones (84/96, 54/60). 0 rate-limit events. 1991 proxy calls (770 real, rest cache replays, including most of compare).
+
+## Re-run 3 (evidence/rerun3-summary.md)
+- Calibrated once at 1b40b27 (`evidence/baseline-1b40b27.json`), smart investigation of 0ecffc0 with all signatures/categories, plain-vs-smart compare per signature. 6 signatures: 4 correct against the private key (amount -> b0be626, must_not_call -> 0ecffc0, es2 refused, refund_within budget -> 59c8b10), 2 wrong (order_status budget -> 59c8b10, refund_outside budget -> 5cee99b). Budget signatures still blame the last token-inflating commit. Smart beat plain on behavioural signatures (24 vs 18, 4 vs 3), lost on two budget ones. 0 rate-limit events.
