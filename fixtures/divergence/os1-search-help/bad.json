@@ -1,0 +1,62 @@
+{
+  "trace_id": "local-5455f963bc664e61",
+  "workflow": "support-agent",
+  "commit": "0ecffc0942a5554f963b38601206813855f6bc90",
+  "status": "pass",
+  "started_at": "2026-10-11T12:40:26+00:00",
+  "input": "Where is order 1042?",
+  "tags": [
+    "commit:0ecffc0942a5554f963b38601206813855f6bc90",
+    "case:os1",
+    "run:fx-0ecffc0"
+  ],
+  "steps": 5,
+  "tokens": 32454,
+  "reply": "Thanks for reaching out! Order 1042 (Mechanical Keyboard, $129.00) has shipped but not yet been delivered. Its tracking number is TRK-884201, and the estimated delivery date was October 2, 2026, which has passed. Our shipping article says standard shipping takes 3-5 business days and orders leave the warehouse within 1 business day. Please check the tracking number for the latest carrier update, and if the keyboard still hasn't arrived, reply here and we can look into it further. Is there anything else we can help with?",
+  "spans": [
+    {
+      "name": "tool:lookup_order",
+      "kind": "tool",
+      "tools": [
+        "lookup_order"
+      ],
+      "args": {
+        "order_id": "1042"
+      },
+      "output": "{\"orders\": [{\"customer_email\": \"ben.ortiz@example.com\", \"delivered_date\": null, \"estimated_delivery_date\": \"2026-10-02\", \"items\": [{\"name\": \"Mechanical Keyboard\", \"quantity\": 1, \"unit_price_usd\": 129.0}], \"order_id\": \"1042\", \"refund_id\": null, \"ship_date\": \"2026-09-27\", \"status\": \"shipped\", \"total_u..."
+    },
+    {
+      "name": "tool:search_help",
+      "kind": "tool",
+      "tools": [
+        "search_help"
+      ],
+      "args": {
+        "query": "shipping times estimated delivery after shipment"
+      },
+      "output": "{\"error\": \"timeout: search_help timed out after 5s; the call can be retried\", \"retryable\": true}"
+    },
+    {
+      "name": "tool:search_help",
+      "kind": "tool",
+      "tools": [
+        "search_help"
+      ],
+      "args": {
+        "query": "shipping times estimated delivery after shipment"
+      },
+      "output": "{\"error\": \"timeout: search_help timed out after 5s; the call can be retried\", \"retryable\": true}"
+    },
+    {
+      "name": "tool:search_help",
+      "kind": "tool",
+      "tools": [
+        "search_help"
+      ],
+      "args": {
+        "query": "shipping times estimated delivery after shipment"
+      },
+      "output": "{\"articles\": [{\"body\": \"Standard shipping takes 3-5 business days and express shipping takes 1-2 business days. Orders leave the warehouse within 1 business day. A tracking number is emailed when the order ships. Orders can be cancelled only before they ship.\", \"id\": \"shipping\", \"title\": \"Shipping t..."
+    }
+  ]
+}

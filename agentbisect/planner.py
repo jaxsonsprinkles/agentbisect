@@ -60,8 +60,8 @@ class Divergence:
     bad: Span | None
 
     def describe(self) -> str:
-        g = ",".join(self.good.tools) or (self.good.name if self.good else "-")
-        b = ",".join(self.bad.tools) or (self.bad.name if self.bad else "-")
+        g = (",".join(self.good.tools) or self.good.name) if self.good else "-"
+        b = (",".join(self.bad.tools) or self.bad.name) if self.bad else "-"
         return {"different_tool": f"step {self.index}: bad run chose {b} instead of {g}",
                 "different_args": f"step {self.index}: {b} called with different arguments than in the good run",
                 "extra_step": f"step {self.index}: bad run made an extra step {b}",
