@@ -7,3 +7,18 @@
 <note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
 <result>BSD sed; use python.</result>
 </task-notification>
+
+---
+
+Continue - usage limits got hit. Just reset. Also add this logo on the github somewhere: [Image: agent-2.png; ref=image_decf1da3-e6d6-437e-b92f-38dfc4c40b36]
+
+<t3_context version="1">
+<context kind="image" id="image_decf1da3-e6d6-437e-b92f-38dfc4c40b36">
+name: agent-2.png
+mimeType: image/png
+sizeBytes: 178450
+attachmentId: b4485d4e-7680-4b4c-9d6c-49b269b634a6-7cb17382-d102-48ce-a7ea-2642ff13661c
+</context>
+</t3_context>
+
+[Attached image "agent-2.png" is saved at: /Users/jaxson/.t3/userdata/attachments/b4485d4e-7680-4b4c-9d6c-49b269b634a6-7cb17382-d102-48ce-a7ea-2642ff13661c.png]
