@@ -54,6 +54,8 @@ def _fmt(x: Any, pct: bool = True) -> str:
 
 
 def fix_passes(a: FixAttempt, baseline: float | None) -> bool:
+    if a.passed is not None and a.eval_score is None and a.intent_test_passed is None:
+        return a.passed  # recorded by the Fixer's own checks, not yet scored by the Verifier
     ok_score = lambda s: s is not None and (baseline is None or s >= baseline - SCORE_TOLERANCE)  # noqa: E731
     return bool(a.intent_test_passed) and ok_score(a.eval_score) and ok_score(a.held_out_score)
 
@@ -65,7 +67,7 @@ def best_attempt(st: BisectState, baseline: float | None) -> FixAttempt | None:
     for a in st.fix_attempts:
         if fix_passes(a, baseline):
             return a
-    return max(st.fix_attempts, key=lambda a: ((a.held_out_score or 0) + (a.eval_score or 0), a.attempt))
+    return max(st.fix_attempts, key=lambda a: (bool(a.passed), bool(a.commit), (a.held_out_score or 0) + (a.eval_score or 0), a.attempt))
 
 
 def build_report(st: BisectState, repo: str | None = None, group: list[BisectState] | None = None) -> dict[str, Any]:

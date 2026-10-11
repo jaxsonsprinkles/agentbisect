@@ -23,6 +23,18 @@ MAX_REASONING_CHARS = 3000
 MAX_DIFF_CHARS = 20000
 MAX_TRACE_LINES = 30
 IMPACT_LOOKUPS = 4
+# paths the Fixer may never read or write (answer keys, secrets, evidence, VCS internals)
+PROTECTED = re.compile(r"(^|/)(\.git|\.env[^/]*|evidence|\.agentbisect|secrets?(\.[^/\s]*)?)(/|\s|$)"
+                       r"|ground[_-]?truth|answer[_-]?key|planted", re.I)
+# prose lines that point at answer keys: dropped from intent / evidence / failure text shown to the Fixer
+PROTECTED_TEXT = re.compile(r"ground[_-]?truth|answer[_-]?key|planted|evidence/|\.agentbisect|\.env\b", re.I)
+
+
+def scrub(text: str) -> str:
+    """Drop lines that mention protected material (see PROTECTED_TEXT); note how many were omitted."""
+    keep = [ln for ln in text.splitlines() if not PROTECTED_TEXT.search(ln)]
+    n = len(text.splitlines()) - len(keep)
+    return "\n".join(keep) + (f"\n({n} protected line(s) omitted)" if n else "")
 NO_CHECKPOINT_MARKERS = ("no Entire-Checkpoint trailer", "checkpoint not found")
 
 
@@ -200,9 +212,16 @@ def fixer_brief(repo: str, report: CulpritReport, run: Run = _run) -> str:
     rc, patch, err = run(["git", "-C", repo, "show", "--format=", "--patch", report.sha], repo)
     if rc != 0:
         raise RuntimeError(f"git show {report.sha} failed: {err.strip()}")
+    # drop file sections that look like answer keys / secrets: the Fixer must never see them
+    sections = re.split(r"(?=^diff --git )", patch, flags=re.M)
+    kept = [s for s in sections if not PROTECTED.search(s.split("\n", 1)[0])]
+    omitted = len(sections) - len(kept)
+    patch = "".join(kept)
     if len(patch) > MAX_DIFF_CHARS:
         patch = patch[:MAX_DIFF_CHARS] + "\n... (diff truncated)\n"
-    evidence = "\n".join(f"- {e}" for e in report.failing_evidence) or "- (none recorded)"
+    if omitted:
+        patch += f"\n({omitted} protected file(s) omitted)\n"
+    evidence = "\n".join(f"- {scrub(e)}" for e in report.failing_evidence) or "- (none recorded)"
     return (f"## Culprit diff (this change introduced the regression)\n\n```diff\n{patch.rstrip()}\n```\n\n"
-            f"## {INTENT_LABEL}\n\n{report.checkpoint_intent or '(unknown)'}\n\n"
+            f"## {INTENT_LABEL}\n\n{scrub(report.checkpoint_intent) or '(unknown)'}\n\n"
             f"## Failing evidence\n\n{evidence}\n")

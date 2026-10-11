@@ -118,6 +118,15 @@ def _parser() -> argparse.ArgumentParser:
     cb.add_argument("--out", help="baseline file (default: <state-dir>/baseline-<good sha>.json)")
     cb.add_argument("--cases", help="comma-separated case ids (default: every case in evals/cases.jsonl)")
     cb.add_argument("--llm-proxy", default="off", metavar="auto|URL|off", help="as for `investigate`")
+    fx = sub.add_parser("fix", help="run the Fixer on an investigation's culprit: a fresh agent edits a worktree "
+                                    "(up to 3 attempts), writes a branch, patch and PR body; no push by default")
+    fx.add_argument("id")
+    fx.add_argument("--out", help="directory for the patch and PR body files (default: <state-dir>/fixes)")
+    fx.add_argument("--max-attempts", type=int, default=3)
+    fx.add_argument("--model", help="Fixer model (default $FIXER_MODEL or claude-sonnet-5-5)")
+    fx.add_argument("--llm-proxy", default="off", metavar="auto|URL|off", help="as for `investigate` (eval runs)")
+    fx.add_argument("--open-draft-pr", action="store_true",
+                    help="really `git push` the fix branch and `gh pr create --draft` (default: write files only)")
     lp = sub.add_parser("llm-proxy", help="serve an Anthropic-compatible API backed by your logged-in `claude` CLI")
     lp.add_argument("--port", type=int, default=8787)
     lp.add_argument("--concurrency", type=int, default=None,
@@ -156,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps(r, indent=2))
         return 0 if r["match"] else 1
-    if a.cmd in ("investigate", "calibrate"):
+    if a.cmd in ("investigate", "calibrate", "fix"):
         with _llm_proxy(getattr(a, "llm_proxy", "off")):
             return _main(a, store)
     return _main(a, store)
@@ -232,6 +241,8 @@ def _main(a: argparse.Namespace, store: StateStore) -> int:
         return code
     if a.cmd == "calibrate":
         return _calibrate(a, store)
+    if a.cmd == "fix":
+        return _fix(a, store)
     if a.cmd == "watch":
         print("agentbisect watch: not implemented yet (later chunk)", file=sys.stderr)
         return 2
@@ -359,6 +370,39 @@ def _explain(store: StateStore, st: BisectState, code: int, meta: dict | None) -
         return 1
     print("\n".join(describe_revert(st)))
     return 0
+
+
+def _fix(a: argparse.Namespace, store: StateStore) -> int:
+    from .bisect import make_runner
+    from .fixer import ProxyFixModel, RunnerChecker, run_fixer
+    if a.max_attempts < 1:
+        print("error: --max-attempts must be at least 1", file=sys.stderr)
+        return 2
+    try:
+        st = store.load(a.id)
+    except StateError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    if not st.culprit:
+        print("error: investigation has no culprit to fix", file=sys.stderr)
+        return 1
+    try:
+        store.set_status(st, "fixing")  # fixing -> fixing is allowed, so a re-run after a crash works
+        res = run_fixer(st, model=ProxyFixModel(model=a.model), checker=RunnerChecker(make_runner(store, st), st.id),
+                        out_dir=a.out or os.path.join(a.state_dir, "fixes"), max_attempts=a.max_attempts,
+                        open_pr=a.open_draft_pr)
+    except Exception as e:  # never leave the investigation stuck in `fixing`
+        print(f"error: {type(e).__name__}: {e}", file=sys.stderr)
+        if st.status == "fixing":
+            store.set_status(st, "failed", f"fixer: {type(e).__name__}: {e}")
+        return 1
+    store.set_status(st, "verifying" if res.passed else "culprit_found")
+    for i in res.attempts:
+        print(f"attempt {i.attempt}: " + ("checks passed" if i.passed else f"failed ({i.error or '; '.join(i.failures[:2])})"))
+    print(f"fix {'PASSED the Fixer checks' if res.passed else 'did NOT pass'}; branch={res.branch or '-'} "
+          f"verifier_input={json.dumps(res.verifier_input)}")
+    print(f"patch: {res.patch_path or '-'}  pr body: {res.pr_body_path or '-'}  pr: {res.pr_url or 'not opened'}")
+    return 0 if res.passed else 1
 
 
 def _compare(a: argparse.Namespace, store: StateStore) -> int:

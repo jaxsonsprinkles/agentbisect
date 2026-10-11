@@ -187,10 +187,43 @@ class FixAttempt:
     intent_test_passed: bool | None = None
     trace_ids: list[str] = field(default_factory=list)
     attempt: int = 1
+    # chunk 10 additions (optional so older saved states still load)
+    commit: str = ""  # sha of the commit holding this attempt's tree (what the checks ran on)
+    passed: bool | None = None  # did the failing checks pass on this attempt (None = not checked)
+    failures: list[str] = field(default_factory=list)  # failing-check output, fed to the next attempt
+    files: list[str] = field(default_factory=list)
+    explanation: str = ""
+    error: str = ""  # model/edit problem (unparseable reply, forbidden path, ...)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "FixAttempt":
+        return cls(**d)
+
+
+@dataclass
+class FixResult:
+    """Outcome of the Fixer. `verifier_input` is the STABLE hand-off to the Verifier: {"repo": <path to the target
+    repo>, "commit": <sha holding the fix>}. It is {} when no attempt produced a commit."""
+    patch: str = ""  # unified diff of the best attempt against the investigated HEAD
+    attempts: list[FixAttempt] = field(default_factory=list)
+    branch: str = ""
+    pr_url: str | None = None
+    pr_error: str = ""  # push / gh failure; the fix itself is still recorded
+    verifier_input: dict[str, str] = field(default_factory=dict)
+    passed: bool = False  # the Fixer's own checks passed on the final attempt (the Verifier decides for real)
+    base: str = ""  # commit the fix is based on
+    patch_path: str = ""
+    pr_body_path: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {**{k: v for k, v in asdict(self).items() if k != "attempts"},
+                "attempts": [a.to_dict() for a in self.attempts]}
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "FixResult":
+        d = dict(d)
+        d["attempts"] = [FixAttempt.from_dict(a) for a in d.get("attempts", [])]
         return cls(**d)
