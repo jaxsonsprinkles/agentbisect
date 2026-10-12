@@ -1,0 +1,35 @@
+Okay, deploy it on the vercel site now
+
+---
+
+Okay, deploy it on the vercel site now
+
+---
+
+Remove the logo from the front page and replace it with this video: [Image: 62BA2BC3-3FA9-4D90-9E4C-0415A50002E2_1_102_o.jpeg; ref=image_f1a841a2-4976-4c67-bd59-a622d74dd295]
+
+<t3_context version="1">
+<context kind="image" id="image_f1a841a2-4976-4c67-bd59-a622d74dd295">
+name: 62BA2BC3-3FA9-4D90-9E4C-0415A50002E2_1_102_o.jpeg
+mimeType: image/jpeg
+sizeBytes: 300162
+attachmentId: 739714c1-e41f-4e74-83f0-5e2b6d671bbd-7ae5bfa6-1740-4a28-8e0e-7e1bcfe3da73
+</context>
+</t3_context>
+
+[Attached image "62BA2BC3-3FA9-4D90-9E4C-0415A50002E2_1_102_o.jpeg" is saved at: /Users/jaxson/.t3/userdata/attachments/739714c1-e41f-4e74-83f0-5e2b6d671bbd-7ae5bfa6-1740-4a28-8e0e-7e1bcfe3da73.jpg]
+
+---
+
+Remove the logo from the front page and replace it with this video: [Image: 62BA2BC3-3FA9-4D90-9E4C-0415A50002E2_1_102_o.jpeg; ref=image_f1a841a2-4976-4c67-bd59-a622d74dd295]
+
+<t3_context version="1">
+<context kind="image" id="image_f1a841a2-4976-4c67-bd59-a622d74dd295">
+name: 62BA2BC3-3FA9-4D90-9E4C-0415A50002E2_1_102_o.jpeg
+mimeType: image/jpeg
+sizeBytes: 300162
+attachmentId: 739714c1-e41f-4e74-83f0-5e2b6d671bbd-7ae5bfa6-1740-4a28-8e0e-7e1bcfe3da73
+</context>
+</t3_context>
+
+[Attached image "62BA2BC3-3FA9-4D90-9E4C-0415A50002E2_1_102_o.jpeg" is saved at: /Users/jaxson/.t3/userdata/attachments/739714c1-e41f-4e74-83f0-5e2b6d671bbd-7ae5bfa6-1740-4a28-8e0e-7e1bcfe3da73.jpg]
