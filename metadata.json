@@ -1,0 +1,51 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4R4T3NPN2E1KAZVWBB8JYFY",
+  "strategy": "manual-commit",
+  "branch": "t3code/agent-bisect-website",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "site/.cursor/rules/boardui.mdc",
+    "site/.gitignore",
+    "site/AGENTS.md",
+    "site/app/bisect-demo.tsx",
+    "site/app/layout.tsx",
+    "site/app/page.tsx",
+    "site/bun.lock",
+    "site/components/base/badges/chip.tsx",
+    "site/components/base/buttons/button.tsx",
+    "site/components/base/buttons/link-button.tsx",
+    "site/components/base/kbd/kbd.tsx",
+    "site/components/base/tabs/pill-tab.tsx",
+    "site/components/base/tabs/tabs.tsx",
+    "site/components/foundations/direction/direction.tsx",
+    "site/next-env.d.ts",
+    "site/next.config.ts",
+    "site/package.json",
+    "site/postcss.config.mjs",
+    "site/public/logo.png",
+    "site/styles/globals.css",
+    "site/styles/theme.css",
+    "site/styles/typography.css",
+    "site/tsconfig.json",
+    "site/utils/cx.ts",
+    "site/utils/directional-icon.ts",
+    "site/utils/use-dismiss-on-outside-press.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 79260,
+    "cache_read_tokens": 837130,
+    "output_tokens": 16050,
+    "api_call_count": 13
+  }
+}

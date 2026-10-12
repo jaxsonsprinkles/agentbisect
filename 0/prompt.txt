@@ -1,0 +1,1 @@
+Make a website for agent bisect with all of the frontend and taste skills you have. use the boardui mcp to make a good looking website. Then push it to vercel when you're done

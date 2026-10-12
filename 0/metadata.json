@@ -1,0 +1,69 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4R4T3NPN2E1KAZVWBB8JYFY",
+  "session_id": "54822c2b-d4b8-4311-8c5a-7ccf6ad13354",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-12T13:28:41.321331Z",
+  "branch": "t3code/agent-bisect-website",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "site/.cursor/rules/boardui.mdc",
+    "site/.gitignore",
+    "site/AGENTS.md",
+    "site/app/bisect-demo.tsx",
+    "site/app/layout.tsx",
+    "site/app/page.tsx",
+    "site/bun.lock",
+    "site/components/base/badges/chip.tsx",
+    "site/components/base/buttons/button.tsx",
+    "site/components/base/buttons/link-button.tsx",
+    "site/components/base/kbd/kbd.tsx",
+    "site/components/base/tabs/pill-tab.tsx",
+    "site/components/base/tabs/tabs.tsx",
+    "site/components/foundations/direction/direction.tsx",
+    "site/next-env.d.ts",
+    "site/next.config.ts",
+    "site/package.json",
+    "site/postcss.config.mjs",
+    "site/public/logo.png",
+    "site/styles/globals.css",
+    "site/styles/theme.css",
+    "site/styles/typography.css",
+    "site/tsconfig.json",
+    "site/utils/cx.ts",
+    "site/utils/directional-icon.ts",
+    "site/utils/use-dismiss-on-outside-press.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "b14c05aa2841",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 79260,
+    "cache_read_tokens": 837130,
+    "output_tokens": 16050,
+    "api_call_count": 13
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-12T13:28:41.291543Z",
+    "agent_lines": 4183,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 4183,
+    "total_lines_changed": 4183,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
