@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4R53HN0T77KKENRHS19F8JP",
+  "strategy": "manual-commit",
+  "branch": "t3code/agent-bisect-website",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "site/app/bisect-demo.tsx",
+    "site/app/layout.tsx",
+    "site/app/page.tsx",
+    "site/app/zz-dark/page.tsx",
+    "site/components/application/theme/theme-toggle.tsx",
+    "site/components/base/switch/switch.tsx",
+    "site/components/foundations/template-copy/template-copy.tsx",
+    "site/public/logo-wordmark.png"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 43852,
+    "cache_read_tokens": 2396475,
+    "output_tokens": 25339,
+    "api_call_count": 18
+  }
+}
