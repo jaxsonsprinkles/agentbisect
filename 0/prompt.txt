@@ -1,0 +1,1 @@
+Change the limitations on the readme to be next steps and then rewrite it all to just be more like, "These are the next steps for what we're going to tackle next with Agent Bisect," instead of limitations.
