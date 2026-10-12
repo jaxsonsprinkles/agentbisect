@@ -107,15 +107,17 @@ function Hero() {
               <ButtonLink href="#how" variant="secondary">How it works</ButtonLink>
             </div>
           </div>
-          <div className="order-first lg:order-last lg:justify-self-end">
-            <Image
-              src="/logo-wordmark.png"
-              alt=""
-              width={1200}
-              height={673}
-              priority
-              className="w-40 sm:w-56 lg:w-[22rem]"
-            />
+          <div className="mx-auto w-full max-w-[260px] sm:max-w-[300px] lg:order-last lg:justify-self-end">
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              poster="/demo-poster.jpg"
+              aria-label="Walkthrough video: a support agent refunds a customer, shown in a neatlogs trace"
+              className="aspect-[9/16] w-full rounded-3xl border border-border-button-default bg-neutral-950 object-cover shadow-[0_24px_60px_-24px_rgb(30_60_200/0.35)]"
+            >
+              <source src="/demo.mp4" type="video/mp4" />
+            </video>
           </div>
         </div>
         <div className="mt-16">
