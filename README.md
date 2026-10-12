@@ -106,7 +106,7 @@ State lives in `.agentbisect/` (atomic writes, resumable mid-step). Run `uv run 
 
 ### Span divergence and the fixture fallback
 
-Live span divergence reads multi-span traces from neatlogs. At the time of writing, those traces finalize as `dlq` with zero spans (see Limitations), so for the demo the same step runs on a **recorded fixture**:
+Live span divergence reads multi-span traces from neatlogs. At the time of writing, those traces finalize as `dlq` with zero spans (see [Next steps](#next-steps)), so for the demo the same step runs on a **recorded fixture**:
 
 ```bash
 uv run python -m agentbisect.fixtures fixtures/divergence/os1-search-help
@@ -120,19 +120,19 @@ first divergence: step 1: bad run made an extra step search_help
 
 The fixture is the tool-call sequence of case `os1` ("Where is order 1042?") at `1b40b27` and `0ecffc0`, taken from real `python -m evals run --json` output (Haiku through the llm-proxy). It is always labelled as a fixture, never presented as live neatlogs data. The bad commit is the tip of the range, so the fixture shows where behavior changed (an extra `search_help` step), not which commit caused it. It contains tool-call spans only; model-call spans are not in the runner's report. `agentbisect.fixtures.FixtureDirSource` plugs into the same `TraceSource` interface as the live source, and `--bundle OUT.json` writes the single-file form that `--fixtures` accepts. `record_pair` records new fixtures from two eval reports.
 
-## Limitations
+## Next steps
 
-Stated plainly, because the evidence says so:
+These are the next steps for what we're going to tackle next with AgentBisect. Each one comes from something the evidence showed us.
 
-- **neatlogs span divergence is blocked.** Multi-span traces dead-letter (`finalizationStatus: "dlq"`, `spansCount: 0`) even for a bare two-span script with no model calls; the SDK reports zero export failures. Reported with trace ids in [`evidence/neatlogs-dlq-report.md`](evidence/neatlogs-dlq-report.md). Because of this, the final re-run's planner ranked on code impact and checkpoint intent only, with no span divergence; the fixture above illustrates the signal and was not used in that run. The neatlogs read path (`NeatlogsCliSource.spans`) was written against the documented CLI and its real span shape is unverified.
-- **Token-budget signatures are the weak spot.** Every token regression (a new tool schema, an extra "verify with search" rule) inflates every category, so a per-category budget signature tends to blame whichever commit crosses 1.5x last, and its revert test can fail with "multiple regressions likely". Behavioural signatures (wrong arguments, forbidden tool calls) are far more reliable. See `evidence/rerun3-summary.md` for the per-signature outcomes: 4 of 6 correct on the final re-run; the three token-budget signatures were the misses or mixed.
-- **Smart is not always cheaper.** It used fewer eval rounds than plain on behavioural signatures (18 vs 24, 3 vs 4) but more on budget signatures (96 vs 84, 60 vs 54). The planner-context saving is measured on one investigation and one range.
-- **Noisy judge of "bad".** Haiku at non-zero temperature (the proxy cannot set it) is stochastic. Repeats, medians and a confidence band reduce but do not remove this; low-confidence culprits are labelled as such.
-- **Token counts for context savings are bytes/4 estimates**, comparable only within that metric, and the "without graph" side is an estimate, not a second run.
-- **Fixer/Verifier evidence is thin.** One run per configuration (single sample), one culprit (R3), six runs in total, about $0.9 of model calls. The one VERIFIED result is an eval-expectation update, not a code fix.
-- **Eval-expectation edits need human review.** The Fixer's checks run the fix commit's own cases file, so an edited expectation is what they see; the Verifier flags the change rather than re-running against the old expectation. A wrong "deliberate contract change" judgement would pass quietly unless a person reads the flagged list.
-- **Budget regressions are unresolved.** The Fixer and Verifier were exercised on a behavioural signature only; the Verifier ignores `budget:*` flags in regression and held-out checks unless the target is itself a budget signature. A tool-count signal for token signatures is on an unmerged branch.
-- **One target repo.** Everything was exercised against `support-agent-demo`. The eval contract is generic, but nothing else has been tried.
+- **Unblock neatlogs span divergence.** Multi-span traces currently dead-letter (`finalizationStatus: "dlq"`, `spansCount: 0`), even for a bare two-span script with no model calls, and the SDK reports zero export failures. The trace ids are in [`evidence/neatlogs-dlq-report.md`](evidence/neatlogs-dlq-report.md). Once traces finalize, we'll run the planner on live span divergence instead of the recorded fixture (the final re-run ranked on code impact and checkpoint intent only), and verify `NeatlogsCliSource.spans` against the real span shape, since it was written against the documented CLI.
+- **Make token-budget signatures reliable.** Every token regression (a new tool schema, an extra "verify with search" rule) inflates every category, so a per-category budget signature tends to blame whichever commit crosses 1.5x last, and its revert test can fail with "multiple regressions likely". Behavioural signatures (wrong arguments, forbidden tool calls) are already far more reliable. We'll attribute token growth per commit rather than per threshold crossing; a tool-count signal for token signatures is on an unmerged branch. Per-signature outcomes are in `evidence/rerun3-summary.md` (4 of 6 correct on the final re-run).
+- **Make smart bisect cheaper on budget signatures.** It already uses fewer eval rounds than plain on behavioural signatures (18 vs 24, 3 vs 4), but more on budget signatures (96 vs 84, 60 vs 54). We'll improve the ranking there, and repeat the planner-context saving on more than one investigation and range.
+- **Tighten the noisy "bad" judgement.** Haiku at non-zero temperature (the proxy cannot set it) is stochastic. Repeats, medians and a confidence band reduce that noise; we want to cut it further, and keep labelling low-confidence culprits as such.
+- **Measure context savings properly.** The current token counts are bytes/4 estimates, and the "without graph" side is an estimate rather than a second run. We'll replace both with real token counts from actual runs.
+- **Broaden the Fixer and Verifier evidence.** So far it is one run per configuration, one culprit (R3), six runs in total, about $0.9 of model calls, and the one VERIFIED result is an eval-expectation update, not a code fix. We'll run more culprits and more samples, and get a real code fix through the Verifier.
+- **Make eval-expectation edits safer.** The Fixer's checks run the fix commit's own cases file, so an edited expectation is what they see; the Verifier flags the change rather than re-running against the old expectation. We'll re-check against the original expectations too, so a wrong "deliberate contract change" judgement cannot pass quietly. Until then, a person should read the flagged list.
+- **Extend the Fixer and Verifier to budget regressions.** They have only been exercised on a behavioural signature, and the Verifier ignores `budget:*` flags in regression and held-out checks unless the target is itself a budget signature.
+- **Try more than one target repo.** Everything has run against `support-agent-demo`. The eval contract is generic, so next we'll point AgentBisect at other agent repos.
 
 ## Repository map
 
