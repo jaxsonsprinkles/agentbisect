@@ -43,13 +43,6 @@ const ROWS = [
   ["call_args:escalate_to_human.priority", "none", "Refused, fails at the good end", "ok"],
 ] as const;
 
-const LIMITS = [
-  { t: "Token budgets", d: "One token inflation tends to blame whichever commit crosses 1.5x last, so budget signatures are the weak spot." },
-  { t: "Span divergence", d: "Live neatlogs traces dead-letter today, so the demo uses a recorded fixture and always labels it." },
-  { t: "The verified fix", d: "The one VERIFIED result updates eval expectations rather than code, and is flagged for human review." },
-  { t: "Target repos", d: "Everything so far has run against one repo, support-agent-demo." },
-];
-
 export default function Home() {
   return (
     <>
@@ -61,7 +54,6 @@ export default function Home() {
         <Report />
         <Results />
         <Quickstart />
-        <Limits />
       </main>
       <Footer />
     </>
@@ -322,24 +314,6 @@ uv run agentbisect verify-fix ID --commit SHA`}
         <div className="mt-6">
           <ButtonLink href={REPO} leadingIcon={RiGithubFill}>View the repo</ButtonLink>
         </div>
-      </Wrap>
-    </section>
-  );
-}
-
-function Limits() {
-  return (
-    <section className="py-24">
-      <Wrap>
-        <h2 className="max-w-2xl text-balance text-title-1-semibold sm:text-display-4-semibold">What it cannot do yet.</h2>
-        <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
-          {LIMITS.map((l) => (
-            <div key={l.t} className="border-t border-separator-border pt-4">
-              <dt className="text-headline-semibold">{l.t}</dt>
-              <dd className="mt-1 max-w-md text-body-regular text-text-secondary">{l.d}</dd>
-            </div>
-          ))}
-        </dl>
       </Wrap>
     </section>
   );
