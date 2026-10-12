@@ -58,7 +58,6 @@ export default function Home() {
       <Report />
       <Results />
       <Quickstart />
-      <Honest />
       <Footer />
     </main>
   );
@@ -286,7 +285,7 @@ function Results() {
           </table>
         </div>
         <p className="mt-3 text-caption-1-regular text-text-tertiary">
-          Final re-run on support-agent-demo, good 1b40b27, bad 0ecffc0. Behavioral signatures were right; token-budget signatures are the weak spot, and we say so below.
+          Final re-run on support-agent-demo, good 1b40b27, bad 0ecffc0. Behavioral signatures were right; token-budget signatures are the weak spot.
         </p>
       </Wrap>
     </section>
@@ -322,28 +321,6 @@ uv run agentbisect report ID
 uv run agentbisect fix ID --llm-proxy auto
 uv run agentbisect verify-fix ID --commit SHA`}
         </pre>
-      </Wrap>
-    </section>
-  );
-}
-
-function Honest() {
-  const items = [
-    "Token-budget signatures are unreliable: one inflation tends to blame whichever commit crosses 1.5x last.",
-    "Live span divergence is blocked on neatlogs traces dead-lettering, so the demo uses a recorded fixture, always labelled.",
-    "The one VERIFIED fix changes eval expectations, not code, and is flagged for human review.",
-    "Everything so far has run against one target repo.",
-  ];
-  return (
-    <section className="py-24">
-      <Wrap className="max-w-3xl">
-        <Eyebrow>What it can&apos;t do yet</Eyebrow>
-        <h2 className="mt-3 text-balance text-title-1-semibold sm:text-display-4-semibold">We would rather tell you than have you find out.</h2>
-        <ul className="mt-8 divide-y divide-separator-border border-y border-separator-border">
-          {items.map((t) => (
-            <li key={t} className="py-4 text-body-regular text-text-secondary">{t}</li>
-          ))}
-        </ul>
       </Wrap>
     </section>
   );
